@@ -40,26 +40,32 @@ impl Add<u8> for Outcome {
 }
 
 #[derive(Debug, Clone)]
-struct Generator {
+pub struct Generator {
     all_pos: HashMap<RetroBoard, Outcome>,
     pos_to_process: VecDeque<RetroBoard>,
 }
 
 impl Generator {
-    fn generation(&mut self, piece_vec: &mut Vec<Piece>, setup: TbSetup) {
+    pub fn generate_positions(&mut self, piece_vec: Vec<Piece>, setup: TbSetup) {
         if let Some(piece) = piece_vec.pop() {
+        	println!("{:?}, setup: {:?}", piece, &setup);
             let range = if piece == White.king() { 0..10 } else { 0..64 };
             for sq in range.map(Square::new) {
-                let mut new_setup = setup.clone();
-                new_setup.board.set_piece_at(sq, piece);
-                self.generation(piece_vec, new_setup);
+                
+                //println!("before {:?}", &setup);
+                if setup.board.piece_at(sq).is_none() {
+                	let mut new_setup = setup.clone();
+                	new_setup.board.set_piece_at(sq, piece);
+                	self.generate_positions(piece_vec, new_setup);
+                }
+                //println!("after {:?}", &new_setup);
             }
         } else {
             // setup is complete, check if valid
             for color in [Black, White] {
                 let mut valid_setup = setup.clone();
                 valid_setup.turn = Some(color);
-                if let Ok(chess) = &valid_setup.to_chess_with_illegal_checks() {
+                if let Ok(chess) = dbg!{&valid_setup}.to_chess_with_illegal_checks() {
                     // if chess is valid then rboard should be too
                     let rboard = RetroBoard::from_setup(&valid_setup, Standard).unwrap();
                     if chess.is_checkmate() {
@@ -73,7 +79,7 @@ impl Generator {
         }
     }
 
-    fn process_positions(&mut self) {
+    pub fn process_positions(&mut self) {
         if let Some(rboard) = self.pos_to_process.pop_front() {
         	let out = *self.all_pos.get(&rboard).unwrap();
             for m in rboard.legal_unmoves() {
@@ -82,8 +88,10 @@ impl Generator {
                 if self.all_pos.get(&rboard_after_unmove).is_none() {
                 	println!("pos not found, illegal? {:?}", rboard_after_unmove)
                 }
-                self.all_pos.insert(rboard_after_unmove, (!out) + 1);
+                self.pos_to_process.push_back(rboard_after_unmove.clone()); // TODO currently the same pos can be scanned multiple times
+                self.all_pos.insert(rboard_after_unmove, (!out) + 1); //relative to player to move
             }
+            return self.process_positions()
         }
     }
 }

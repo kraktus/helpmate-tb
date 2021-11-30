@@ -50,3 +50,13 @@ impl Setup for TbSetup {
         NonZeroU32::new(1).unwrap()
     }
 }
+
+impl Default for TbSetup {
+    fn default() -> Self {
+        Self {
+            board: Board::empty(),
+            ep_square: None,
+            turn: None,
+        }
+    }
+}
