@@ -8,7 +8,7 @@ use std::ops::{Add, Not};
 
 /// According to side to move
 #[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
-enum Outcome {
+pub enum Outcome {
     Win(u8),
     Draw,
     Lose(u8),
@@ -40,15 +40,15 @@ impl Add<u8> for Outcome {
 
 #[derive(Debug, Clone)]
 pub struct Generator {
-    all_pos: HashMap<RetroBoard, Outcome>,
-    pos_to_process: VecDeque<RetroBoard>,
+    pub all_pos: HashMap<RetroBoard, Outcome>,
+    pub pos_to_process: VecDeque<RetroBoard>,
 }
 
 impl Generator {
     pub fn generate_positions(&mut self, piece_vec: &[Piece], setup: TbSetup) {
         match piece_vec {
             [piece, tail @ ..] => {
-                println!("{:?}, setup: {:?}", piece, &setup);
+                //println!("{:?}, setup: {:?}", piece, &setup);
                 let range = if *piece == White.king() { 0..10 } else { 0..64 };
                 for sq in range.map(Square::new) {
                     //println!("before {:?}", &setup);
@@ -65,7 +65,7 @@ impl Generator {
                 for color in [Black, White] {
                     let mut valid_setup = setup.clone();
                     valid_setup.turn = Some(color);
-                    if let Ok(chess) = dbg! {&valid_setup}.to_chess_with_illegal_checks() {
+                    if let Ok(chess) = &valid_setup.to_chess_with_illegal_checks() {
                         // if chess is valid then rboard should be too
                         let rboard = RetroBoard::from_setup(&valid_setup, Standard).unwrap();
                         if chess.is_checkmate() {
@@ -86,10 +86,11 @@ impl Generator {
             for m in rboard.legal_unmoves() {
                 let mut rboard_after_unmove = rboard.clone();
                 rboard_after_unmove.push(&m);
-                if self.all_pos.get(&rboard_after_unmove).is_none() {
-                    println!("pos not found, illegal? {:?}", rboard_after_unmove)
+                match self.all_pos.get(&rboard_after_unmove) {
+                    None => panic!("pos not found, illegal? {:?}", rboard_after_unmove),
+                    Some(Outcome::Draw) => self.pos_to_process.push_back(rboard_after_unmove.clone()),
+                    _ =>(),
                 }
-                self.pos_to_process.push_back(rboard_after_unmove.clone()); // TODO currently the same pos can be scanned multiple times
                 self.all_pos.insert(rboard_after_unmove, (!out) + 1); //relative to player to move
             }
             return self.process_positions();
@@ -104,4 +105,15 @@ impl Default for Generator {
             pos_to_process: VecDeque::new(),
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_process_positions_overflow() {
+
+    }
+
 }
