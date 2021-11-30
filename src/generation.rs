@@ -75,12 +75,14 @@ impl Generator {
 
     fn process_positions(&mut self) {
         if let Some(rboard) = self.pos_to_process.pop_front() {
+        	let out = self.all_pos.get(&rboard);
             for m in rboard.legal_unmoves() {
                 let mut rboard_after_unmove = rboard.clone();
                 rboard_after_unmove.push(&m);
-                // match self.all_pos.get(&rboard_after_unmove) {
-                // 	_ => println!("pos not found, illegal? {:?}", rboard_after_unmove),
-                // }
+                if self.all_pos.get(&rboard_after_unmove).is_none() {
+                	println!("pos not found, illegal? {:?}", rboard_after_unmove)
+                }
+                self.all_pos.insert(&rboard_after_unmove, (!out) + 1);
             }
         }
     }
