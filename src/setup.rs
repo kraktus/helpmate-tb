@@ -1,4 +1,7 @@
-use shakmaty::{Bitboard, Board, ByColor, Color, MaterialSide, RemainingChecks, Setup, Square};
+use shakmaty::{
+    Bitboard, Board, ByColor, CastlingMode, Chess, Color, FromSetup, MaterialSide, PositionError,
+    RemainingChecks, Setup, Square,
+};
 
 use std::num::NonZeroU32;
 
@@ -7,6 +10,15 @@ pub struct TbSetup {
     pub board: Board,
     pub ep_square: Option<Square>,
     pub turn: Option<Color>,
+}
+
+impl TbSetup {
+    pub fn to_chess_with_illegal_checks(&self) -> Result<Chess, PositionError<Chess>> {
+        match Chess::from_setup(self, CastlingMode::Standard) {
+            Err(x) => x.ignore_impossible_check(),
+            pos => pos,
+        }
+    }
 }
 
 impl Setup for TbSetup {

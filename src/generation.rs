@@ -2,9 +2,10 @@ use crate::TbSetup;
 use retroboard::RetroBoard;
 use shakmaty::{
     CastlingMode::Standard, Chess, Color, Color::Black, Color::White, FromSetup, Piece, Position,
-    Square,
+    Setup, Square,
 };
 use std::collections::{HashMap, VecDeque};
+use std::ops::{Add, Not};
 
 /// According to side to move
 #[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
@@ -12,6 +13,30 @@ enum Outcome {
     Win(u8),
     Draw,
     Lose(u8),
+}
+
+impl Not for Outcome {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        match self {
+            Outcome::Win(x) => Outcome::Lose(x),
+            Outcome::Lose(x) => Outcome::Win(x),
+            Outcome::Draw => Outcome::Draw,
+        }
+    }
+}
+
+impl Add<u8> for Outcome {
+    type Output = Self;
+
+    fn add(self, rhs: u8) -> Self {
+        match self {
+            Outcome::Win(x) => Outcome::Lose(x + rhs),
+            Outcome::Lose(x) => Outcome::Win(x + rhs),
+            Outcome::Draw => Outcome::Draw,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -32,9 +57,9 @@ impl Generator {
         } else {
             // setup is complete, check if valid
             for color in [Black, White] {
-            	let mut valid_setup = setup.clone();
-            	valid_setup.turn = Some(color);
-                if let Ok(chess) = Chess::from_setup(&valid_setup, Standard) {
+                let mut valid_setup = setup.clone();
+                valid_setup.turn = Some(color);
+                if let Ok(chess) = &valid_setup.to_chess_with_illegal_checks() {
                     // if chess is valid then rboard should be too
                     let rboard = RetroBoard::from_setup(&valid_setup, Standard).unwrap();
                     if chess.is_checkmate() {
@@ -44,16 +69,28 @@ impl Generator {
                         self.all_pos.insert(rboard.clone(), Outcome::Draw);
                     }
                 }
-            };
+            }
+        }
+    }
+
+    fn process_positions(&mut self) {
+        if let Some(rboard) = self.pos_to_process.pop_front() {
+            for m in rboard.legal_unmoves() {
+                let mut rboard_after_unmove = rboard.clone();
+                rboard_after_unmove.push(&m);
+                // match self.all_pos.get(&rboard_after_unmove) {
+                // 	_ => println!("pos not found, illegal? {:?}", rboard_after_unmove),
+                // }
+            }
         }
     }
 }
 
 impl Default for Generator {
-	fn default() -> Self {
-		Self {
-			all_pos: HashMap::new(),
-			pos_to_process: VecDeque::new(),
-		}
-	}
+    fn default() -> Self {
+        Self {
+            all_pos: HashMap::new(),
+            pos_to_process: VecDeque::new(),
+        }
+    }
 }
