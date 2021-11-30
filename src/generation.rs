@@ -136,5 +136,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_process_positions_overflow() {}
+    fn test_process_positions_overflow() {
+    	let mut gen = Generator::default();
+    	let r = RetroBoard::new_no_pockets("k1b5/1p1p4/1P1P4/8/8/1p1p4/1P1P4/K1B5 w - - 0 1").unwrap();
+    	gen.all_pos.insert(r.clone(), Outcome::Draw);
+    	gen.pos_to_process.push_back(r.clone());
+    	gen.process_positions();
+    }
 }
