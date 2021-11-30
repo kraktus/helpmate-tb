@@ -45,12 +45,15 @@ pub struct Generator {
 }
 
 impl Generator {
+
+	const KING_SQUARES: [Square; 10] = [Square::A1, Square::B1, Square::C1, Square::D1, Square::B2, Square::C2, Square::D2, Square::C3, Square::D3, Square::D4];
+
     pub fn generate_positions(&mut self, piece_vec: &[Piece], setup: TbSetup) {
         match piece_vec {
             [piece, tail @ ..] => {
-                //println!("{:?}, setup: {:?}", piece, &setup);
-                let range = if *piece == White.king() { 0..10 } else { 0..64 };
-                for sq in range.map(Square::new) {
+                println!("{:?}, setup: {:?}", piece, &setup);
+                let squares = if *piece == White.king() { &(Self::KING_SQUARES[..]) } else { &(Square::ALL[..]) };
+                for &sq in squares {
                     //println!("before {:?}", &setup);
                     if setup.board.piece_at(sq).is_none() {
                         let mut new_setup = setup.clone();
