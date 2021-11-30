@@ -1,8 +1,8 @@
 use crate::TbSetup;
 use retroboard::RetroBoard;
 use shakmaty::{
-	Bitboard,
-    CastlingMode::Standard, Color::Black, Color::White, FromSetup, Piece, Position, Setup, Square,
+    Bitboard, CastlingMode::Standard, Color::Black, Color::White, FromSetup, Piece, Position,
+    Setup, Square,
 };
 use std::collections::{HashMap, VecDeque};
 use std::ops::{Add, Not};
@@ -47,12 +47,15 @@ pub struct Generator {
 }
 
 impl Generator {
-
     pub fn generate_positions(&mut self, piece_vec: &[Piece], setup: TbSetup) {
         match piece_vec {
             [piece, tail @ ..] => {
-                println!("{:?}, setup: {:?}", piece, &setup);
-                let squares = if *piece == White.king() { self.white_king_bb } else { Bitboard::FULL };
+                //println!("{:?}, setup: {:?}", piece, &setup);
+                let squares = if *piece == White.king() {
+                    self.white_king_bb
+                } else {
+                    Bitboard::FULL
+                };
                 for sq in squares {
                     //println!("before {:?}", &setup);
                     if setup.board.piece_at(sq).is_none() {
@@ -90,9 +93,16 @@ impl Generator {
                 let mut rboard_after_unmove = rboard.clone();
                 rboard_after_unmove.push(&m);
                 match self.all_pos.get(&rboard_after_unmove) {
-                    None if self.white_king_bb.contains(rboard_after_unmove.king_of(White)) => panic!("pos not found, illegal? {:?}", rboard_after_unmove),
-                    Some(Outcome::Draw) => self.pos_to_process.push_back(rboard_after_unmove.clone()),
-                    _ =>(),
+                    None if self
+                        .white_king_bb
+                        .contains(rboard_after_unmove.king_of(White)) =>
+                    {
+                        panic!("pos not found, illegal? {:?}", rboard_after_unmove)
+                    }
+                    Some(Outcome::Draw) => {
+                        self.pos_to_process.push_back(rboard_after_unmove.clone())
+                    }
+                    _ => (),
                 }
                 self.all_pos.insert(rboard_after_unmove, (!out) + 1); //relative to player to move
             }
@@ -106,7 +116,17 @@ impl Default for Generator {
         Self {
             all_pos: HashMap::new(),
             pos_to_process: VecDeque::new(),
-            white_king_bb: Bitboard::EMPTY | Square::A1 | Square::B1 | Square::C1 | Square::D1 | Square::B2 | Square::C2 | Square::D2 | Square::C3 | Square::D3 | Square::D4,
+            white_king_bb: Bitboard::EMPTY
+                | Square::A1
+                | Square::B1
+                | Square::C1
+                | Square::D1
+                | Square::B2
+                | Square::C2
+                | Square::D2
+                | Square::C3
+                | Square::D3
+                | Square::D4,
         }
     }
 }
@@ -116,8 +136,5 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_process_positions_overflow() {
-
-    }
-
+    fn test_process_positions_overflow() {}
 }

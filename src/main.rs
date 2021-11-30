@@ -15,5 +15,5 @@ fn main() {
     gen.generate_positions(&mut vec_pieces, setup);
     println!("nb pos {:?}", gen.all_pos.len());
     println!("nb mates {:?}", gen.pos_to_process.len());
-    gen.process_positions();
+    //gen.process_positions();
 }
