@@ -32,8 +32,8 @@ impl Add<u8> for Outcome {
 
     fn add(self, rhs: u8) -> Self {
         match self {
-            Outcome::Win(x) => Outcome::Lose(x + rhs),
-            Outcome::Lose(x) => Outcome::Win(x + rhs),
+            Outcome::Win(x) => Outcome::Win(x + rhs),
+            Outcome::Lose(x) => Outcome::Lose(x + rhs),
             Outcome::Draw => Outcome::Draw,
         }
     }
@@ -105,7 +105,8 @@ impl Generator {
                         }
                         _ => (),
                     }
-                    self.all_pos.insert(rboard_after_unmove, (!out) + 1); //relative to player to move
+                    //println!("{:?}", (!out) + 1);
+                    self.all_pos.insert(rboard_after_unmove, (!out) + 1); //relative to the player to move
                 }
             } else {
                 break;
