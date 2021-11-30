@@ -2,10 +2,11 @@ use shakmaty::{Bitboard, Board, ByColor, Color, MaterialSide, RemainingChecks, S
 
 use std::num::NonZeroU32;
 
-struct TbSetup {
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub struct TbSetup {
     pub board: Board,
     pub ep_square: Option<Square>,
-    pub turn: Color,
+    pub turn: Option<Color>,
 }
 
 impl Setup for TbSetup {
@@ -19,7 +20,7 @@ impl Setup for TbSetup {
         None
     }
     fn turn(&self) -> Color {
-        self.turn
+        self.turn.unwrap()
     }
     fn castling_rights(&self) -> Bitboard {
         Bitboard::EMPTY
