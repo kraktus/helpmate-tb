@@ -87,26 +87,29 @@ impl Generator {
     }
 
     pub fn process_positions(&mut self) {
-        if let Some(rboard) = self.pos_to_process.pop_front() {
-            let out = *self.all_pos.get(&rboard).unwrap();
-            for m in rboard.legal_unmoves() {
-                let mut rboard_after_unmove = rboard.clone();
-                rboard_after_unmove.push(&m);
-                match self.all_pos.get(&rboard_after_unmove) {
-                    None if self
-                        .white_king_bb
-                        .contains(rboard_after_unmove.king_of(White)) =>
-                    {
-                        panic!("pos not found, illegal? {:?}", rboard_after_unmove)
+        loop {
+            if let Some(rboard) = self.pos_to_process.pop_front() {
+                let out = *self.all_pos.get(&rboard).unwrap();
+                for m in rboard.legal_unmoves() {
+                    let mut rboard_after_unmove = rboard.clone();
+                    rboard_after_unmove.push(&m);
+                    match self.all_pos.get(&rboard_after_unmove) {
+                        None if self
+                            .white_king_bb
+                            .contains(rboard_after_unmove.king_of(White)) =>
+                        {
+                            panic!("pos not found, illegal? {:?}", rboard_after_unmove)
+                        }
+                        Some(Outcome::Draw) => {
+                            self.pos_to_process.push_back(rboard_after_unmove.clone())
+                        }
+                        _ => (),
                     }
-                    Some(Outcome::Draw) => {
-                        self.pos_to_process.push_back(rboard_after_unmove.clone())
-                    }
-                    _ => (),
+                    self.all_pos.insert(rboard_after_unmove, (!out) + 1); //relative to player to move
                 }
-                self.all_pos.insert(rboard_after_unmove, (!out) + 1); //relative to player to move
+            } else {
+                break;
             }
-            return self.process_positions();
         }
     }
 }
@@ -137,10 +140,11 @@ mod tests {
 
     #[test]
     fn test_process_positions_overflow() {
-    	let mut gen = Generator::default();
-    	let r = RetroBoard::new_no_pockets("k1b5/1p1p4/1P1P4/8/8/1p1p4/1P1P4/K1B5 w - - 0 1").unwrap();
-    	gen.all_pos.insert(r.clone(), Outcome::Draw);
-    	gen.pos_to_process.push_back(r.clone());
-    	gen.process_positions();
+        let mut gen = Generator::default();
+        let r =
+            RetroBoard::new_no_pockets("k1b5/1p1p4/1P1P4/8/8/1p1p4/1P1P4/K1B5 w - - 0 1").unwrap();
+        gen.all_pos.insert(r.clone(), Outcome::Draw);
+        gen.pos_to_process.push_back(r.clone());
+        gen.process_positions();
     }
 }
