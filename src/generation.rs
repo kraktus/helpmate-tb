@@ -1,7 +1,7 @@
 use crate::TbSetup;
 use retroboard::RetroBoard;
 use shakmaty::{
-    CastlingMode::Standard, Chess, Color, Color::Black, Color::White, FromSetup, Piece, Position,
+    CastlingMode::Standard, Color::Black, Color::White, FromSetup, Piece, Position,
     Setup, Square,
 };
 use std::collections::{HashMap, VecDeque};
