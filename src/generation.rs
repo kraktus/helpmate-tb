@@ -1,18 +1,19 @@
 use crate::TbSetup;
 use retroboard::RetroBoard;
 use shakmaty::{
-    Bitboard, CastlingMode::Standard, Color, Color::Black, Color::White, FromSetup, Piece, Position,
-    Setup, Square,
+    Bitboard, CastlingMode::Standard, Color, Color::Black, Color::White, FromSetup, Piece,
+    Position, Setup, Square,
 };
 use std::collections::{HashMap, VecDeque};
 use std::ops::{Add, Not};
 
-/// According to side to move
+/// According to winnner set in `Generator`
 #[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
 pub enum Outcome {
     Win(u8),
     Draw,
     Lose(u8),
+    Unknown,
 }
 
 impl Not for Outcome {
@@ -23,6 +24,7 @@ impl Not for Outcome {
             Outcome::Win(x) => Outcome::Lose(x),
             Outcome::Lose(x) => Outcome::Win(x),
             Outcome::Draw => Outcome::Draw,
+            Outcome::Unknown => Outcome::Unknown,
         }
     }
 }
@@ -35,20 +37,26 @@ impl Add<u8> for Outcome {
             Outcome::Win(x) => Outcome::Win(x + rhs),
             Outcome::Lose(x) => Outcome::Lose(x + rhs),
             Outcome::Draw => Outcome::Draw,
+            Outcome::Unknown => Outcome::Unknown,
         }
     }
 }
 
 #[derive(Debug, Clone)]
+pub struct Queue {
+    pub winning_pos_to_process: VecDeque<RetroBoard>,
+    pub losing_pos_to_process: VecDeque<RetroBoard>,
+}
+
+#[derive(Debug, Clone)]
 pub struct Generator {
     pub all_pos: HashMap<RetroBoard, Outcome>,
-    pub pos_to_process: VecDeque<RetroBoard>,
     pub white_king_bb: Bitboard,
-    pub winner: Color
+    pub winner: Color,
 }
 
 impl Generator {
-    pub fn generate_positions(&mut self, piece_vec: &[Piece], setup: TbSetup) {
+    pub fn generate_positions(&mut self, piece_vec: &[Piece], setup: TbSetup, queue: &mut Queue) {
         match piece_vec {
             [piece, tail @ ..] => {
                 //println!("{:?}, setup: {:?}", piece, &setup);
@@ -62,7 +70,7 @@ impl Generator {
                     if setup.board.piece_at(sq).is_none() {
                         let mut new_setup = setup.clone();
                         new_setup.board.set_piece_at(sq, *piece);
-                        self.generate_positions(tail, new_setup);
+                        self.generate_positions(tail, new_setup, queue);
                     }
                     //println!("after {:?}", &new_setup);
                 }
@@ -76,10 +84,20 @@ impl Generator {
                         // if chess is valid then rboard should be too
                         let rboard = RetroBoard::from_setup(&valid_setup, Standard).unwrap();
                         if chess.is_checkmate() {
-                            self.all_pos.insert(rboard.clone(), Outcome::Lose(0));
-                            self.pos_to_process.push_back(rboard);
+                            self.all_pos.insert(
+                                rboard.clone(),
+                                match chess.turn() {
+                                    c if c == self.winner => Outcome::Lose(0),
+                                    _ => Outcome::Win(0),
+                                },
+                            );
+                            if chess.turn() == self.winner {
+                                queue.losing_pos_to_process.push_back(rboard);
+                            } else {
+                                queue.winning_pos_to_process.push_back(rboard);
+                            }
                         } else {
-                            self.all_pos.insert(rboard.clone(), Outcome::Draw);
+                            self.all_pos.insert(rboard.clone(), Outcome::Unknown);
                         }
                     }
                 }
@@ -87,9 +105,9 @@ impl Generator {
         }
     }
 
-    pub fn process_positions(&mut self) {
+    pub fn process_positions(&mut self, queue: &mut VecDeque<RetroBoard>) {
         loop {
-            if let Some(rboard) = self.pos_to_process.pop_front() {
+            if let Some(rboard) = queue.pop_front() {
                 let out = *self.all_pos.get(&rboard).unwrap();
                 for m in rboard.legal_unmoves() {
                     let mut rboard_after_unmove = rboard.clone();
@@ -101,13 +119,11 @@ impl Generator {
                         {
                             panic!("pos not found, illegal? {:?}", rboard_after_unmove)
                         }
-                        Some(Outcome::Draw) => {
-                            self.pos_to_process.push_back(rboard_after_unmove.clone())
-                        }
+                        Some(Outcome::Unknown) => queue.push_back(rboard_after_unmove.clone()),
                         _ => (),
                     }
                     //println!("{:?}", (!out) + 1);
-                    self.all_pos.insert(rboard_after_unmove, (!out) + 1); //relative to the player to move
+                    self.all_pos.insert(rboard_after_unmove, out + 1); //relative to the player to move
                 }
             } else {
                 break;
@@ -120,8 +136,7 @@ impl Default for Generator {
     fn default() -> Self {
         Self {
             all_pos: HashMap::new(),
-            pos_to_process: VecDeque::new(),
-            white_king_bb: Bitboard::EMPTY
+            white_king_bb: Bitboard::EMPTY // TODO replace that by proper reflection function
                 | Square::A1
                 | Square::B1
                 | Square::C1
@@ -132,7 +147,16 @@ impl Default for Generator {
                 | Square::C3
                 | Square::D3
                 | Square::D4,
-            winner: White
+            winner: White,
+        }
+    }
+}
+
+impl Default for Queue {
+    fn default() -> Self {
+        Self {
+            winning_pos_to_process: VecDeque::new(),
+            losing_pos_to_process: VecDeque::new(),
         }
     }
 }
