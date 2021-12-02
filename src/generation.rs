@@ -1,7 +1,7 @@
 use crate::TbSetup;
 use retroboard::RetroBoard;
 use shakmaty::{
-    Bitboard, CastlingMode::Standard, Color::Black, Color::White, FromSetup, Piece, Position,
+    Bitboard, CastlingMode::Standard, Color, Color::Black, Color::White, FromSetup, Piece, Position,
     Setup, Square,
 };
 use std::collections::{HashMap, VecDeque};
@@ -44,6 +44,7 @@ pub struct Generator {
     pub all_pos: HashMap<RetroBoard, Outcome>,
     pub pos_to_process: VecDeque<RetroBoard>,
     pub white_king_bb: Bitboard,
+    pub winner: Color
 }
 
 impl Generator {
@@ -131,6 +132,7 @@ impl Default for Generator {
                 | Square::C3
                 | Square::D3
                 | Square::D4,
+            winner: White
         }
     }
 }
