@@ -92,12 +92,13 @@ impl Generator {
                                 },
                             );
                             if chess.turn() == self.winner {
+                            	//println!("lost {:?}", rboard);
                                 queue.losing_pos_to_process.push_back(rboard);
                             } else {
                                 queue.winning_pos_to_process.push_back(rboard);
                             }
                         } else {
-                            self.all_pos.insert(rboard.clone(), Outcome::Unknown);
+                            self.all_pos.insert(rboard.clone(), Outcome::Draw);
                         }
                     }
                 }
@@ -119,11 +120,14 @@ impl Generator {
                         {
                             panic!("pos not found, illegal? {:?}", rboard_after_unmove)
                         }
-                        Some(Outcome::Unknown) => queue.push_back(rboard_after_unmove.clone()),
+                        Some(Outcome::Draw) => {
+                        	queue.push_back(rboard_after_unmove.clone());
+                        	self.all_pos.insert(rboard_after_unmove, out + 1);
+                        	},
                         _ => (),
                     }
                     //println!("{:?}", (!out) + 1);
-                    self.all_pos.insert(rboard_after_unmove, out + 1); //relative to the player to move
+                    
                 }
             } else {
                 break;
