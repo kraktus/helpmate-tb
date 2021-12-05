@@ -129,25 +129,6 @@ mod tests {
         assert_eq!(WHITE_KING_INDEX_TO_SQUARE[9], Square::D4);
     }
 
-    fn tb_setup(fen: &str) -> TbSetup {
-        let board = fen
-            .split(' ')
-            .next()
-            .map(|s| Board::from_board_fen(s.as_bytes()).unwrap())
-            .unwrap();
-        let turn = fen
-            .split(' ')
-            .nth(1)
-            .and_then(|s| s.chars().next())
-            .and_then(Color::from_char)
-            .or(Some(White));
-        TbSetup {
-            board,
-            turn,
-            ep_square: None,
-        }
-    }
-
     fn mat(fen: &str) -> Config {
         from_material(&Material::from_ascii_fen(fen.as_bytes()).unwrap())
     }
