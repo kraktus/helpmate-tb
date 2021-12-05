@@ -3,8 +3,8 @@ mod indexer;
 mod setup;
 
 use generation::{Generator, Outcome};
-pub use setup::TbSetup;
 pub use indexer::index;
+pub use setup::TbSetup;
 
 use shakmaty::Color::{Black, White};
 use std::collections::HashMap;
@@ -68,8 +68,9 @@ fn main() {
         "From {:?} perspective, win: {:?}, draw: {:?}, lost: {:?}",
         gen.winner, win, draw, lose
     );
-    println!("Distribution {:?}", distrib);
     for i in 0..30 {
-        println!("Win({}), {:?}", i, distrib.get(&Outcome::Win(i)));
+        if let Some(nb_win) = distrib.get(&Outcome::Win(i)) {
+            println!("Win({}), {:?}", i, nb_win);
+        }
     }
 }

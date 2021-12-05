@@ -1,4 +1,7 @@
-use shakmaty::{Board, Color, Color::Black, Color::White, Material, Piece, Role, Square, FromSetup, CastlingMode};
+use shakmaty::{
+    Board, CastlingMode, Color, Color::Black, Color::White, FromSetup, Material, Piece, Role,
+    Square,
+};
 
 use retroboard::RetroBoard;
 
@@ -35,7 +38,9 @@ pub fn index(b: &RetroBoard) -> u64 {
     idx *= 10;
     let white_king_idx =
         WHITE_KING_SQUARES_TO_INDEX[b.board().king_of(White).expect("white king") as usize];
-    assert!(white_king_idx < 10);
+    if white_king_idx >= 10 {
+        panic!("Wrong king index, retroboard: {:?}", b);
+    }
     idx += white_king_idx;
     idx *= 64;
     idx += b.board().king_of(Black).expect("black king") as u64;
@@ -93,7 +98,7 @@ pub fn restore_from_index(config: &Config, index: u64) -> RetroBoard {
     idx /= 10;
 
     // index takes as an input a `RetroBoard`, and `retro_turn` == !`turn` so to return the right retro-turn, we need to put the reverse turn.
-    setup.turn = Some(Color::from_white(idx == 0)); 
+    setup.turn = Some(Color::from_white(idx == 0));
     RetroBoard::from_setup(&setup, CastlingMode::Standard).expect("Right setup")
 }
 

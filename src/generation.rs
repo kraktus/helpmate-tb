@@ -1,4 +1,4 @@
-use crate::{TbSetup, index};
+use crate::{index, TbSetup};
 use retroboard::RetroBoard;
 use shakmaty::{
     Bitboard, CastlingMode::Standard, Color, Color::Black, Color::White, FromSetup, Piece,
@@ -52,7 +52,7 @@ pub struct Queue {
 
 #[derive(Debug, Clone)]
 pub struct Generator {
-    pub all_pos: HashMap<RetroBoard, Outcome>,
+    pub all_pos: HashMap<u64, Outcome>,
     pub white_king_bb: Bitboard,
     pub winner: Color,
     pub counter: u64,
@@ -98,7 +98,7 @@ impl Generator {
                         let rboard = RetroBoard::from_setup(&valid_setup, Standard).unwrap();
                         if chess.is_checkmate() {
                             self.all_pos.insert(
-                                rboard.clone(),
+                                index(&rboard),
                                 match chess.turn() {
                                     c if c == self.winner => Outcome::Lose(0),
                                     _ => Outcome::Win(0),
@@ -111,7 +111,7 @@ impl Generator {
                                 queue.winning_pos_to_process.push_back(rboard);
                             }
                         } else {
-                            self.all_pos.insert(rboard.clone(), Outcome::Draw);
+                            self.all_pos.insert(index(&rboard), Outcome::Draw);
                         }
                     }
                 }
@@ -137,22 +137,24 @@ impl Generator {
     pub fn process_positions(&mut self, queue: &mut VecDeque<RetroBoard>) {
         loop {
             if let Some(rboard) = queue.pop_front() {
-                let out = *self.all_pos.get(&rboard).unwrap();
+                let out = *self.all_pos.get(&index(&rboard)).unwrap();
                 for m in rboard.legal_unmoves() {
                     let mut rboard_after_unmove = rboard.clone();
                     rboard_after_unmove.push(&m);
-                    match self.all_pos.get(&rboard_after_unmove) {
-                        None if self
-                            .white_king_bb
-                            .contains(rboard_after_unmove.king_of(White)) =>
-                        {
-                            panic!("pos not found, illegal? {:?}", rboard_after_unmove)
+                    if self
+                        .white_king_bb
+                        .contains(rboard_after_unmove.king_of(White))
+                    {
+                        match self.all_pos.get(&index(&rboard_after_unmove)) {
+                            None => {
+                                panic!("pos not found, illegal? {:?}", rboard_after_unmove)
+                            }
+                            Some(Outcome::Draw) => {
+                                queue.push_back(rboard_after_unmove.clone());
+                                self.all_pos.insert(index(&rboard_after_unmove), out + 1);
+                            }
+                            _ => (),
                         }
-                        Some(Outcome::Draw) => {
-                            queue.push_back(rboard_after_unmove.clone());
-                            self.all_pos.insert(rboard_after_unmove, out + 1);
-                        }
-                        _ => (),
                     }
                     //println!("{:?}", (!out) + 1);
                 }
