@@ -1,6 +1,6 @@
 mod generation;
-mod setup;
 mod indexer;
+mod setup;
 
 use generation::{Generator, Outcome};
 pub use setup::TbSetup;
