@@ -1,8 +1,8 @@
-use crate::{index, TbSetup};
+use crate::{index, TbSetup, restore_from_index, from_material};
 use retroboard::RetroBoard;
 use shakmaty::{
     Bitboard, CastlingMode::Standard, Color, Color::Black, Color::White, FromSetup, Piece,
-    Position, Setup, Square,
+    Position, Setup, Square, Material
 };
 use std::collections::{HashMap, VecDeque};
 use std::ops::{Add, Not};
@@ -46,8 +46,8 @@ impl Add<u8> for Outcome {
 
 #[derive(Debug, Clone)]
 pub struct Queue {
-    pub winning_pos_to_process: VecDeque<RetroBoard>,
-    pub losing_pos_to_process: VecDeque<RetroBoard>,
+    pub winning_pos_to_process: VecDeque<u64>,
+    pub losing_pos_to_process: VecDeque<u64>,
 }
 
 #[derive(Debug, Clone)]
@@ -56,6 +56,7 @@ pub struct Generator {
     pub white_king_bb: Bitboard,
     pub winner: Color,
     pub counter: u64,
+    material: Material
 }
 
 impl Generator {
@@ -96,9 +97,10 @@ impl Generator {
                     if let Ok(chess) = &valid_setup.to_chess_with_illegal_checks() {
                         // if chess is valid then rboard should be too
                         let rboard = RetroBoard::from_setup(&valid_setup, Standard).unwrap();
+                        let idx = index(&rboard);
                         if chess.is_checkmate() {
                             self.all_pos.insert(
-                                index(&rboard),
+                                idx,
                                 match chess.turn() {
                                     c if c == self.winner => Outcome::Lose(0),
                                     _ => Outcome::Win(0),
@@ -106,12 +108,12 @@ impl Generator {
                             );
                             if chess.turn() == self.winner {
                                 //println!("lost {:?}", rboard);
-                                queue.losing_pos_to_process.push_back(rboard);
+                                queue.losing_pos_to_process.push_back(idx);
                             } else {
-                                queue.winning_pos_to_process.push_back(rboard);
+                                queue.winning_pos_to_process.push_back(idx);
                             }
                         } else {
-                            self.all_pos.insert(index(&rboard), Outcome::Draw);
+                            self.all_pos.insert(idx, Outcome::Draw);
                         }
                     }
                 }
@@ -119,7 +121,8 @@ impl Generator {
         }
     }
 
-    pub fn generate_positions(&mut self, piece_vec: &[Piece], setup: TbSetup) -> Queue {
+    pub fn generate_positions(&mut self, setup: TbSetup) -> Queue {
+    	let piece_vec = from_material(&self.material);
         let pb = ProgressBar::new(pow_minus_1(63, piece_vec.len()) * 10 * 2);
         pb.set_style(ProgressStyle::default_bar()
         .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})")
@@ -129,14 +132,16 @@ impl Generator {
         for white_king_sq in self.white_king_bb {
             let mut new_setup = setup.clone();
             new_setup.board.set_piece_at(white_king_sq, White.king());
-            self.generate_positions_internal(piece_vec, new_setup, &mut queue, &pb)
+            self.generate_positions_internal(&piece_vec, new_setup, &mut queue, &pb)
         }
         queue
     }
 
-    pub fn process_positions(&mut self, queue: &mut VecDeque<RetroBoard>) {
+    pub fn process_positions(&mut self, queue: &mut VecDeque<u64>) {
+    	let config = from_material(&self.material);
         loop {
-            if let Some(rboard) = queue.pop_front() {
+            if let Some(idx) = queue.pop_front() {
+            	let rboard = restore_from_index(&config, idx);
                 let out = *self.all_pos.get(&index(&rboard)).unwrap();
                 for m in rboard.legal_unmoves() {
                     let mut rboard_after_unmove = rboard.clone();
@@ -145,13 +150,14 @@ impl Generator {
                         .white_king_bb
                         .contains(rboard_after_unmove.king_of(White))
                     {
-                        match self.all_pos.get(&index(&rboard_after_unmove)) {
+                    	let idx_after_unmove = index(&rboard_after_unmove);
+                        match self.all_pos.get(&idx_after_unmove) {
                             None => {
                                 panic!("pos not found, illegal? {:?}", rboard_after_unmove)
                             }
                             Some(Outcome::Draw) => {
-                                queue.push_back(rboard_after_unmove.clone());
-                                self.all_pos.insert(index(&rboard_after_unmove), out + 1);
+                                queue.push_back(idx_after_unmove);
+                                self.all_pos.insert(idx_after_unmove, out + 1);
                             }
                             _ => (),
                         }
@@ -163,20 +169,8 @@ impl Generator {
             }
         }
     }
-}
 
-// instead of 64**4 get 64*63*62*61
-#[inline]
-const fn pow_minus_1(exp: u64, left: usize) -> u64 {
-    if left >= 1 {
-        exp * pow_minus_1(exp - 1, left - 1)
-    } else {
-        1
-    }
-}
-
-impl Default for Generator {
-    fn default() -> Self {
+    pub fn new(fen_config: &str) -> Self {
         Self {
             all_pos: HashMap::new(),
             white_king_bb: Bitboard::EMPTY // TODO replace that by proper reflection function
@@ -192,7 +186,18 @@ impl Default for Generator {
                 | Square::D4,
             winner: White,
             counter: 0,
+            material: Material::from_ascii_fen(fen_config.as_bytes()).unwrap(),
         }
+    }
+}
+
+// instead of 64**4 get 64*63*62*61
+#[inline]
+const fn pow_minus_1(exp: u64, left: usize) -> u64 {
+    if left >= 1 {
+        exp * pow_minus_1(exp - 1, left - 1)
+    } else {
+        1
     }
 }
 

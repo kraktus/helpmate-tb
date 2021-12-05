@@ -3,7 +3,7 @@ mod indexer;
 mod setup;
 
 use generation::{Generator, Outcome};
-pub use indexer::index;
+pub use indexer::{index, restore_from_index, from_material};
 pub use setup::TbSetup;
 
 use shakmaty::Color::{Black, White};
@@ -18,17 +18,10 @@ static ALLOCATOR: DhatAlloc = DhatAlloc;
 
 fn main() {
     let _dhat = Dhat::start_heap_profiling();
-    let mut gen = Generator::default();
-    // gen.winner = Black;
-    let vec_pieces = vec![
-        // no need for white king
-        White.queen(),
-        Black.rook(),
-        Black.king(),
-    ];
+    let mut gen = Generator::new("Qrk"); // white king is included by default
     let setup = TbSetup::default();
     println!("gen before {:?}", gen);
-    let mut q = gen.generate_positions(&vec_pieces, setup);
+    let mut q = gen.generate_positions(setup);
     println!("nb pos {:?}", gen.all_pos.len());
     println!("counter {:?}", gen.counter);
     println!(
