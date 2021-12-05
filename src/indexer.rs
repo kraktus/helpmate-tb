@@ -64,9 +64,14 @@ pub fn from_material(m: &Material) -> Config {
         Role::Pawn,
     ] {
         for color in [White, Black] {
-            config.push(Piece { role, color })
+            let mut count = m.by_piece(Piece { role, color });
+            while count > 0 {
+                config.push(Piece { role, color });
+                count -= 1
+            }
         }
     }
+    config.push(Black.king());
     config
 }
 
@@ -80,7 +85,7 @@ pub fn restore_from_index(config: &Config, index: u64) -> TbSetup {
         idx /= 64;
     }
     setup.board.set_piece_at(
-        unsafe { Square::new_unchecked((idx % 10) as u32) },
+        WHITE_KING_INDEX_TO_SQUARE[(idx % 10) as usize],
         White.king(),
     );
     idx /= 10;
@@ -140,26 +145,24 @@ mod tests {
         }
     }
 
+    fn mat(fen: &str) -> Config {
+        from_material(&Material::from_ascii_fen(fen.as_bytes()).unwrap())
+    }
+
     #[test]
     fn test_index_overflow() {
-        let two_kings = tb_setup("8/5p2/6k1/8/8/8/Q1RB4/1K6 w");
+        let two_kings = tb_setup("4qqqr/7k/8/8/3K4/8/8/8 w");
         let idx = index(&two_kings);
-        let mut config = Config::new();
-        config.push(White.queen());
-        config.push(White.rook());
-        config.push(White.bishop());
-        config.push(Black.pawn());
-        config.push(Black.king());
+        let config = mat("rqqqk");
         let two_kings_from_idx = restore_from_index(&config, idx);
         assert_eq!(two_kings, two_kings_from_idx);
     }
 
     #[test]
     fn test_index_then_de_index() {
-        let two_kings = tb_setup("8/8/6k1/8/8/8/8/1K6 w");
+        let two_kings = tb_setup("8/7k/8/8/3K4/8/8/8 w");
         let idx = index(&two_kings);
-        let mut config = Config::new();
-        config.push(Black.king());
+        let config = mat("k");
         let two_kings_from_idx = restore_from_index(&config, idx);
         assert_eq!(two_kings, two_kings_from_idx);
     }
