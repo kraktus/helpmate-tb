@@ -4,6 +4,7 @@ mod setup;
 
 use generation::{Generator, Outcome};
 pub use setup::TbSetup;
+pub use indexer::index;
 
 use shakmaty::Color::{Black, White};
 use std::collections::HashMap;

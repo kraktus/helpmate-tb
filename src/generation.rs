@@ -1,4 +1,4 @@
-use crate::TbSetup;
+use crate::{TbSetup, index};
 use retroboard::RetroBoard;
 use shakmaty::{
     Bitboard, CastlingMode::Standard, Color, Color::Black, Color::White, FromSetup, Piece,

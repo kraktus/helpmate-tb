@@ -1,4 +1,6 @@
-use shakmaty::{Board, Color, Color::Black, Color::White, Material, Piece, Role, Setup, Square};
+use shakmaty::{Board, Color, Color::Black, Color::White, Material, Piece, Role, Square, FromSetup, CastlingMode};
+
+use retroboard::RetroBoard;
 
 use crate::TbSetup;
 use arrayvec::ArrayVec;
@@ -28,8 +30,8 @@ const WHITE_KING_INDEX_TO_SQUARE: [Square; 10] = [
 ];
 
 // for now ASSUME the white king is in the a1-d1-d4 corner already
-pub fn index(b: &dyn Setup) -> u64 {
-    let mut idx: u64 = b.turn() as u64;
+pub fn index(b: &RetroBoard) -> u64 {
+    let mut idx: u64 = b.retro_turn() as u64;
     idx *= 10;
     let white_king_idx =
         WHITE_KING_SQUARES_TO_INDEX[b.board().king_of(White).expect("white king") as usize];
@@ -75,7 +77,7 @@ pub fn from_material(m: &Material) -> Config {
     config
 }
 
-pub fn restore_from_index(config: &Config, index: u64) -> TbSetup {
+pub fn restore_from_index(config: &Config, index: u64) -> RetroBoard {
     let mut idx = index;
     let mut setup = TbSetup::default();
     for &piece in config {
@@ -90,8 +92,9 @@ pub fn restore_from_index(config: &Config, index: u64) -> TbSetup {
     );
     idx /= 10;
 
-    setup.turn = Some(Color::from_white(idx == 1));
-    setup
+    // index takes as an input a `RetroBoard`, and `retro_turn` == !`turn` so to return the right retro-turn, we need to put the reverse turn.
+    setup.turn = Some(Color::from_white(idx == 0)); 
+    RetroBoard::from_setup(&setup, CastlingMode::Standard).expect("Right setup")
 }
 
 #[cfg(test)]
@@ -151,7 +154,7 @@ mod tests {
 
     #[test]
     fn test_index_overflow() {
-        let two_kings = tb_setup("3bnqqk/8/8/8/3K4/8/8/8 w");
+        let two_kings = RetroBoard::new_no_pockets("3bnqqk/8/8/8/3K4/8/8/8 b").unwrap();
         let idx = index(&two_kings);
         let config = mat("bnqqk");
         let two_kings_from_idx = restore_from_index(&config, idx);
@@ -161,7 +164,7 @@ mod tests {
 
     #[test]
     fn test_index_then_de_index() {
-        let two_kings = tb_setup("8/7k/8/8/3K4/8/8/8 w");
+        let two_kings = RetroBoard::new_no_pockets("8/7k/8/8/3K4/8/8/8 b").unwrap();
         let idx = index(&two_kings);
         let config = mat("k");
         let two_kings_from_idx = restore_from_index(&config, idx);
