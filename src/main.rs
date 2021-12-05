@@ -8,13 +8,20 @@ pub use setup::TbSetup;
 use shakmaty::Color::{Black, White};
 use std::collections::HashMap;
 
+use dhat::{Dhat, DhatAlloc};
+
+#[global_allocator]
+static ALLOCATOR: DhatAlloc = DhatAlloc;
+// 3 pieces before using index At t-gmax: 19,080,095 bytes (100%) in 47 blocks (100%), avg size 405,959.47 bytes
+// 4 pieces before using index At t-gmax: 610,457,858 bytes (100%) in 199 blocks (100%), avg size 3,067,627.43 bytes
+
 fn main() {
-    println!("Hello, world!");
+    let _dhat = Dhat::start_heap_profiling();
     let mut gen = Generator::default();
     // gen.winner = Black;
     let vec_pieces = vec![
         // no need for white king
-        White.knight(),
+        White.queen(),
         Black.rook(),
         Black.king(),
     ];
@@ -36,6 +43,7 @@ fn main() {
     // for rboard in gen.pos_to_process.iter() {
     //     println!("{:?}", gen.all_pos.get(rboard));
     // };
+    // need to process FIRST winning positions, then losing ones.
     gen.process_positions(&mut q.winning_pos_to_process);
     gen.process_positions(&mut q.losing_pos_to_process);
     let mut draw = 0;

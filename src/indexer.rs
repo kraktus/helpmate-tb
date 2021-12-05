@@ -151,10 +151,11 @@ mod tests {
 
     #[test]
     fn test_index_overflow() {
-        let two_kings = tb_setup("3bqqqk/8/8/8/3K4/8/8/8 w");
+        let two_kings = tb_setup("3bnqqk/8/8/8/3K4/8/8/8 w");
         let idx = index(&two_kings);
-        let config = mat("bqqqk");
+        let config = mat("bnqqk");
         let two_kings_from_idx = restore_from_index(&config, idx);
+        //assert_eq!(idx, 21474565947);
         assert_eq!(two_kings, two_kings_from_idx);
     }
 
