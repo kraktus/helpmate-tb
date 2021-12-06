@@ -3,9 +3,8 @@ mod indexer;
 mod setup;
 
 use generation::{Generator, Outcome};
-pub use indexer::{from_material, index, restore_from_index, index_unchecked};
+pub use indexer::{from_material, index, index_unchecked, restore_from_index};
 pub use setup::TbSetup;
-
 
 use std::collections::HashMap;
 

@@ -1,6 +1,5 @@
 use shakmaty::{
-    CastlingMode, Color, Color::Black, Color::White, FromSetup, Material, Piece, Role,
-    Square,
+    CastlingMode, Color, Color::Black, Color::White, FromSetup, Material, Piece, Role, Square,
 };
 
 use retroboard::RetroBoard;
@@ -46,7 +45,8 @@ const WHITE_KING_INDEX_TO_SQUARE: [Square; 10] = [
 
 pub fn index(b: &RetroBoard) -> u64 {
     let mut rboard_checked = b.clone();
-    let board_transfo_needed = WHITE_KING_SQUARES_TO_TRANSFO[b.board().king_of(White).expect("white king") as usize];
+    let board_transfo_needed =
+        WHITE_KING_SQUARES_TO_TRANSFO[b.board().king_of(White).expect("white king") as usize];
     match board_transfo_needed {
         0 => (),
         1 => rboard_checked.flip_diagonal(),
@@ -57,7 +57,6 @@ pub fn index(b: &RetroBoard) -> u64 {
         6 => rboard_checked.rotate_180(),
         7 => rboard_checked.flip_anti_diagonal(),
         _ => panic!("Only 7 transformations expected"),
-
     };
     index_unchecked(&rboard_checked)
 }
@@ -135,7 +134,7 @@ pub fn restore_from_index(config: &Config, index: u64) -> RetroBoard {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use shakmaty::{Board, Bitboard};
+    use shakmaty::{Bitboard, Board};
 
     #[test]
     fn test_white_king_squares_to_index() {
@@ -212,9 +211,10 @@ mod tests {
             let setup = TbSetup {
                 board,
                 turn: Some(Color::Black),
-                ep_square: None, 
+                ep_square: None,
             };
-            let rboard = RetroBoard::from_setup(&setup, CastlingMode::Standard).expect("Valid setup");
+            let rboard =
+                RetroBoard::from_setup(&setup, CastlingMode::Standard).expect("Valid setup");
             let idx = index(&rboard);
             let config = mat("k");
             let rboard_restored = restore_from_index(&config, idx);
