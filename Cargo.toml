@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-retroboard = "0.2.0"
-shakmaty = "0.20.2"
+retroboard = { git = "https://github.com/kraktus/rs-retroboard-chess", branch = "shakmaty_board_transfo"} # need same shakmaty version
+shakmaty = { git = "https://github.com/niklasf/shakmaty", rev = "7190fc23126c67c1445064b7065a1c3772055050" } # waiting for shakmaty release with support for `Board` transformation
 arrayvec = "0.7" 
 indicatif = "0.16.2"
 dhat = "0.2.4"

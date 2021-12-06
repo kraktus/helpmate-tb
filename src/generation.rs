@@ -1,4 +1,4 @@
-use crate::{from_material, index, restore_from_index, TbSetup};
+use crate::{from_material, index, index_unchecked, restore_from_index, TbSetup};
 use retroboard::RetroBoard;
 use shakmaty::{
     Bitboard, CastlingMode::Standard, Color, Color::Black, Color::White, FromSetup, Material,
@@ -97,7 +97,7 @@ impl Generator {
                     if let Ok(chess) = &valid_setup.to_chess_with_illegal_checks() {
                         // if chess is valid then rboard should be too
                         let rboard = RetroBoard::from_setup(&valid_setup, Standard).unwrap();
-                        let idx = index(&rboard);
+                        let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
                         if chess.is_checkmate() {
                             self.all_pos.insert(
                                 idx,

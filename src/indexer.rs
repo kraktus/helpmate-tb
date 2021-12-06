@@ -13,10 +13,22 @@ type Config = ArrayVec<Piece, 5>;
 
 #[rustfmt::skip]
 const WHITE_KING_SQUARES_TO_INDEX: [u64; 32] = [
-    0, 1, 2, 3, 10, 10, 10, 10,
-    10, 4, 5, 6, 10, 10, 10, 10,
-    10, 10, 7, 8, 10, 10, 10, 10,
-    10, 10, 10, 9, 10, 10, 10, 10,
+    0,  1, 2, 3, 10, 10, 10, 10,
+   10,  4, 5, 6, 10, 10, 10, 10,
+   10, 10, 7, 8, 10, 10, 10, 10,
+   10, 10,10, 9, 10, 10, 10, 10,
+];
+
+#[rustfmt::skip]
+const WHITE_KING_SQUARES_TO_TRANSFO: [u64; 64] = [
+    0, 0, 0, 0, 2, 2, 2, 2,
+    1, 0, 0, 0, 2, 2, 2, 3,
+    1, 1, 0, 0, 2, 2, 3, 3,
+    1, 1, 1, 0, 2, 3, 3, 3,
+    4, 4, 4, 5, 6, 7, 7, 7,
+    4, 4, 5, 5, 6, 6, 7, 7,
+    4, 5, 5, 5, 6, 6, 6, 7,
+    5, 5, 5, 5, 6, 6, 6, 6,
 ];
 
 const WHITE_KING_INDEX_TO_SQUARE: [Square; 10] = [
@@ -32,8 +44,26 @@ const WHITE_KING_INDEX_TO_SQUARE: [Square; 10] = [
     Square::D4,
 ];
 
-// for now ASSUME the white king is in the a1-d1-d4 corner already
 pub fn index(b: &RetroBoard) -> u64 {
+    let mut rboard_checked = b.clone();
+    let board_transfo_needed = WHITE_KING_SQUARES_TO_TRANSFO[b.board().king_of(White).expect("white king") as usize];
+    match board_transfo_needed {
+        0 => (),
+        1 => rboard_checked.flip_diagonal(),
+        2 => rboard_checked.flip_horizontal(),
+        3 => rboard_checked.rotate_90(),
+        4 => rboard_checked.rotate_270(),
+        5 => rboard_checked.flip_vertical(),
+        6 => rboard_checked.rotate_180(),
+        7 => rboard_checked.flip_anti_diagonal(),
+        _ => panic!("Only 7 transformations expected"),
+
+    };
+    index_unchecked(&rboard_checked)
+}
+
+/// ASSUME the white king is in the a1-d1-d4 corner already
+pub fn index_unchecked(b: &RetroBoard) -> u64 {
     let mut idx: u64 = b.retro_turn() as u64;
     idx *= 10;
     let white_king_idx =
@@ -105,6 +135,7 @@ pub fn restore_from_index(config: &Config, index: u64) -> RetroBoard {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use shakmaty::{Board, Bitboard};
 
     #[test]
     fn test_white_king_squares_to_index() {
@@ -139,9 +170,9 @@ mod tests {
     }
 
     #[test]
-    fn test_index_overflow() {
+    fn test_index_unchecked_overflow() {
         let high_value_board = RetroBoard::new_no_pockets("3bnqqk/8/8/8/3K4/8/8/8 b").unwrap();
-        let idx = index(&high_value_board);
+        let idx = index_unchecked(&high_value_board);
         let config = mat("bnqqk");
         let high_value_from_idx = restore_from_index(&config, idx);
         //assert_eq!(idx, 21474565947);
@@ -149,26 +180,56 @@ mod tests {
     }
 
     #[test]
-    fn test_index_then_de_index() {
+    fn test_index_unchecked_then_de_index() {
         let two_kings = RetroBoard::new_no_pockets("8/7k/8/8/3K4/8/8/8 b").unwrap();
-        let idx = index(&two_kings);
+        let idx = index_unchecked(&two_kings);
         let config = mat("k");
         let two_kings_from_idx = restore_from_index(&config, idx);
         assert_eq!(two_kings, two_kings_from_idx);
     }
 
     #[test]
-    fn test_index_then_de_index_no_swapping_color() {
+    fn test_index_unchecked_then_de_index_no_swapping_color() {
         // check if the color of the pieces are not swapped.
         let knights = RetroBoard::new_no_pockets("8/8/8/8/8/1N6/8/KBkn4 b").unwrap();
         let knights_color_swapped = RetroBoard::new_no_pockets("8/8/8/8/8/1n6/8/KBkN4 b").unwrap();
-        let idx = index(&knights);
-        let idx_swapped = index(&knights_color_swapped);
+        let idx = index_unchecked(&knights);
+        let idx_swapped = index_unchecked(&knights_color_swapped);
         assert_ne!(idx, idx_swapped);
         let config = mat("BNnk");
         let knights_from_idx = restore_from_index(&config, idx);
         let knights_swapped_from_idx = restore_from_index(&config, idx_swapped);
         assert_eq!(knights, knights_from_idx);
         assert_eq!(knights_color_swapped, knights_swapped_from_idx);
+    }
+
+    #[test]
+    fn test_index_white_king_in_bound() {
+        for sq in Square::ALL {
+            let mut board = Board::empty();
+            board.set_piece_at(sq, White.king());
+            board.set_piece_at(sq.offset(16).unwrap_or(Square::A1), Black.king());
+            let setup = TbSetup {
+                board,
+                turn: Some(Color::Black),
+                ep_square: None, 
+            };
+            let rboard = RetroBoard::from_setup(&setup, CastlingMode::Standard).expect("Valid setup");
+            let idx = index(&rboard);
+            let config = mat("k");
+            let rboard_restored = restore_from_index(&config, idx);
+            let white_king_bb = Bitboard::EMPTY
+                | Square::A1
+                | Square::B1
+                | Square::C1
+                | Square::D1
+                | Square::B2
+                | Square::C2
+                | Square::D2
+                | Square::C3
+                | Square::D3
+                | Square::D4;
+            assert!(white_king_bb.contains(rboard_restored.king_of(White)));
+        }
     }
 }

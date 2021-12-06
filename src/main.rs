@@ -3,7 +3,7 @@ mod indexer;
 mod setup;
 
 use generation::{Generator, Outcome};
-pub use indexer::{from_material, index, restore_from_index};
+pub use indexer::{from_material, index, restore_from_index, index_unchecked};
 pub use setup::TbSetup;
 
 
