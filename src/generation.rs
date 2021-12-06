@@ -53,7 +53,6 @@ pub struct Queue {
 #[derive(Debug, Clone)]
 pub struct Generator {
     pub all_pos: HashMap<u64, Outcome>,
-    pub white_king_bb: Bitboard,
     pub winner: Color,
     pub counter: u64,
     material: Material,
@@ -70,11 +69,7 @@ impl Generator {
         match piece_vec {
             [piece, tail @ ..] => {
                 //println!("{:?}, setup: {:?}", piece, &setup);
-                let squares = if *piece == White.king() {
-                    self.white_king_bb
-                } else {
-                    Bitboard::FULL
-                };
+                let squares = Bitboard::FULL; // white king handled in `generate_positions`
                 for sq in squares {
                     //println!("before {:?}", &setup);
                     if setup.board.piece_at(sq).is_none() {
@@ -126,7 +121,18 @@ impl Generator {
         let pb = self.get_progress_bar();
         self.counter = 0;
         let mut queue = Queue::default();
-        for white_king_sq in self.white_king_bb {
+        let white_king_bb = Bitboard::EMPTY
+            | Square::A1
+            | Square::B1
+            | Square::C1
+            | Square::D1
+            | Square::B2
+            | Square::C2
+            | Square::D2
+            | Square::C3
+            | Square::D3
+            | Square::D4;
+        for white_king_sq in white_king_bb {
             let mut new_setup = setup.clone();
             new_setup.board.set_piece_at(white_king_sq, White.king());
             self.generate_positions_internal(&piece_vec, new_setup, &mut queue, &pb)
@@ -164,21 +170,16 @@ impl Generator {
                 for m in rboard.legal_unmoves() {
                     let mut rboard_after_unmove = rboard.clone();
                     rboard_after_unmove.push(&m);
-                    if self
-                        .white_king_bb
-                        .contains(rboard_after_unmove.king_of(White))
-                    {
-                        let idx_after_unmove = index(&rboard_after_unmove);
-                        match self.all_pos.get(&idx_after_unmove) {
-                            None => {
-                                panic!("pos not found, illegal? {:?}", rboard_after_unmove)
-                            }
-                            Some(Outcome::Draw) => {
-                                queue.push_back(idx_after_unmove);
-                                self.all_pos.insert(idx_after_unmove, out + 1);
-                            }
-                            _ => (),
+                    let idx_after_unmove = index(&rboard_after_unmove);
+                    match self.all_pos.get(&idx_after_unmove) {
+                        None => {
+                            panic!("pos not found, illegal? {:?}", rboard_after_unmove)
                         }
+                        Some(Outcome::Draw) => {
+                            queue.push_back(idx_after_unmove);
+                            self.all_pos.insert(idx_after_unmove, out + 1);
+                        }
+                        _ => (),
                     }
                     //println!("{:?}", (!out) + 1);
                 }
@@ -191,17 +192,6 @@ impl Generator {
     pub fn new(fen_config: &str) -> Self {
         Self {
             all_pos: HashMap::new(),
-            white_king_bb: Bitboard::EMPTY // TODO replace that by proper reflection function
-                | Square::A1
-                | Square::B1
-                | Square::C1
-                | Square::D1
-                | Square::B2
-                | Square::C2
-                | Square::D2
-                | Square::C3
-                | Square::D3
-                | Square::D4,
             winner: White,
             counter: 0,
             material: Material::from_ascii_fen(fen_config.as_bytes()).unwrap(),
