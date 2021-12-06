@@ -70,7 +70,7 @@ pub fn from_material(m: &Material) -> Config {
         Role::Knight,
         Role::Pawn,
     ] {
-        for color in [White, Black] {
+        for color in [Black, White] {
             let mut count = m.by_piece(Piece { role, color });
             while count > 0 {
                 config.push(Piece { role, color });
@@ -140,12 +140,12 @@ mod tests {
 
     #[test]
     fn test_index_overflow() {
-        let two_kings = RetroBoard::new_no_pockets("3bnqqk/8/8/8/3K4/8/8/8 b").unwrap();
-        let idx = index(&two_kings);
+        let high_value_board = RetroBoard::new_no_pockets("3bnqqk/8/8/8/3K4/8/8/8 b").unwrap();
+        let idx = index(&high_value_board);
         let config = mat("bnqqk");
-        let two_kings_from_idx = restore_from_index(&config, idx);
+        let high_value_from_idx = restore_from_index(&config, idx);
         //assert_eq!(idx, 21474565947);
-        assert_eq!(two_kings, two_kings_from_idx);
+        assert_eq!(high_value_board, high_value_from_idx);
     }
 
     #[test]
@@ -155,5 +155,20 @@ mod tests {
         let config = mat("k");
         let two_kings_from_idx = restore_from_index(&config, idx);
         assert_eq!(two_kings, two_kings_from_idx);
+    }
+
+    #[test]
+    fn test_index_then_de_index_no_swapping_color() {
+        // check if the color of the pieces are not swapped.
+        let knights = RetroBoard::new_no_pockets("8/8/8/8/8/1N6/8/KBkn4 b").unwrap();
+        let knights_color_swapped = RetroBoard::new_no_pockets("8/8/8/8/8/1n6/8/KBkN4 b").unwrap();
+        let idx = index(&knights);
+        let idx_swapped = index(&knights_color_swapped);
+        assert_ne!(idx, idx_swapped);
+        let config = mat("BNnk");
+        let knights_from_idx = restore_from_index(&config, idx);
+        let knights_swapped_from_idx = restore_from_index(&config, idx_swapped);
+        assert_eq!(knights, knights_from_idx);
+        assert_eq!(knights_color_swapped, knights_swapped_from_idx);
     }
 }

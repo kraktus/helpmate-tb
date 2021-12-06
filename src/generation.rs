@@ -1,8 +1,8 @@
-use crate::{index, TbSetup, restore_from_index, from_material};
+use crate::{from_material, index, restore_from_index, TbSetup};
 use retroboard::RetroBoard;
 use shakmaty::{
-    Bitboard, CastlingMode::Standard, Color, Color::Black, Color::White, FromSetup, Piece,
-    Position, Setup, Square, Material
+    Bitboard, CastlingMode::Standard, Color, Color::Black, Color::White, FromSetup, Material,
+    Piece, Position, Setup, Square,
 };
 use std::collections::{HashMap, VecDeque};
 use std::ops::{Add, Not};
@@ -56,7 +56,7 @@ pub struct Generator {
     pub white_king_bb: Bitboard,
     pub winner: Color,
     pub counter: u64,
-    material: Material
+    material: Material,
 }
 
 impl Generator {
@@ -98,6 +98,9 @@ impl Generator {
                         // if chess is valid then rboard should be too
                         let rboard = RetroBoard::from_setup(&valid_setup, Standard).unwrap();
                         let idx = index(&rboard);
+                        if idx == 168366273 { // DEBUG
+                        	print!("idx == 168366273, rboard: {:?}", &rboard);
+                        };
                         if chess.is_checkmate() {
                             self.all_pos.insert(
                                 idx,
@@ -122,12 +125,9 @@ impl Generator {
     }
 
     pub fn generate_positions(&mut self, setup: TbSetup) -> Queue {
-    	let piece_vec = from_material(&self.material);
-        let pb = ProgressBar::new(pow_minus_1(63, piece_vec.len()) * 10 * 2);
-        pb.set_style(ProgressStyle::default_bar()
-        .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})")
-        // .with_key("eta", |state| format!("{:.1}s", state.eta().as_secs_f64())) only in beta
-        .progress_chars("#>-"));
+        let piece_vec = from_material(&self.material);
+        let pb = self.get_progress_bar();
+        self.counter = 0;
         let mut queue = Queue::default();
         for white_king_sq in self.white_king_bb {
             let mut new_setup = setup.clone();
@@ -137,12 +137,26 @@ impl Generator {
         queue
     }
 
+    fn get_progress_bar(&self) -> ProgressBar {
+        let pb = ProgressBar::new(pow_minus_1(63, self.material.count()) * 10 * 2);
+        pb.set_style(ProgressStyle::default_bar()
+        .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})")
+        .progress_chars("#>-"));
+        pb
+    }
+
     pub fn process_positions(&mut self, queue: &mut VecDeque<u64>) {
-    	let config = from_material(&self.material);
+        let config = from_material(&self.material);
+        let pb = self.get_progress_bar();
+        self.counter = 0;
         loop {
             if let Some(idx) = queue.pop_front() {
-            	let rboard = restore_from_index(&config, idx);
-                let out = *self.all_pos.get(&index(&rboard)).unwrap();
+                self.counter += 1;
+                if self.counter % 100000 == 0 {
+                    pb.set_position(self.counter);
+                }
+                let rboard = restore_from_index(&config, idx);
+                let out = *self.all_pos.get(&index(&rboard)).unwrap_or_else(|| panic!("idx got {}, idx recomputed {}, rboard {:?}", idx, index(&rboard), rboard));;
                 for m in rboard.legal_unmoves() {
                     let mut rboard_after_unmove = rboard.clone();
                     rboard_after_unmove.push(&m);
@@ -150,7 +164,7 @@ impl Generator {
                         .white_king_bb
                         .contains(rboard_after_unmove.king_of(White))
                     {
-                    	let idx_after_unmove = index(&rboard_after_unmove);
+                        let idx_after_unmove = index(&rboard_after_unmove);
                         match self.all_pos.get(&idx_after_unmove) {
                             None => {
                                 panic!("pos not found, illegal? {:?}", rboard_after_unmove)

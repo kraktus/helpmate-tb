@@ -3,7 +3,7 @@ mod indexer;
 mod setup;
 
 use generation::{Generator, Outcome};
-pub use indexer::{index, restore_from_index, from_material};
+pub use indexer::{from_material, index, restore_from_index};
 pub use setup::TbSetup;
 
 use shakmaty::Color::{Black, White};
@@ -18,7 +18,7 @@ static ALLOCATOR: DhatAlloc = DhatAlloc;
 
 fn main() {
     let _dhat = Dhat::start_heap_profiling();
-    let mut gen = Generator::new("Qrk"); // white king is included by default
+    let mut gen = Generator::new("BNnk"); // white king is included by default
     let setup = TbSetup::default();
     println!("gen before {:?}", gen);
     let mut q = gen.generate_positions(setup);
