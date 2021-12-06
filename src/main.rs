@@ -6,7 +6,7 @@ use generation::{Generator, Outcome};
 pub use indexer::{from_material, index, restore_from_index};
 pub use setup::TbSetup;
 
-use shakmaty::Color::{Black, White};
+
 use std::collections::HashMap;
 
 use dhat::{Dhat, DhatAlloc};

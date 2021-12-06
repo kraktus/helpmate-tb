@@ -1,5 +1,5 @@
 use shakmaty::{
-    Board, CastlingMode, Color, Color::Black, Color::White, FromSetup, Material, Piece, Role,
+    CastlingMode, Color, Color::Black, Color::White, FromSetup, Material, Piece, Role,
     Square,
 };
 
