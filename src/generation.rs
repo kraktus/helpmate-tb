@@ -153,7 +153,14 @@ impl Generator {
                     pb.set_position(self.counter);
                 }
                 let rboard = restore_from_index(&config, idx);
-                let out = *self.all_pos.get(&index(&rboard)).unwrap_or_else(|| panic!("idx got {}, idx recomputed {}, rboard {:?}", idx, index(&rboard), rboard));;
+                let out = *self.all_pos.get(&index(&rboard)).unwrap_or_else(|| {
+                    panic!(
+                        "idx got {}, idx recomputed {}, rboard {:?}",
+                        idx,
+                        index(&rboard),
+                        rboard
+                    )
+                });
                 for m in rboard.legal_unmoves() {
                     let mut rboard_after_unmove = rboard.clone();
                     rboard_after_unmove.push(&m);
