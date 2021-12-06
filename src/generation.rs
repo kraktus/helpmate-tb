@@ -98,9 +98,6 @@ impl Generator {
                         // if chess is valid then rboard should be too
                         let rboard = RetroBoard::from_setup(&valid_setup, Standard).unwrap();
                         let idx = index(&rboard);
-                        if idx == 168366273 { // DEBUG
-                        	print!("idx == 168366273, rboard: {:?}", &rboard);
-                        };
                         if chess.is_checkmate() {
                             self.all_pos.insert(
                                 idx,
