@@ -8,7 +8,7 @@ use std::collections::VecDeque;
 use std::ops::{Add, Not};
 
 use indicatif::{ProgressBar, ProgressStyle};
-use map_of_indexes::{CombinedKeyValue, MapOfIndexes, KeyValue};
+use map_of_indexes::{CombinedKeyValue, KeyValue, MapOfIndexes};
 
 pub type TbKeyValue = CombinedKeyValue<u64, 32, 8>;
 
@@ -115,6 +115,7 @@ impl Generator {
         piece_vec: &[Piece],
         setup: TbSetup,
         queue: &mut Queue,
+        all_pos: &mut Vec<TbKeyValue>,
         pb: &ProgressBar,
     ) {
         match piece_vec {
@@ -126,7 +127,7 @@ impl Generator {
                     if setup.board.piece_at(sq).is_none() {
                         let mut new_setup = setup.clone();
                         new_setup.board.set_piece_at(sq, *piece);
-                        self.generate_positions_internal(tail, new_setup, queue, pb);
+                        self.generate_positions_internal(tail, new_setup, queue, all_pos, pb);
                     }
                     //println!("after {:?}", &new_setup);
                 }
@@ -145,13 +146,15 @@ impl Generator {
                         let rboard = RetroBoard::from_setup(&valid_setup, Standard).unwrap();
                         let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
                         if chess.is_checkmate() {
-                            self.all_pos.push(
-                                TbKeyValue::new(idx,
+                            let key_value = TbKeyValue::new(
+                                idx,
                                 match chess.turn() {
                                     c if c == self.winner => Outcome::Lose(0),
                                     _ => Outcome::Win(0),
                                 },
-                            ));
+                            );
+
+                            all_pos.push(key_value);
                             if chess.turn() == self.winner {
                                 //println!("lost {:?}", rboard);
                                 queue.losing_pos_to_process.push_back(idx);
@@ -159,8 +162,8 @@ impl Generator {
                                 queue.winning_pos_to_process.push_back(idx);
                             }
                         } else {
-                            println!("{:?}, new idx: {idx}", self.all_pos.get(0).map(|x| x.key()));
-                            self.all_pos.push(TbKeyValue::new(idx, Outcome::Draw));
+                            // println!("{:?}, new idx: {idx}", self.all_pos.get(0).map(|x| x.key()));
+                            all_pos.push(TbKeyValue::new(idx, Outcome::Draw));
                         }
                     }
                 }
@@ -173,6 +176,8 @@ impl Generator {
         let pb = self.get_progress_bar();
         self.counter = 0;
         let mut queue = Queue::default();
+        let mut all_pos_vec: Vec<TbKeyValue> =
+            Vec::with_capacity(self.get_nb_pos() as usize / 10 * 9); // heuristic, less than 90% of pos are legals
         let white_king_bb = Bitboard::EMPTY
             | Square::A1
             | Square::B1
@@ -187,18 +192,37 @@ impl Generator {
         for white_king_sq in white_king_bb {
             let mut new_setup = setup.clone();
             new_setup.board.set_piece_at(white_king_sq, White.king());
-            self.generate_positions_internal(&piece_vec, new_setup, &mut queue, &pb)
+            self.generate_positions_internal(
+                &piece_vec,
+                new_setup,
+                &mut queue,
+                &mut all_pos_vec,
+                &pb,
+            )
         }
         pb.finish_with_message("positions generated");
+        println!("all_pos_vec capacity: {}", all_pos_vec.capacity());
+        all_pos_vec.shrink_to_fit();
+        println!(
+            "all_pos_vec capacity: {} after shrinking",
+            all_pos_vec.capacity()
+        );
+        self.all_pos = all_pos_vec.try_into().expect("unique indexes");
+        assert!(self.all_pos.get_element(&4732043).is_some());
         queue
     }
 
     fn get_progress_bar(&self) -> ProgressBar {
-        let pb = ProgressBar::new(pow_minus_1(63, self.material.count()) * 10 * 2);
+        let pb = ProgressBar::new(self.get_nb_pos());
         pb.set_style(ProgressStyle::default_bar()
         .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})")
         .progress_chars("#>-"));
         pb
+    }
+
+    #[inline]
+    fn get_nb_pos(&self) -> u64 {
+        pow_minus_1(63, self.material.count()) * 10 * 2
     }
 
     pub fn process_positions(&mut self, queue: &mut VecDeque<u64>) {
@@ -212,14 +236,18 @@ impl Generator {
                     pb.set_position(self.counter);
                 }
                 let rboard = restore_from_index(&config, idx);
-                let out: Outcome = self.all_pos.get_element(&index(&rboard)).unwrap_or_else(|| {
-                    panic!(
-                        "idx got {}, idx recomputed {}, rboard {:?}",
-                        idx,
-                        index(&rboard),
-                        rboard
-                    )
-                }).into();
+                let out: Outcome = self
+                    .all_pos
+                    .get_element(&index(&rboard))
+                    .unwrap_or_else(|| {
+                        panic!(
+                            "idx got {}, idx recomputed {}, rboard {:?}",
+                            idx,
+                            index(&rboard),
+                            rboard
+                        )
+                    })
+                    .into();
                 for m in rboard.legal_unmoves() {
                     let mut rboard_after_unmove = rboard.clone();
                     rboard_after_unmove.push(&m);
@@ -230,7 +258,8 @@ impl Generator {
                         }
                         Some(key_value) if Outcome::Draw == key_value.into() => {
                             queue.push_back(idx_after_unmove);
-                            self.all_pos.push(TbKeyValue::new(idx_after_unmove, out + 1));
+                            self.all_pos
+                                .push(TbKeyValue::new(idx_after_unmove, out + 1));
                         }
                         _ => (),
                     }
