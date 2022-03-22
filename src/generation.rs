@@ -4,10 +4,13 @@ use shakmaty::{
     Bitboard, CastlingMode::Standard, Color, Color::Black, Color::White, FromSetup, Material,
     Piece, Position, Setup, Square,
 };
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::VecDeque;
 use std::ops::{Add, Not};
 
 use indicatif::{ProgressBar, ProgressStyle};
+use map_of_indexes::{CombinedKeyValue, MapOfIndexes, KeyValue};
+
+pub type TbKeyValue = CombinedKeyValue<u64, 32, 8>;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct OutcomeOutOfBound;
@@ -32,16 +35,37 @@ impl From<u8> for Outcome {
     }
 }
 
-impl TryFrom<Outcome> for u8 {
-    type Error = OutcomeOutOfBound;
-    fn try_from(o: Outcome) -> Result<Self, Self::Error> {
-        match o {
-            Outcome::Draw => Ok(0),
-            Outcome::Unknown => Ok(255),
-            Outcome::Win(w) if w <= 126 => Ok(w + 128),
-            Outcome::Lose(l) if l <= 126 => Ok(l + 1),
-            _ => Err(OutcomeOutOfBound),
-        }
+fn try_into_util(o: Outcome) -> Result<u8, OutcomeOutOfBound> {
+    match o {
+        Outcome::Draw => Ok(0),
+        Outcome::Unknown => Ok(255),
+        Outcome::Win(w) if w <= 126 => Ok(w + 128),
+        Outcome::Lose(l) if l <= 126 => Ok(l + 1),
+        _ => Err(OutcomeOutOfBound),
+    }
+}
+
+impl From<Outcome> for u8 {
+    fn from(o: Outcome) -> Self {
+        try_into_util(o).unwrap()
+    }
+}
+
+impl From<TbKeyValue> for Outcome {
+    fn from(key_value: TbKeyValue) -> Self {
+        Outcome::from(u8::try_from(key_value.value()).unwrap())
+    }
+}
+
+impl From<&TbKeyValue> for Outcome {
+    fn from(key_value: &TbKeyValue) -> Self {
+        Outcome::from(u8::try_from(key_value.value()).unwrap())
+    }
+}
+
+impl From<Outcome> for u128 {
+    fn from(o: Outcome) -> Self {
+        u8::from(o) as u128
     }
 }
 
@@ -79,7 +103,7 @@ pub struct Queue {
 
 #[derive(Debug, Clone)]
 pub struct Generator {
-    pub all_pos: BTreeMap<u64, Outcome>,
+    pub all_pos: MapOfIndexes<TbKeyValue>,
     pub winner: Color,
     pub counter: u64,
     material: Material,
@@ -121,13 +145,13 @@ impl Generator {
                         let rboard = RetroBoard::from_setup(&valid_setup, Standard).unwrap();
                         let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
                         if chess.is_checkmate() {
-                            self.all_pos.insert(
-                                idx,
+                            self.all_pos.push(
+                                TbKeyValue::new(idx,
                                 match chess.turn() {
                                     c if c == self.winner => Outcome::Lose(0),
                                     _ => Outcome::Win(0),
                                 },
-                            );
+                            ));
                             if chess.turn() == self.winner {
                                 //println!("lost {:?}", rboard);
                                 queue.losing_pos_to_process.push_back(idx);
@@ -135,7 +159,8 @@ impl Generator {
                                 queue.winning_pos_to_process.push_back(idx);
                             }
                         } else {
-                            self.all_pos.insert(idx, Outcome::Draw);
+                            println!("{:?}, new idx: {idx}", self.all_pos.get(0).map(|x| x.key()));
+                            self.all_pos.push(TbKeyValue::new(idx, Outcome::Draw));
                         }
                     }
                 }
@@ -187,25 +212,25 @@ impl Generator {
                     pb.set_position(self.counter);
                 }
                 let rboard = restore_from_index(&config, idx);
-                let out = *self.all_pos.get(&index(&rboard)).unwrap_or_else(|| {
+                let out: Outcome = self.all_pos.get_element(&index(&rboard)).unwrap_or_else(|| {
                     panic!(
                         "idx got {}, idx recomputed {}, rboard {:?}",
                         idx,
                         index(&rboard),
                         rboard
                     )
-                });
+                }).into();
                 for m in rboard.legal_unmoves() {
                     let mut rboard_after_unmove = rboard.clone();
                     rboard_after_unmove.push(&m);
                     let idx_after_unmove = index(&rboard_after_unmove);
-                    match self.all_pos.get(&idx_after_unmove) {
+                    match self.all_pos.get_element(&idx_after_unmove) {
                         None => {
                             panic!("pos not found, illegal? {:?}", rboard_after_unmove)
                         }
-                        Some(Outcome::Draw) => {
+                        Some(key_value) if Outcome::Draw == key_value.into() => {
                             queue.push_back(idx_after_unmove);
-                            self.all_pos.insert(idx_after_unmove, out + 1);
+                            self.all_pos.push(TbKeyValue::new(idx_after_unmove, out + 1));
                         }
                         _ => (),
                     }
@@ -220,7 +245,7 @@ impl Generator {
 
     pub fn new(fen_config: &str) -> Self {
         Self {
-            all_pos: BTreeMap::default(),
+            all_pos: MapOfIndexes::default(),
             winner: White,
             counter: 0,
             material: Material::from_ascii_fen(fen_config.as_bytes()).unwrap(),

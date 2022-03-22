@@ -9,7 +9,7 @@ edition = "2021"
 retroboard = "0.2.1" # need same shakmaty version
 shakmaty = "0.20.3"
 arrayvec = "0.7" 
-map-of-indexes = "0.1.1" 
+map-of-indexes = "0.1.3" 
 indicatif = "0.16.2"
 dhat = "0.2.4"
 

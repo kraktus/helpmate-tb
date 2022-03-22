@@ -2,7 +2,7 @@ mod generation;
 mod indexer;
 mod setup;
 
-use generation::{Generator, Outcome};
+use generation::{Generator, Outcome, TbKeyValue};
 pub use indexer::{from_material, index, index_unchecked, restore_from_index};
 pub use setup::TbSetup;
 
@@ -17,6 +17,7 @@ static ALLOCATOR: DhatAlloc = DhatAlloc;
 
 fn main() {
     let _dhat = Dhat::start_heap_profiling();
+    TbKeyValue::safety_check();
     let mut gen = Generator::new("BNk"); // white king is included by default
     let setup = TbSetup::default();
     println!("gen before {:?}", gen);
@@ -44,8 +45,9 @@ fn main() {
     let mut lose = 0;
     let mut distrib: HashMap<Outcome, u64> = HashMap::new();
 
-    for (_, outcome) in gen.all_pos.iter() {
-        distrib.insert(*outcome, *distrib.get(outcome).unwrap_or(&0) + 1);
+    for key_value in gen.all_pos.iter() {
+        let outcome: Outcome = key_value.into();
+        distrib.insert(outcome, *distrib.get(&outcome).unwrap_or(&0) + 1);
         match outcome {
             Outcome::Draw => {
                 draw += 1;
