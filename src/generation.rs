@@ -4,19 +4,51 @@ use shakmaty::{
     Bitboard, CastlingMode::Standard, Color, Color::Black, Color::White, FromSetup, Material,
     Piece, Position, Setup, Square,
 };
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BTreeMap, VecDeque};
 use std::ops::{Add, Not};
 
 use indicatif::{ProgressBar, ProgressStyle};
 
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct OutcomeOutOfBound;
+
 /// According to winnner set in `Generator`
 #[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
 pub enum Outcome {
-    Win(u8),
+    Win(u8), // Need to be between 0 and 125 due to conversion to u8
     Draw,
-    Lose(u8),
+    Lose(u8), // Need to be between 0 and 125 due to conversion to u8
     Unknown,
 }
+
+impl From<u8> for Outcome {
+    fn from(u: u8) -> Self {
+        match u {
+            0 => Self::Draw,
+            255 => Self::Unknown,
+            w if w >= 128 => Self::Win(w - 128),
+            l => Self::Lose(l - 1),
+        }
+    }
+}
+
+impl TryFrom<Outcome> for u8 {
+    type Error = OutcomeOutOfBound;
+    fn try_from(o: Outcome) -> Result<Self, Self::Error> {
+        match o {
+            Outcome::Draw => Ok(0),
+            Outcome::Unknown => Ok(255),
+            Outcome::Win(w) if w <= 126 => {
+                Ok(w + 128)
+            }
+            Outcome::Lose(l) if l <= 126 => {
+                Ok(l + 1)
+            },
+            _ => Err(OutcomeOutOfBound)
+        }
+    }
+}
+
 
 impl Not for Outcome {
     type Output = Self;
@@ -52,7 +84,7 @@ pub struct Queue {
 
 #[derive(Debug, Clone)]
 pub struct Generator {
-    pub all_pos: HashMap<u64, Outcome>,
+    pub all_pos: BTreeMap<u64, Outcome>,
     pub winner: Color,
     pub counter: u64,
     material: Material,
@@ -137,6 +169,7 @@ impl Generator {
             new_setup.board.set_piece_at(white_king_sq, White.king());
             self.generate_positions_internal(&piece_vec, new_setup, &mut queue, &pb)
         }
+        pb.finish_with_message("positions generated");
         queue
     }
 
@@ -187,11 +220,12 @@ impl Generator {
                 break;
             }
         }
+        pb.finish_with_message("positions processed");
     }
 
     pub fn new(fen_config: &str) -> Self {
         Self {
-            all_pos: HashMap::new(),
+            all_pos: BTreeMap::default(),
             winner: White,
             counter: 0,
             material: Material::from_ascii_fen(fen_config.as_bytes()).unwrap(),
@@ -226,5 +260,20 @@ mod tests {
     fn test_pow_minus_1() {
         assert_eq!(pow_minus_1(64, 1), 64);
         assert_eq!(pow_minus_1(64, 2), 64 * 63);
+    }
+
+    #[test]
+    fn test_outcome_to_u8() {
+        assert_eq!(u8::try_from(Outcome::Draw).unwrap(), 0);
+        assert_eq!(u8::try_from(Outcome::Unknown).unwrap(), 255);
+        assert_eq!(u8::try_from(Outcome::Lose(0)).unwrap(), 1);
+        assert_eq!(u8::try_from(Outcome::Lose(125)).unwrap(), 126);
+    }
+
+    #[test]
+    fn test_u8_to_outcome() {
+        for i in 0..u8::MAX {
+            assert_eq!(u8::try_from(Outcome::from(i)).unwrap(), i)
+        }
     }
 }
