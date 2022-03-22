@@ -17,7 +17,7 @@ static ALLOCATOR: DhatAlloc = DhatAlloc;
 
 fn main() {
     let _dhat = Dhat::start_heap_profiling();
-    let mut gen = Generator::new("BNnk"); // white king is included by default
+    let mut gen = Generator::new("BNk"); // white king is included by default
     let setup = TbSetup::default();
     println!("gen before {:?}", gen);
     let mut q = gen.generate_positions(setup);
@@ -60,7 +60,7 @@ fn main() {
         "From {:?} perspective, win: {:?}, draw: {:?}, lost: {:?}",
         gen.winner, win, draw, lose
     );
-    for i in 0..30 {
+    for i in 0..u8::MAX {
         if let Some(nb_win) = distrib.get(&Outcome::Win(i)) {
             println!("Win({}), {:?}", i, nb_win);
         }
