@@ -258,7 +258,8 @@ impl Generator {
                         Some(key_value) if Outcome::Draw == key_value.into() => {
                             queue.push_back(idx_after_unmove);
                             self.all_pos
-                                .set(TbKeyValue::new(idx_after_unmove, out + 1));
+                                .set(TbKeyValue::new(idx_after_unmove, out + 1))
+                                .expect("Position already generated");
                         }
                         _ => (),
                     }
