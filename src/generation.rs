@@ -38,17 +38,12 @@ impl TryFrom<Outcome> for u8 {
         match o {
             Outcome::Draw => Ok(0),
             Outcome::Unknown => Ok(255),
-            Outcome::Win(w) if w <= 126 => {
-                Ok(w + 128)
-            }
-            Outcome::Lose(l) if l <= 126 => {
-                Ok(l + 1)
-            },
-            _ => Err(OutcomeOutOfBound)
+            Outcome::Win(w) if w <= 126 => Ok(w + 128),
+            Outcome::Lose(l) if l <= 126 => Ok(l + 1),
+            _ => Err(OutcomeOutOfBound),
         }
     }
 }
-
 
 impl Not for Outcome {
     type Output = Self;
