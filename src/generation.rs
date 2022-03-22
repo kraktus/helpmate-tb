@@ -208,7 +208,6 @@ impl Generator {
             all_pos_vec.capacity()
         );
         self.all_pos = all_pos_vec.try_into().expect("unique indexes");
-        assert!(self.all_pos.get_element(&4732043).is_some());
         queue
     }
 

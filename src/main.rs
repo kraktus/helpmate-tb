@@ -18,7 +18,7 @@ static ALLOCATOR: DhatAlloc = DhatAlloc;
 fn main() {
     let _dhat = Dhat::start_heap_profiling();
     TbKeyValue::safety_check();
-    let mut gen = Generator::new("BNk"); // white king is included by default
+    let mut gen = Generator::new("BNkr"); // white king is included by default
     let setup = TbSetup::default();
     println!("gen before {:?}", gen);
     let mut q = gen.generate_positions(setup);
