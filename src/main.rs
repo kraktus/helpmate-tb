@@ -1,10 +1,11 @@
 mod generation;
 mod indexer;
-mod setup;
+mod material;
 
+use shakmaty::Setup;
 use generation::{Generator, Outcome, TbKeyValue};
 pub use indexer::{from_material, index, index_unchecked, restore_from_index};
-pub use setup::TbSetup;
+pub use material::Material;
 
 use std::collections::HashMap;
 
@@ -18,8 +19,8 @@ static ALLOCATOR: DhatAlloc = DhatAlloc;
 fn main() {
     let _dhat = Dhat::start_heap_profiling();
     TbKeyValue::safety_check();
-    let mut gen = Generator::new("BNkr"); // white king is included by default
-    let setup = TbSetup::default();
+    let mut gen = Generator::new("BNvK"); // white king is included by default
+    let setup = Setup::empty();
     println!("gen before {:?}", gen);
     let mut q = gen.generate_positions(setup);
     println!("nb pos {:?}", gen.all_pos.len());

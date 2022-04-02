@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-retroboard = "0.2.1" # need same shakmaty version
-shakmaty = "0.20.3"
+retroboard = "0.2.2" # need same shakmaty version
+shakmaty = "0.21.1"
 arrayvec = "0.7" 
 map-of-indexes = "0.1.4" 
 indicatif = "0.16.2"

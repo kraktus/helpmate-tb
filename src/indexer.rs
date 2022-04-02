@@ -1,10 +1,10 @@
 use shakmaty::{
-    CastlingMode, Color, Color::Black, Color::White, FromSetup, Material, Piece, Role, Square,
+    CastlingMode, Color, Color::Black, Color::White, FromSetup, Piece, Role, Square, Setup
 };
 
 use retroboard::RetroBoard;
+use crate::Material;
 
-use crate::TbSetup;
 use arrayvec::ArrayVec;
 
 // White king is included by default, so need to add it here
@@ -113,7 +113,7 @@ pub fn from_material(m: &Material) -> Config {
 
 pub fn restore_from_index(config: &Config, index: u64) -> RetroBoard {
     let mut idx = index;
-    let mut setup = TbSetup::default();
+    let mut setup = Setup::empty();
     for &piece in config {
         setup
             .board
@@ -127,8 +127,8 @@ pub fn restore_from_index(config: &Config, index: u64) -> RetroBoard {
     idx /= 10;
 
     // index takes as an input a `RetroBoard`, and `retro_turn` == !`turn` so to return the right retro-turn, we need to put the reverse turn.
-    setup.turn = Some(Color::from_white(idx == 0));
-    RetroBoard::from_setup(&setup, CastlingMode::Standard).expect("Right setup")
+    setup.turn = Color::from_white(idx == 0);
+    RetroBoard::from_setup(setup, CastlingMode::Standard).expect("Right setup")
 }
 
 #[cfg(test)]
@@ -214,7 +214,7 @@ mod tests {
                 ep_square: None,
             };
             let rboard =
-                RetroBoard::from_setup(&setup, CastlingMode::Standard).expect("Valid setup");
+                RetroBoard::from_setup(setup, CastlingMode::Standard).expect("Valid setup");
             let idx = index(&rboard);
             let config = mat("k");
             let rboard_restored = restore_from_index(&config, idx);

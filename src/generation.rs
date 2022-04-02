@@ -1,8 +1,8 @@
-use crate::{from_material, index, index_unchecked, restore_from_index, TbSetup};
+use crate::{from_material, index, index_unchecked, restore_from_index, Material};
 use retroboard::RetroBoard;
 use shakmaty::{
-    Bitboard, CastlingMode::Standard, Color, Color::Black, Color::White, FromSetup, Material,
-    Piece, Position, Setup, Square,
+    Bitboard, CastlingMode::Standard, Color, Color::Black, Color::White, FromSetup,
+    Piece, Setup, Square, Chess, PositionError, CastlingMode, Position
 };
 use std::collections::VecDeque;
 use std::ops::{Add, Not};
@@ -113,7 +113,7 @@ impl Generator {
     fn generate_positions_internal(
         &mut self,
         piece_vec: &[Piece],
-        setup: TbSetup,
+        setup: Setup,
         queue: &mut Queue,
         all_pos: &mut Vec<TbKeyValue>,
         pb: &ProgressBar,
@@ -136,14 +136,15 @@ impl Generator {
                 // setup is complete, check if valid
                 for color in [Black, White] {
                     let mut valid_setup = setup.clone();
-                    valid_setup.turn = Some(color);
+                    valid_setup.turn = color;
                     self.counter += 1;
                     if self.counter % 100000 == 0 {
                         pb.set_position(self.counter);
                     }
-                    if let Ok(chess) = &valid_setup.to_chess_with_illegal_checks() {
+                    // println!("{:?}", valid_setup);
+                    if let Ok(chess) = to_chess_with_illegal_checks(valid_setup.clone()) {
                         // if chess is valid then rboard should be too
-                        let rboard = RetroBoard::from_setup(&valid_setup, Standard).unwrap();
+                        let rboard = RetroBoard::from_setup(valid_setup, Standard).unwrap();
                         let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
                         if chess.is_checkmate() {
                             let key_value = TbKeyValue::new(
@@ -171,7 +172,7 @@ impl Generator {
         }
     }
 
-    pub fn generate_positions(&mut self, setup: TbSetup) -> Queue {
+    pub fn generate_positions(&mut self, setup: Setup) -> Queue {
         let piece_vec = from_material(&self.material);
         let pb = self.get_progress_bar();
         self.counter = 0;
@@ -277,7 +278,7 @@ impl Generator {
             all_pos: MapOfIndexes::default(),
             winner: White,
             counter: 0,
-            material: Material::from_ascii_fen(fen_config.as_bytes()).unwrap(),
+            material: Material::from_str(fen_config).unwrap(),
         }
     }
 }
@@ -291,6 +292,10 @@ const fn pow_minus_1(exp: u64, left: usize) -> u64 {
         1
     }
 }
+
+fn to_chess_with_illegal_checks(setup: Setup) -> Result<Chess, PositionError<Chess>> {
+        Chess::from_setup(setup, CastlingMode::Standard).or_else(|x| x.ignore_impossible_check())
+    }
 
 impl Default for Queue {
     fn default() -> Self {
