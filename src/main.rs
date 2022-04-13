@@ -1,6 +1,7 @@
 mod generation;
 mod indexer;
 mod material;
+mod indexer_syzygy;
 
 use shakmaty::Setup;
 use generation::{Generator, Outcome, TbKeyValue};

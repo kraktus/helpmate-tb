@@ -11,6 +11,7 @@ shakmaty = "0.21.1"
 arrayvec = "0.7" 
 map-of-indexes = "0.1.4" 
 indicatif = "0.16.2"
+itertools = "0.10.3"
 dhat = "0.2.4"
 
 [profile.release] # for profiling only # dhat
