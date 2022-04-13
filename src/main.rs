@@ -1,12 +1,13 @@
 mod generation;
 mod indexer;
-mod material;
 mod indexer_syzygy;
+mod material;
 
-use shakmaty::Setup;
 use generation::{Generator, Outcome, TbKeyValue};
 pub use indexer::{from_material, index, index_unchecked, restore_from_index};
+pub use indexer_syzygy::{Pieces, Table};
 pub use material::Material;
+use shakmaty::Setup;
 
 use std::collections::HashMap;
 

@@ -1,7 +1,7 @@
-use shakmaty::Bitboard;
-use shakmaty::{Square, File, Position, Rank, Role, Piece};
 use arrayvec::ArrayVec;
 use itertools::Itertools as _;
+use shakmaty::Bitboard;
+use shakmaty::{File, Piece, Position, Rank, Role, Square};
 
 use crate::Material;
 
@@ -349,9 +349,7 @@ impl FileData {
     fn new(pieces: Pieces, order: [u8; 2], file: usize) -> Self {
         let groups = GroupData::new(pieces, order, file);
         let sides = ArrayVec::from([groups.clone(), groups]);
-        Self {
-            sides
-        }
+        Self { sides }
     }
 }
 
@@ -409,7 +407,6 @@ fn group_pieces(pieces: &Pieces) -> ArrayVec<usize, MAX_PIECES> {
 
     result
 }
-
 
 impl GroupData {
     pub fn new(pieces: Pieces, order: [u8; 2], file: usize) -> Self {
@@ -475,30 +472,29 @@ impl GroupData {
 pub struct PairsData {
     // Piece configuration encoding info.
     groups: GroupData,
-
 }
 
-
 impl Table {
-
-
-// order: [4, 2], file: 0
-// order: [2, 5], file: 1
-// order: [2, 1], file: 2
-// order: [3, 5], file: 3
-// taken from cr --example fathom -- --path norm_factor_table -- "r1k5/p7/2K5/8/8/8/6P1/7R w - - 0 1"
-// so KRPvKRP table
+    // order: [4, 2], file: 0
+    // order: [2, 5], file: 1
+    // order: [2, 1], file: 2
+    // order: [3, 5], file: 3
+    // taken from cr --example fathom -- --path norm_factor_table -- "r1k5/p7/2K5/8/8/8/6P1/7R w - - 0 1"
+    // so KRPvKRP table
 
     pub fn new(pieces: Pieces) -> Self {
         let material = Material::from_iter(pieces.clone());
-        let files: ArrayVec<FileData, 4> = [[4, 2],[2, 5],[2, 1],[3, 5]].into_iter().enumerate().map(|(file, order)| FileData::new(pieces.clone(), order, file)).collect();
+        let files: ArrayVec<FileData, 4> = [[4, 2], [2, 5], [2, 1], [3, 5]]
+            .into_iter()
+            .enumerate()
+            .map(|(file, order)| FileData::new(pieces.clone(), order, file))
+            .collect();
         Self {
             num_unique_pieces: material.unique_pieces(),
             min_like_man: material.min_like_man(),
             files,
         }
     }
-
 
     /// Given a position, determine the unique (modulo symmetries) index into
     /// the corresponding subtable.
@@ -567,7 +563,8 @@ impl Table {
 
         for piece in side.pieces.iter().skip(lead_pawns_count) {
             let color = piece.color ^ flip;
-            let square = ((pos.board().by_piece(piece.role.of(color)) & !used).first()).expect("Uncorrupted table (what does it mean?)");
+            let square = ((pos.board().by_piece(piece.role.of(color)) & !used).first())
+                .expect("Uncorrupted table (what does it mean?)");
             squares.push(if flip { square.flip_vertical() } else { square });
             used.add(square);
         }
@@ -730,8 +727,8 @@ impl Table {
                     }
                 }
 
-                let mut idx = CONSTS.mult_idx[side.lens[0] - 1]
-                    [TRIANGLE[usize::from(squares[0])] as usize];
+                let mut idx =
+                    CONSTS.mult_idx[side.lens[0] - 1][TRIANGLE[usize::from(squares[0])] as usize];
                 for i in 1..side.lens[0] {
                     idx += binomial(MULT_TWIST[usize::from(squares[i])], i as u64);
                 }
@@ -773,4 +770,4 @@ impl Table {
 
         Ok(Some((side, idx)))
     }
- }
+}

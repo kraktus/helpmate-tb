@@ -19,7 +19,9 @@ use std::{
     fmt,
 };
 
-use shakmaty::{Board, ByColor, ByRole, Piece, Role};
+use shakmaty::{Board, ByColor, ByRole, Color, Piece, Role};
+
+use crate::Pieces;
 
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub(crate) struct MaterialSide {
@@ -192,6 +194,19 @@ impl Material {
 
     pub(crate) fn by_piece(&self, piece: Piece) -> u8 {
         *self.by_color.get(piece.color).get(piece.role)
+    }
+
+    pub(crate) fn into_pieces(&self) -> Pieces {
+        let mut pieces = Pieces::new();
+        for color in Color::ALL {
+            for role in Role::ALL {
+                let piece = Piece { color, role };
+                for _ in 0..self.by_piece(piece) {
+                    pieces.push(piece)
+                }
+            }
+        }
+        pieces
     }
 }
 

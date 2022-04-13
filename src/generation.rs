@@ -1,8 +1,8 @@
 use crate::{from_material, index, index_unchecked, restore_from_index, Material};
 use retroboard::RetroBoard;
 use shakmaty::{
-    Bitboard, CastlingMode::Standard, Color, Color::Black, Color::White, FromSetup,
-    Piece, Setup, Square, Chess, PositionError, CastlingMode, Position
+    Bitboard, CastlingMode, CastlingMode::Standard, Chess, Color, Color::Black, Color::White,
+    FromSetup, Piece, Position, PositionError, Setup, Square,
 };
 use std::collections::VecDeque;
 use std::ops::{Add, Not};
@@ -294,8 +294,8 @@ const fn pow_minus_1(exp: u64, left: usize) -> u64 {
 }
 
 fn to_chess_with_illegal_checks(setup: Setup) -> Result<Chess, PositionError<Chess>> {
-        Chess::from_setup(setup, CastlingMode::Standard).or_else(|x| x.ignore_impossible_check())
-    }
+    Chess::from_setup(setup, CastlingMode::Standard).or_else(|x| x.ignore_impossible_check())
+}
 
 impl Default for Queue {
     fn default() -> Self {

@@ -1,9 +1,9 @@
 use shakmaty::{
-    CastlingMode, Color, Color::Black, Color::White, FromSetup, Piece, Role, Square, Setup
+    CastlingMode, Color, Color::Black, Color::White, FromSetup, Piece, Role, Setup, Square,
 };
 
-use retroboard::RetroBoard;
 use crate::Material;
+use retroboard::RetroBoard;
 
 use arrayvec::ArrayVec;
 
