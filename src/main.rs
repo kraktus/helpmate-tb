@@ -3,7 +3,7 @@ mod indexer;
 mod indexer_syzygy;
 mod material;
 
-use generation::{Generator, Outcome, TbKeyValue};
+use generation::{Generator, Outcome};
 pub use indexer::{from_material, index, index_unchecked, restore_from_index};
 pub use indexer_syzygy::{Pieces, Table};
 pub use material::Material;
@@ -20,7 +20,6 @@ static ALLOCATOR: DhatAlloc = DhatAlloc;
 
 fn main() {
     let _dhat = Dhat::start_heap_profiling();
-    TbKeyValue::safety_check();
     let mut gen = Generator::new("BNvK"); // white king is included by default
     let setup = Setup::empty();
     println!("gen before {:?}", gen);
@@ -49,16 +48,13 @@ fn main() {
     let mut distrib: HashMap<Outcome, u64> = HashMap::new();
 
     for key_value in gen.all_pos.iter() {
-        let outcome: Outcome = key_value.into();
+        let outcome: Outcome = (*key_value).into();
         distrib.insert(outcome, *distrib.get(&outcome).unwrap_or(&0) + 1);
         match outcome {
-            Outcome::Draw => {
-                draw += 1;
-                //println!("{:?}", rboard)
-            }
+            Outcome::Draw => draw += 1,
             Outcome::Win(_) => win += 1,
             Outcome::Lose(_) => lose += 1,
-            Outcome::Unknown => todo!(),
+            Outcome::Unknown => (),
         }
     }
     println!(

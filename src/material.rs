@@ -186,17 +186,17 @@ impl Material {
         }
     }
 
-    pub(crate) fn into_normalized(self) -> Material {
-        Material {
-            by_color: self.by_color.into_normalized(),
-        }
-    }
+    // pub(crate) fn into_normalized(self) -> Material {
+    //     Material {
+    //         by_color: self.by_color.into_normalized(),
+    //     }
+    // }
 
     pub(crate) fn by_piece(&self, piece: Piece) -> u8 {
         *self.by_color.get(piece.color).get(piece.role)
     }
 
-    pub(crate) fn into_pieces(&self) -> Pieces {
+    pub(crate) fn pieces(&self) -> Pieces {
         let mut pieces = Pieces::new();
         for color in Color::ALL {
             for role in Role::ALL {

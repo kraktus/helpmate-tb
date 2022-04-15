@@ -24,9 +24,6 @@ const fn binomial(mut n: u64, k: u64) -> u64 {
 
 const MAX_PIECES: usize = 7; // DEBUG
 
-/// Maximum size in bytes of a compressed block.
-const MAX_BLOCK_SIZE: usize = 1024;
-
 /// Maps squares into the a1-d1-d4 triangle.
 #[rustfmt::skip]
 const TRIANGLE: [u64; 64] = [
@@ -340,7 +337,7 @@ impl Consts {
 }
 
 /// Descripton of encoding and compression for both sides of a table.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct FileData {
     sides: ArrayVec<GroupData, 2>,
 }
@@ -354,7 +351,7 @@ impl FileData {
 }
 
 /// A Syzygy table.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Table {
     num_unique_pieces: u8,
     min_like_man: u8,
@@ -467,12 +464,12 @@ impl GroupData {
     }
 }
 
-/// Description of encoding and compression.
-#[derive(Debug)]
-pub struct PairsData {
-    // Piece configuration encoding info.
-    groups: GroupData,
-}
+// /// Description of encoding and compression.
+// #[derive(Debug)]
+// pub struct PairsData {
+//     // Piece configuration encoding info.
+//     groups: GroupData,
+// }
 
 impl Table {
     // order: [4, 2], file: 0
@@ -498,7 +495,7 @@ impl Table {
 
     /// Given a position, determine the unique (modulo symmetries) index into
     /// the corresponding subtable.
-    pub fn encode(&self, pos: &dyn Position) -> Result<Option<(&GroupData, u64)>, ()> {
+    pub fn encode(&self, pos: &dyn Position) -> Result<usize, ()> {
         let key = Material::from_board(pos.board());
         let material = Material::from_iter(self.files[0].sides[0].pieces.clone());
         assert!(key == material || key == material.clone().into_flipped());
@@ -768,6 +765,7 @@ impl Table {
             next += 1;
         }
 
-        Ok(Some((side, idx)))
+        // Ok(Some((side, idx)))
+        Ok(idx as usize) // u64
     }
 }
