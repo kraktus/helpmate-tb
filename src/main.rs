@@ -20,7 +20,7 @@ static ALLOCATOR: DhatAlloc = DhatAlloc;
 
 fn main() {
     let _dhat = Dhat::start_heap_profiling();
-    let mut gen = Generator::new("BNvK"); // white king is included by default
+    let mut gen = Generator::new("KBNvK");
     let setup = Setup::empty();
     println!("gen before {:?}", gen);
     let mut q = gen.generate_positions(setup);
@@ -36,9 +36,6 @@ fn main() {
         !gen.winner,
         q.losing_pos_to_process.len()
     );
-    // for rboard in gen.pos_to_process.iter() {
-    //     println!("{:?}", gen.all_pos.get(rboard));
-    // };
     // need to process FIRST winning positions, then losing ones.
     gen.process_positions(&mut q.winning_pos_to_process);
     gen.process_positions(&mut q.losing_pos_to_process);
