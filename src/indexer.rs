@@ -2,13 +2,8 @@ use shakmaty::{
     CastlingMode, Color, Color::Black, Color::White, FromSetup, Piece, Role, Setup, Square,
 };
 
-use crate::Material;
+use crate::{Material, Pieces};
 use retroboard::RetroBoard;
-
-use arrayvec::ArrayVec;
-
-// White king is included by default, so need to add it here
-type Config = ArrayVec<Piece, 5>;
 
 #[rustfmt::skip]
 const WHITE_KING_SQUARES_TO_INDEX: [u64; 32] = [
@@ -90,28 +85,7 @@ pub fn index_unchecked(b: &RetroBoard) -> u64 {
     idx
 }
 
-pub fn from_material(m: &Material) -> Config {
-    let mut config = Config::new();
-    for role in [
-        Role::Queen,
-        Role::Rook,
-        Role::Bishop,
-        Role::Knight,
-        Role::Pawn,
-    ] {
-        for color in [Black, White] {
-            let mut count = m.by_piece(Piece { role, color });
-            while count > 0 {
-                config.push(Piece { role, color });
-                count -= 1
-            }
-        }
-    }
-    config.push(Black.king());
-    config
-}
-
-pub fn restore_from_index(config: &Config, index: u64) -> RetroBoard {
+pub fn restore_from_index(config: &Pieces, index: u64) -> RetroBoard {
     let mut idx = index;
     let mut setup = Setup::empty();
     for &piece in config {
@@ -164,9 +138,9 @@ mod tests {
         assert_eq!(WHITE_KING_INDEX_TO_SQUARE[9], Square::D4);
     }
 
-    fn mat(fen: &str) -> Config {
-        from_material(&Material::from_ascii_fen(fen.as_bytes()).unwrap())
-    }
+    // fn mat(fen: &str) -> Config {
+    //     from_material(&Material::from_ascii_fen(fen.as_bytes()).unwrap())
+    // }
 
     #[test]
     fn test_index_unchecked_overflow() {

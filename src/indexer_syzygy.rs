@@ -498,7 +498,12 @@ impl Table {
     pub fn encode(&self, pos: &dyn Position) -> Result<usize, ()> {
         let key = Material::from_board(pos.board());
         let material = Material::from_iter(self.files[0].sides[0].pieces.clone());
-        assert!(key == material || key == material.clone().into_flipped());
+        let key_check = key == material || key == material.clone().into_flipped();
+
+        if (!key_check) {
+            println!("{:?}", &pos.board());
+        }
+        assert!(key_check);
 
         let symmetric_btm = material.is_symmetric() && pos.turn().is_black();
         let black_stronger = key != material;

@@ -196,17 +196,27 @@ impl Material {
         *self.by_color.get(piece.color).get(piece.role)
     }
 
-    pub(crate) fn pieces(&self) -> Pieces {
+    fn pieces_with_white_king(&self, with_white_king: bool) -> Pieces {
         let mut pieces = Pieces::new();
         for color in Color::ALL {
             for role in Role::ALL {
                 let piece = Piece { color, role };
-                for _ in 0..self.by_piece(piece) {
-                    pieces.push(piece)
+                if !(with_white_king && piece == Color::White.king()) {
+                    for _ in 0..self.by_piece(piece) {
+                        pieces.push(piece)
+                    }
                 }
             }
         }
-        pieces
+        pieces 
+    }
+
+    pub(crate) fn pieces(&self) -> Pieces {
+        self.pieces_with_white_king(true)
+    }
+
+    pub(crate) fn pieces_without_white_king(&self) -> Pieces {
+        self.pieces_with_white_king(false)
     }
 }
 

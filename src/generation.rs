@@ -1,4 +1,4 @@
-use crate::{from_material, index, index_unchecked, restore_from_index, Material, Table};
+use crate::{index, index_unchecked, restore_from_index, Material, Table};
 use retroboard::RetroBoard;
 use shakmaty::{
     Bitboard, CastlingMode, CastlingMode::Standard, Chess, Color, Color::Black, Color::White,
@@ -175,7 +175,7 @@ impl Generator {
     }
 
     pub fn generate_positions(&mut self, setup: Setup) -> Queue {
-        let piece_vec = from_material(&self.material);
+        let piece_vec = self.material.pieces_without_white_king();
         let pb = self.get_progress_bar();
         self.counter = 0;
         let mut queue = Queue::default();
@@ -227,7 +227,7 @@ impl Generator {
     }
 
     pub fn process_positions(&mut self, queue: &mut VecDeque<u64>) {
-        let config = from_material(&self.material);
+        let config = self.material.pieces_without_white_king();
         let pb = self.get_progress_bar();
         self.counter = 0;
         loop {

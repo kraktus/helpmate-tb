@@ -4,7 +4,7 @@ mod indexer_syzygy;
 mod material;
 
 use generation::{Generator, Outcome};
-pub use indexer::{from_material, index, index_unchecked, restore_from_index};
+pub use indexer::{index, index_unchecked, restore_from_index};
 pub use indexer_syzygy::{Pieces, Table};
 pub use material::Material;
 use shakmaty::Setup;
