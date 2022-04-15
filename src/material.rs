@@ -208,7 +208,7 @@ impl Material {
                 }
             }
         }
-        pieces 
+        pieces
     }
 
     pub(crate) fn pieces(&self) -> Pieces {
