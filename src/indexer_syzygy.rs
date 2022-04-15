@@ -500,7 +500,7 @@ impl Table {
         let material = Material::from_iter(self.files[0].sides[0].pieces.clone());
         let key_check = key == material || key == material.clone().into_flipped();
 
-        if (!key_check) {
+        if !key_check {
             println!("{:?}", &pos.board());
         }
         assert!(key_check);

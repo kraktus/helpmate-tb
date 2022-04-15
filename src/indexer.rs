@@ -2,7 +2,7 @@ use shakmaty::{
     CastlingMode, Color, Color::Black, Color::White, FromSetup, Piece, Role, Setup, Square,
 };
 
-use crate::{Material, Pieces};
+use crate::{Pieces};
 use retroboard::RetroBoard;
 
 #[rustfmt::skip]
