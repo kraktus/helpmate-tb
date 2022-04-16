@@ -54,24 +54,6 @@ impl From<Outcome> for u8 {
     }
 }
 
-// impl From<TbKeyValue> for Outcome {
-//     fn from(key_value: TbKeyValue) -> Self {
-//         Outcome::from(u8::try_from(key_value.value()).unwrap())
-//     }
-// }
-
-// impl From<&TbKeyValue> for Outcome {
-//     fn from(key_value: &TbKeyValue) -> Self {
-//         Outcome::from(u8::try_from(key_value.value()).unwrap())
-//     }
-// }
-
-// impl From<Outcome> for u128 {
-//     fn from(o: Outcome) -> Self {
-//         u8::from(o) as u128
-//     }
-// }
-
 impl Not for Outcome {
     type Output = Self;
 
@@ -174,7 +156,7 @@ impl Generator {
         }
     }
 
-    pub fn generate_positions(&mut self, setup: Setup) -> Queue {
+    pub fn generate_positions(&mut self) -> Queue {
         let piece_vec = self.material.pieces_without_white_king();
         let pb = self.get_progress_bar();
         self.counter = 0;
@@ -192,7 +174,7 @@ impl Generator {
             | Square::D3
             | Square::D4;
         for white_king_sq in white_king_bb {
-            let mut new_setup = setup.clone();
+            let mut new_setup = Setup::empty();
             new_setup.board.set_piece_at(white_king_sq, White.king());
             self.generate_positions_internal(
                 &piece_vec,
@@ -227,7 +209,7 @@ impl Generator {
     }
 
     pub fn process_positions(&mut self, queue: &mut VecDeque<u64>) {
-        let config = self.material.pieces_without_white_king();
+        // let config = self.material.pieces_without_white_king();
         let pb = self.get_progress_bar();
         self.counter = 0;
         loop {
@@ -236,7 +218,7 @@ impl Generator {
                 if self.counter % 100000 == 0 {
                     pb.set_position(self.counter);
                 }
-                let rboard = restore_from_index(&config, idx);
+                let rboard = restore_from_index(&self.material, idx);
                 let out: Outcome = self
                     .all_pos
                     .get(self.table.encode(&Chess::from(rboard.clone())).unwrap())

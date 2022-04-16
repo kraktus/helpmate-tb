@@ -2,7 +2,7 @@ use shakmaty::{
     CastlingMode, Color, Color::Black, Color::White, FromSetup, Piece, Role, Setup, Square,
 };
 
-use crate::{Pieces};
+use crate::{Material};
 use retroboard::RetroBoard;
 
 #[rustfmt::skip]
@@ -85,15 +85,31 @@ pub fn index_unchecked(b: &RetroBoard) -> u64 {
     idx
 }
 
-pub fn restore_from_index(config: &Pieces, index: u64) -> RetroBoard {
+pub fn restore_from_index(material: &Material, index: u64) -> RetroBoard {
     let mut idx = index;
     let mut setup = Setup::empty();
-    for &piece in config {
-        setup
-            .board
-            .set_piece_at(unsafe { Square::new_unchecked((idx % 64) as u32) }, piece);
-        idx /= 64;
+    for role in [
+        Role::Queen,
+        Role::Rook,
+        Role::Bishop,
+        Role::Knight,
+        Role::Pawn,
+    ] {
+        for color in [Black, White] {
+            let piece = Piece { role, color };
+            for _ in 0..material.by_piece(piece) {
+                setup
+                    .board
+                    .set_piece_at(unsafe { Square::new_unchecked((idx % 64) as u32) }, piece);
+                idx /= 64;
+            }
+        }
     }
+    setup.board.set_piece_at(
+        unsafe { Square::new_unchecked((idx % 64) as u32) },
+        Black.king(),
+    );
+    idx /= 64;
     setup.board.set_piece_at(
         WHITE_KING_INDEX_TO_SQUARE[(idx % 10) as usize],
         White.king(),
@@ -109,6 +125,7 @@ pub fn restore_from_index(config: &Pieces, index: u64) -> RetroBoard {
 mod tests {
     use super::*;
     use shakmaty::{Bitboard, Board};
+    use std::num::NonZeroU32;
 
     #[test]
     fn test_white_king_squares_to_index() {
@@ -138,15 +155,17 @@ mod tests {
         assert_eq!(WHITE_KING_INDEX_TO_SQUARE[9], Square::D4);
     }
 
-    // fn mat(fen: &str) -> Config {
-    //     from_material(&Material::from_ascii_fen(fen.as_bytes()).unwrap())
-    // }
+    fn mat(fen: &str) -> Material {
+        Material::from_str(fen)
+            .expect("valid fen config to init Material")
+    }
 
     #[test]
     fn test_index_unchecked_overflow() {
         let high_value_board = RetroBoard::new_no_pockets("3bnqqk/8/8/8/3K4/8/8/8 b").unwrap();
         let idx = index_unchecked(&high_value_board);
-        let config = mat("bnqqk");
+        let config = mat("KvKBNQQ");
+        println!("{config:?}");
         let high_value_from_idx = restore_from_index(&config, idx);
         //assert_eq!(idx, 21474565947);
         assert_eq!(high_value_board, high_value_from_idx);
@@ -156,7 +175,7 @@ mod tests {
     fn test_index_unchecked_then_de_index() {
         let two_kings = RetroBoard::new_no_pockets("8/7k/8/8/3K4/8/8/8 b").unwrap();
         let idx = index_unchecked(&two_kings);
-        let config = mat("k");
+        let config = mat("KvK");
         let two_kings_from_idx = restore_from_index(&config, idx);
         assert_eq!(two_kings, two_kings_from_idx);
     }
@@ -169,7 +188,7 @@ mod tests {
         let idx = index_unchecked(&knights);
         let idx_swapped = index_unchecked(&knights_color_swapped);
         assert_ne!(idx, idx_swapped);
-        let config = mat("BNnk");
+        let config = mat("KBNvKN");
         let knights_from_idx = restore_from_index(&config, idx);
         let knights_swapped_from_idx = restore_from_index(&config, idx_swapped);
         assert_eq!(knights, knights_from_idx);
@@ -182,15 +201,21 @@ mod tests {
             let mut board = Board::empty();
             board.set_piece_at(sq, White.king());
             board.set_piece_at(sq.offset(16).unwrap_or(Square::A1), Black.king());
-            let setup = TbSetup {
+            let setup = Setup {
                 board,
-                turn: Some(Color::Black),
+                turn: Color::Black,
                 ep_square: None,
+                castling_rights: Bitboard::EMPTY,
+                fullmoves: NonZeroU32::try_from(1).unwrap(),
+                halfmoves: 0,
+                pockets: None,
+                promoted: Bitboard::EMPTY,
+                remaining_checks: None,
             };
             let rboard =
                 RetroBoard::from_setup(setup, CastlingMode::Standard).expect("Valid setup");
             let idx = index(&rboard);
-            let config = mat("k");
+            let config = mat("KvK");
             let rboard_restored = restore_from_index(&config, idx);
             let white_king_bb = Bitboard::EMPTY
                 | Square::A1

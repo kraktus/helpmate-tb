@@ -21,7 +21,7 @@ use std::{
 
 use shakmaty::{Board, ByColor, ByRole, Color, Piece, Role};
 
-use crate::Pieces;
+use crate::{Pieces};
 
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub(crate) struct MaterialSide {
@@ -201,7 +201,7 @@ impl Material {
         for color in Color::ALL {
             for role in Role::ALL {
                 let piece = Piece { color, role };
-                if !(with_white_king && piece == Color::White.king()) {
+                if !(!with_white_king && piece == Color::White.king()) {
                     for _ in 0..self.by_piece(piece) {
                         pieces.push(piece)
                     }
@@ -223,5 +223,42 @@ impl Material {
 impl fmt::Display for Material {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}v{}", self.by_color.white, self.by_color.black)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use shakmaty::Color::{Black, White};
+
+    #[test]
+    fn test_pieces_from_material() {
+        let mat = Material::from_str("KBNvKRQ").unwrap();
+        let pieces: Pieces = (&[
+            White.knight(),
+            White.bishop(),
+            White.king(),
+            Black.rook(),
+            Black.queen(),
+            Black.king(),
+        ] as &[_])
+            .try_into()
+            .unwrap();
+        assert_eq!(mat.pieces(), pieces)
+    }
+
+    #[test]
+    fn test_pieces_without_white_king_from_material() {
+        let mat = Material::from_str("KBNvKRQ").unwrap();
+        let pieces: Pieces = (&[
+            White.knight(),
+            White.bishop(),
+            Black.rook(),
+            Black.queen(),
+            Black.king(),
+        ] as &[_])
+            .try_into()
+            .unwrap();
+        assert_eq!(mat.pieces_without_white_king(), pieces)
     }
 }

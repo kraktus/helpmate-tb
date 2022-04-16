@@ -38,6 +38,7 @@ const TRIANGLE: [u64; 64] = [
 ];
 
 pub type Pieces = ArrayVec<Piece, MAX_PIECES>;
+// pub type PiecesWoWhiteKing = ArrayVec<Piece, { MAX_PIECES - 1 }>;
 
 /// Inverse of `TRIANGLE`.
 const INV_TRIANGLE: [usize; 10] = [1, 2, 3, 10, 11, 19, 0, 9, 18, 27];

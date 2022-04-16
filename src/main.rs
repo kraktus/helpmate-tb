@@ -7,7 +7,6 @@ use generation::{Generator, Outcome};
 pub use indexer::{index, index_unchecked, restore_from_index};
 pub use indexer_syzygy::{Pieces, Table};
 pub use material::Material;
-use shakmaty::Setup;
 
 use std::collections::HashMap;
 
@@ -21,8 +20,7 @@ static ALLOCATOR: DhatAlloc = DhatAlloc;
 fn main() {
     let _dhat = Dhat::start_heap_profiling();
     let mut gen = Generator::new("KBNvK");
-    let setup = Setup::empty();
-    let mut q = gen.generate_positions(setup);
+    let mut q = gen.generate_positions();
     println!("nb pos {:?}", gen.all_pos.len());
     println!("counter {:?}", gen.counter);
     println!(
