@@ -473,12 +473,14 @@ impl GroupData {
 // }
 
 impl Table {
+    // for white
     // order: [4, 2], file: 0
     // order: [2, 5], file: 1
     // order: [2, 1], file: 2
     // order: [3, 5], file: 3
     // taken from cr --example fathom -- --path norm_factor_table -- "r1k5/p7/2K5/8/8/8/6P1/7R w - - 0 1"
     // so KRPvKRP table
+    // for black order is always [0,0]
 
     pub fn new(pieces: Pieces) -> Self {
         let material = Material::from_iter(pieces.clone());
