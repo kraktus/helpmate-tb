@@ -21,7 +21,7 @@ use std::{
 
 use shakmaty::{Board, ByColor, ByRole, Color, Piece, Role};
 
-use crate::{Pieces};
+use crate::Pieces;
 
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub(crate) struct MaterialSide {

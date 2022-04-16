@@ -2,7 +2,7 @@ use shakmaty::{
     CastlingMode, Color, Color::Black, Color::White, FromSetup, Piece, Role, Setup, Square,
 };
 
-use crate::{Material};
+use crate::Material;
 use retroboard::RetroBoard;
 
 #[rustfmt::skip]
@@ -156,8 +156,7 @@ mod tests {
     }
 
     fn mat(fen: &str) -> Material {
-        Material::from_str(fen)
-            .expect("valid fen config to init Material")
+        Material::from_str(fen).expect("valid fen config to init Material")
     }
 
     #[test]
