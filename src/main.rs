@@ -22,7 +22,6 @@ fn main() {
     let _dhat = Dhat::start_heap_profiling();
     let mut gen = Generator::new("KBNvK");
     let setup = Setup::empty();
-    println!("gen before {:?}", gen);
     let mut q = gen.generate_positions(setup);
     println!("nb pos {:?}", gen.all_pos.len());
     println!("counter {:?}", gen.counter);

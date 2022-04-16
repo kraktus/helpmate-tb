@@ -407,7 +407,6 @@ fn group_pieces(pieces: &Pieces) -> ArrayVec<usize, MAX_PIECES> {
 
 impl GroupData {
     pub fn new(pieces: Pieces, order: [u8; 2], file: usize) -> Self {
-        println!("order: {order:?}, file: {file:?}");
         assert!(pieces.len() >= 2);
 
         let material = Material::from_iter(pieces.clone());
