@@ -345,8 +345,9 @@ struct FileData {
 
 impl FileData {
     fn new(pieces: Pieces, order: [u8; 2], file: usize) -> Self {
-        let groups = GroupData::new(pieces, order, file);
-        let sides = ArrayVec::from([groups.clone(), groups]);
+        let groups = GroupData::new(pieces.clone(), order, file);
+        let groups_0 = GroupData::new(pieces, [0, 0], file);
+        let sides = ArrayVec::from([groups, groups_0]);
         Self { sides }
     }
 }

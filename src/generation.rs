@@ -133,6 +133,11 @@ impl Generator {
                         let rboard = RetroBoard::from_setup(valid_setup, Standard).unwrap();
                         let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
                         let all_pos_idx = self.table.encode(&chess).unwrap();
+                        //
+                        //println!("all_pos_idx: {all_pos_idx:?}");
+                        if all_pos_idx == 0 {
+                            println!("{rboard:?}");
+                        }
                         assert!(Outcome::Unknown == all_pos[all_pos_idx].into()); // Check that position is generated for the first time/index schema is injective
                         if chess.is_checkmate() {
                             let outcome = match chess.turn() {
