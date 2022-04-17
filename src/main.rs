@@ -3,7 +3,7 @@ mod indexer;
 mod indexer_syzygy;
 mod material;
 
-use generation::{Generator, Outcome};
+pub use generation::{Generator, Outcome,SideToMove};
 pub use indexer::{index, index_unchecked, restore_from_index};
 pub use indexer_syzygy::{Pieces, Table};
 pub use material::Material;

@@ -1,9 +1,9 @@
 use arrayvec::ArrayVec;
 use itertools::Itertools as _;
 use shakmaty::Bitboard;
-use shakmaty::{File, Piece, Position, Rank, Role, Square};
+use shakmaty::{File, Piece, Rank, Role, Square};
 
-use crate::Material;
+use crate::{Material, SideToMove};
 
 const fn binomial(mut n: u64, k: u64) -> u64 {
     if k > n {
@@ -489,6 +489,7 @@ impl Table {
             FileData::new(pieces.clone(), [[2, 5], [0, 15]], 2),
             FileData::new(pieces.clone(), [[3, 5], [0, 15]], 3),
         ]);
+        println!("files at the end {:?}", files[0].sides[0]);
         Self {
             num_unique_pieces: material.unique_pieces(),
             min_like_man: material.min_like_man(),
@@ -496,14 +497,14 @@ impl Table {
         }
     }
 
-    pub fn encode(&self, pos: &dyn Position) -> usize {
+    pub fn encode(&self, pos: &dyn SideToMove) -> usize {
         self.encode_checked(pos)
             .expect("Valid index, it not sure use `encode_checked`")
     }
 
     /// Given a position, determine the unique (modulo symmetries) index into
     /// the corresponding subtable.
-    pub fn encode_checked(&self, pos: &dyn Position) -> Result<usize, ()> {
+    pub fn encode_checked(&self, pos: &dyn SideToMove) -> Result<usize, ()> {
         let key = Material::from_board(pos.board());
         let material = Material::from_iter(self.files[0].sides[0].pieces.clone());
         let key_check = key == material || key == material.clone().into_flipped();
@@ -513,10 +514,10 @@ impl Table {
         }
         assert!(key_check);
 
-        let symmetric_btm = material.is_symmetric() && pos.turn().is_black();
+        let symmetric_btm = material.is_symmetric() && pos.side_to_move().is_black();
         let black_stronger = key != material;
         let flip = symmetric_btm || black_stronger;
-        let bside = pos.turn().is_black() ^ flip;
+        let bside = pos.side_to_move().is_black() ^ flip;
 
         let mut squares: ArrayVec<Square, MAX_PIECES> = ArrayVec::new();
         let mut used = Bitboard(0);
@@ -779,6 +780,7 @@ impl Table {
         }
 
         // Ok(Some((side, idx)))
+        // println!("{idx:?}");
         Ok(idx as usize) // u64
     }
 }

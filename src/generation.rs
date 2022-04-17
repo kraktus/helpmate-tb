@@ -2,7 +2,7 @@ use crate::{index, index_unchecked, restore_from_index, Material, Table};
 use retroboard::RetroBoard;
 use shakmaty::{
     Bitboard, ByColor, CastlingMode, CastlingMode::Standard, Chess, Color, Color::Black,
-    Color::White, FromSetup, Piece, Position, PositionError, Setup, Square,
+    Color::White, FromSetup, Piece, Position, PositionError, Setup, Square, Board
 };
 use std::collections::VecDeque;
 use std::ops::{Add, Not};
@@ -10,20 +10,28 @@ use std::ops::{Add, Not};
 use indicatif::{ProgressBar, ProgressStyle};
 
 // Allow to use both `Chess` and `RetroBoard`
-trait SideToMove {
+pub trait SideToMove {
     // side to **move**, so opposite of side to unmove
     fn side_to_move(&self) -> Color;
+    fn board(&self) -> &Board;
 }
 
 impl SideToMove for Chess {
     fn side_to_move(&self) -> Color {
         self.turn()
     }
+    fn board(&self) -> &Board {
+        Position::board(self)
+    }
 }
 
 impl SideToMove for RetroBoard {
     fn side_to_move(&self) -> Color {
         !self.retro_turn()
+    }
+
+    fn board(&self) -> &Board {
+        self.board()
     }
 }
 
@@ -170,10 +178,10 @@ impl Generator {
                         let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
                         let all_pos_idx = self.table.encode(&chess);
                         //println!("all_pos_idx: {all_pos_idx:?}");
-                        if all_pos_idx == 0 {
+                        if all_pos_idx == 407750 {
                             println!("{rboard:?}");
                         }
-                        assert!(Outcome::Unknown == all_pos[all_pos_idx].got(&chess).into()); // Check that position is generated for the first time/index schema is injective
+                        //assert!(Outcome::Unknown == all_pos[all_pos_idx].got(&chess).into()); // Check that position is generated for the first time/index schema is injective
                         if chess.is_checkmate() {
                             let outcome = match chess.turn() {
                                 c if c == self.winner => Outcome::Lose(0),
@@ -206,7 +214,7 @@ impl Generator {
                 black: 255,
                 white: 255
             };
-            self.get_nb_pos() as usize / 10 * 9 * 4
+            self.get_nb_pos() as usize / 10 * 9
         ]; // heuristic, less than 90% of pos are legals. Takes x4 more than number of legal positions
         let white_king_bb = Bitboard::EMPTY
             | Square::A1
@@ -281,13 +289,13 @@ impl Generator {
                 for m in rboard.legal_unmoves() {
                     let mut rboard_after_unmove = rboard.clone();
                     rboard_after_unmove.push(&m);
-                    let chess_after_unmove: Chess = rboard_after_unmove.clone().into();
+                    // let chess_after_unmove: Chess = rboard_after_unmove.clone().into();
                     let idx_after_unmove = index(&rboard_after_unmove);
-                    let idx_all_pos_after_unmove = self.table.encode(&chess_after_unmove);
+                    let idx_all_pos_after_unmove = self.table.encode(&rboard_after_unmove);
                     match self
                         .all_pos
                         .get(idx_all_pos_after_unmove)
-                        .map(|bc| bc.got(&chess_after_unmove))
+                        .map(|bc| bc.got(&rboard_after_unmove))
                     {
                         None => {
                             panic!("pos not found, illegal? {:?}", rboard_after_unmove)
@@ -295,7 +303,7 @@ impl Generator {
                         Some(outcome_u8) if Outcome::Draw == outcome_u8.into() => {
                             queue.push_back(idx_after_unmove);
                             self.all_pos[idx_all_pos_after_unmove]
-                                .set_to(&chess_after_unmove, (out + 1).into());
+                                .set_to(&rboard_after_unmove, (out + 1).into());
                         }
                         Some(outcome_u8) if Outcome::Unknown == outcome_u8.into() => {
                             panic!("pos not found, illegal? {:?}", rboard_after_unmove)
