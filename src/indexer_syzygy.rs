@@ -343,9 +343,10 @@ struct FileData {
 }
 
 impl FileData {
-    fn new(pieces: Pieces, order: [u8; 2], file: usize) -> Self {
-        let groups = GroupData::new(pieces.clone(), order, file);
-        let sides = ArrayVec::from([groups.clone(), groups]);
+    fn new(pieces: Pieces, orders: [[u8; 2]; 2], file: usize) -> Self {
+        let group_0 = GroupData::new(pieces.clone(), orders[0], file);
+        let group_1 = GroupData::new(pieces.clone(), orders[1], file);
+        let sides = ArrayVec::from([group_0, group_1]);
         Self { sides }
     }
 }
@@ -482,11 +483,12 @@ impl Table {
 
     pub fn new(pieces: Pieces) -> Self {
         let material = Material::from_iter(pieces.clone());
-        let files: ArrayVec<FileData, 4> = [[4, 2], [2, 5], [2, 1], [3, 5]]
-            .into_iter()
-            .enumerate()
-            .map(|(file, order)| FileData::new(pieces.clone(), order, file))
-            .collect();
+        let files: ArrayVec<FileData, 4> = ArrayVec::from([
+            FileData::new(pieces.clone(), [[1, 15], [0, 15]], 0),
+            FileData::new(pieces.clone(), [[4, 2], [0, 15]], 1),
+            FileData::new(pieces.clone(), [[2, 5], [0, 15]], 2),
+            FileData::new(pieces.clone(), [[3, 5], [0, 15]], 3),
+        ]);
         Self {
             num_unique_pieces: material.unique_pieces(),
             min_like_man: material.min_like_man(),
@@ -495,7 +497,8 @@ impl Table {
     }
 
     pub fn encode(&self, pos: &dyn Position) -> usize {
-        self.encode_checked(pos).expect("Valid index, it not sure use `encode_checked`")
+        self.encode_checked(pos)
+            .expect("Valid index, it not sure use `encode_checked`")
     }
 
     /// Given a position, determine the unique (modulo symmetries) index into
