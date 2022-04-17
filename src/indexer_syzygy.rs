@@ -494,9 +494,13 @@ impl Table {
         }
     }
 
+    pub fn encode(&self, pos: &dyn Position) -> usize {
+        self.encode_checked(pos).expect("Valid index, it not sure use `encode_checked`")
+    }
+
     /// Given a position, determine the unique (modulo symmetries) index into
     /// the corresponding subtable.
-    pub fn encode(&self, pos: &dyn Position) -> Result<usize, ()> {
+    pub fn encode_checked(&self, pos: &dyn Position) -> Result<usize, ()> {
         let key = Material::from_board(pos.board());
         let material = Material::from_iter(self.files[0].sides[0].pieces.clone());
         let key_check = key == material || key == material.clone().into_flipped();

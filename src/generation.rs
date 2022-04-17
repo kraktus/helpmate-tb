@@ -168,7 +168,7 @@ impl Generator {
                         let rboard = RetroBoard::from_setup(valid_setup, Standard)
                             .expect("if chess is valid then rboard should be too");
                         let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
-                        let all_pos_idx = self.table.encode(&chess).unwrap();
+                        let all_pos_idx = self.table.encode(&chess);
                         //println!("all_pos_idx: {all_pos_idx:?}");
                         if all_pos_idx == 0 {
                             println!("{rboard:?}");
@@ -267,7 +267,7 @@ impl Generator {
                 let rboard = restore_from_index(&self.material, idx);
                 let out: Outcome = self
                     .all_pos
-                    .get(self.table.encode(&Chess::from(rboard.clone())).unwrap())
+                    .get(self.table.encode(&Chess::from(rboard.clone())))
                     .map(|bc| bc.got(&rboard))
                     .unwrap_or_else(|| {
                         panic!(
@@ -283,7 +283,7 @@ impl Generator {
                     rboard_after_unmove.push(&m);
                     let chess_after_unmove: Chess = rboard_after_unmove.clone().into();
                     let idx_after_unmove = index(&rboard_after_unmove);
-                    let idx_all_pos_after_unmove = self.table.encode(&chess_after_unmove).unwrap();
+                    let idx_all_pos_after_unmove = self.table.encode(&chess_after_unmove);
                     match self
                         .all_pos
                         .get(idx_all_pos_after_unmove)
