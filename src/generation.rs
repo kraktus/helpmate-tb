@@ -1,13 +1,49 @@
 use crate::{index, index_unchecked, restore_from_index, Material, Table};
 use retroboard::RetroBoard;
 use shakmaty::{
-    Bitboard, CastlingMode, CastlingMode::Standard, Chess, Color, Color::Black, Color::White,
-    FromSetup, Piece, Position, PositionError, Setup, Square,
+    Bitboard, ByColor, CastlingMode, CastlingMode::Standard, Chess, Color, Color::Black,
+    Color::White, FromSetup, Piece, Position, PositionError, Setup, Square,
 };
 use std::collections::VecDeque;
 use std::ops::{Add, Not};
 
 use indicatif::{ProgressBar, ProgressStyle};
+
+// Allow to use both `Chess` and `RetroBoard`
+trait SideToMove {
+    // side to **move**, so opposite of side to unmove
+    fn side_to_move(&self) -> Color;
+}
+
+impl SideToMove for Chess {
+    fn side_to_move(&self) -> Color {
+        self.turn()
+    }
+}
+
+impl SideToMove for RetroBoard {
+    fn side_to_move(&self) -> Color {
+        !self.retro_turn()
+    }
+}
+
+trait SideToMoveGetter {
+    type T;
+    // chose `got` and not `get` not to shadow the original methods
+    fn got(&self, pos: &dyn SideToMove) -> &Self::T;
+    fn set_to(&mut self, pos: &dyn SideToMove, t: Self::T);
+}
+
+impl SideToMoveGetter for ByColor<u8> {
+    type T = u8;
+    fn got(&self, pos: &dyn SideToMove) -> &Self::T {
+        self.get(pos.side_to_move())
+    }
+    fn set_to(&mut self, pos: &dyn SideToMove, t: Self::T) {
+        let x_mut = self.get_mut(pos.side_to_move());
+        *x_mut = t;
+    }
+}
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct OutcomeOutOfBound;
@@ -88,7 +124,7 @@ pub struct Queue {
 
 #[derive(Debug, Clone)]
 pub struct Generator {
-    pub all_pos: Vec<u8>,
+    pub all_pos: Vec<ByColor<u8>>,
     pub winner: Color,
     pub counter: u64,
     material: Material,
@@ -101,7 +137,7 @@ impl Generator {
         piece_vec: &[Piece],
         setup: Setup,
         queue: &mut Queue,
-        all_pos: &mut Vec<u8>,
+        all_pos: &mut Vec<ByColor<u8>>,
         pb: &ProgressBar,
     ) {
         match piece_vec {
@@ -129,22 +165,21 @@ impl Generator {
                     }
                     // println!("{:?}", valid_setup);
                     if let Ok(chess) = to_chess_with_illegal_checks(valid_setup.clone()) {
-                        // if chess is valid then rboard should be too
-                        let rboard = RetroBoard::from_setup(valid_setup, Standard).unwrap();
+                        let rboard = RetroBoard::from_setup(valid_setup, Standard)
+                            .expect("if chess is valid then rboard should be too");
                         let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
                         let all_pos_idx = self.table.encode(&chess).unwrap();
-                        //
                         //println!("all_pos_idx: {all_pos_idx:?}");
                         if all_pos_idx == 0 {
                             println!("{rboard:?}");
                         }
-                        assert!(Outcome::Unknown == all_pos[all_pos_idx].into()); // Check that position is generated for the first time/index schema is injective
+                        assert!(Outcome::Unknown == all_pos[all_pos_idx].got(&chess).into()); // Check that position is generated for the first time/index schema is injective
                         if chess.is_checkmate() {
                             let outcome = match chess.turn() {
                                 c if c == self.winner => Outcome::Lose(0),
                                 _ => Outcome::Win(0),
                             };
-                            all_pos[all_pos_idx] = outcome.into();
+                            all_pos[all_pos_idx].set_to(&chess, outcome.into());
                             if chess.turn() == self.winner {
                                 //println!("lost {:?}", rboard);
                                 queue.losing_pos_to_process.push_back(idx);
@@ -153,7 +188,7 @@ impl Generator {
                             }
                         } else {
                             // println!("{:?}, new idx: {idx}", self.all_pos.get(0).map(|x| x.key()));
-                            all_pos[all_pos_idx] = Outcome::Draw.into();
+                            all_pos[all_pos_idx].set_to(&chess, Outcome::Draw.into());
                         }
                     }
                 }
@@ -166,7 +201,13 @@ impl Generator {
         let pb = self.get_progress_bar();
         self.counter = 0;
         let mut queue = Queue::default();
-        let mut all_pos_vec: Vec<u8> = [255].repeat(self.get_nb_pos() as usize / 10 * 9 * 4); // heuristic, less than 90% of pos are legals. Takes x4 more than number of legal positions
+        let mut all_pos_vec: Vec<ByColor<u8>> = vec![
+            ByColor {
+                black: 255,
+                white: 255
+            };
+            self.get_nb_pos() as usize / 10 * 9 * 4
+        ]; // heuristic, less than 90% of pos are legals. Takes x4 more than number of legal positions
         let white_king_bb = Bitboard::EMPTY
             | Square::A1
             | Square::B1
@@ -196,7 +237,7 @@ impl Generator {
             "all_pos_vec capacity: {} after shrinking",
             all_pos_vec.capacity()
         );
-        self.all_pos = all_pos_vec.try_into().expect("unique indexes");
+        self.all_pos = all_pos_vec;
         queue
     }
 
@@ -227,6 +268,7 @@ impl Generator {
                 let out: Outcome = self
                     .all_pos
                     .get(self.table.encode(&Chess::from(rboard.clone())).unwrap())
+                    .map(|bc| bc.got(&rboard))
                     .unwrap_or_else(|| {
                         panic!(
                             "idx got {}, idx recomputed {}, rboard {:?}",
@@ -242,13 +284,18 @@ impl Generator {
                     let chess_after_unmove: Chess = rboard_after_unmove.clone().into();
                     let idx_after_unmove = index(&rboard_after_unmove);
                     let idx_all_pos_after_unmove = self.table.encode(&chess_after_unmove).unwrap();
-                    match self.all_pos.get(idx_all_pos_after_unmove) {
+                    match self
+                        .all_pos
+                        .get(idx_all_pos_after_unmove)
+                        .map(|bc| bc.got(&chess_after_unmove))
+                    {
                         None => {
                             panic!("pos not found, illegal? {:?}", rboard_after_unmove)
                         }
                         Some(outcome_u8) if Outcome::Draw == outcome_u8.into() => {
                             queue.push_back(idx_after_unmove);
-                            self.all_pos[idx_all_pos_after_unmove] = (out + 1).into()
+                            self.all_pos[idx_all_pos_after_unmove]
+                                .set_to(&chess_after_unmove, (out + 1).into());
                         }
                         Some(outcome_u8) if Outcome::Unknown == outcome_u8.into() => {
                             panic!("pos not found, illegal? {:?}", rboard_after_unmove)
@@ -302,6 +349,7 @@ impl Default for Queue {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use shakmaty::fen::Fen;
 
     #[test]
     fn test_pow_minus_1() {
@@ -322,5 +370,39 @@ mod tests {
         for i in 0..u8::MAX {
             assert_eq!(u8::try_from(Outcome::from(i)).unwrap(), i)
         }
+    }
+
+    #[test]
+    fn test_side_to_move() {
+        let fen = "4k3/8/8/8/8/8/PPPPPPPP/RNBQKBNR w KQ - 0 1";
+        let rboard = RetroBoard::new_no_pockets(fen).unwrap();
+        let chess: Chess = Fen::from_ascii(fen.as_bytes())
+            .unwrap()
+            .into_position(Standard)
+            .unwrap();
+        assert_eq!(rboard.side_to_move(), White);
+        assert_eq!(chess.side_to_move(), White);
+    }
+
+    #[test]
+    fn test_side_to_move_getter() {
+        let fen = "4k3/8/8/8/8/8/PPPPPPPP/RNBQKBNR w KQ - 0 1";
+        let rboard = RetroBoard::new_no_pockets(fen).unwrap();
+        let mut chess: Chess = Fen::from_ascii(fen.as_bytes())
+            .unwrap()
+            .into_position(Standard)
+            .unwrap();
+        let mut bc = ByColor {
+            white: 10,
+            black: 0,
+        };
+        assert_eq!(*bc.got(&rboard), 10);
+        assert_eq!(*bc.got(&chess), 10);
+        chess = chess.swap_turn().unwrap();
+        assert_eq!(*bc.got(&chess), 0);
+        chess = chess.swap_turn().unwrap();
+        let x = bc.got_mut(&chess);
+        *x = 200;
+        assert_eq!(*bc.got(&rboard), 200);
     }
 }

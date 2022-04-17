@@ -41,14 +41,16 @@ fn main() {
     let mut lose = 0;
     let mut distrib: HashMap<Outcome, u64> = HashMap::new();
 
-    for key_value in gen.all_pos.iter() {
-        let outcome: Outcome = (*key_value).into();
-        distrib.insert(outcome, *distrib.get(&outcome).unwrap_or(&0) + 1);
-        match outcome {
-            Outcome::Draw => draw += 1,
-            Outcome::Win(_) => win += 1,
-            Outcome::Lose(_) => lose += 1,
-            Outcome::Unknown => (),
+    for by_color_outcome in gen.all_pos.iter() {
+        for value in by_color_outcome.iter() {
+            let outcome: Outcome = (*value).into();
+            distrib.insert(outcome, *distrib.get(&outcome).unwrap_or(&0) + 1);
+            match outcome {
+                Outcome::Draw => draw += 1,
+                Outcome::Win(_) => win += 1,
+                Outcome::Lose(_) => lose += 1,
+                Outcome::Unknown => (),
+            }
         }
     }
     println!(

@@ -38,7 +38,6 @@ const TRIANGLE: [u64; 64] = [
 ];
 
 pub type Pieces = ArrayVec<Piece, MAX_PIECES>;
-// pub type PiecesWoWhiteKing = ArrayVec<Piece, { MAX_PIECES - 1 }>;
 
 /// Inverse of `TRIANGLE`.
 const INV_TRIANGLE: [usize; 10] = [1, 2, 3, 10, 11, 19, 0, 9, 18, 27];
@@ -346,8 +345,7 @@ struct FileData {
 impl FileData {
     fn new(pieces: Pieces, order: [u8; 2], file: usize) -> Self {
         let groups = GroupData::new(pieces.clone(), order, file);
-        let groups_0 = GroupData::new(pieces, [0, 0], file);
-        let sides = ArrayVec::from([groups, groups_0]);
+        let sides = ArrayVec::from([groups.clone(), groups]);
         Self { sides }
     }
 }
