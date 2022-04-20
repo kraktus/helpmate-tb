@@ -259,7 +259,8 @@ impl Generator {
 
     #[inline]
     fn get_nb_pos(&self) -> u64 {
-        pow_minus_1(63, self.material.count()) * 10 * 2
+        // white king is already included in `material.count()`, so substract it, and multiply by 10 instead, real number of cases the white king can go on
+        pow_minus_1(63, self.material.count() - 1) * 10 * 2
     }
 
     pub fn process_positions(&mut self, queue: &mut VecDeque<u64>) {
