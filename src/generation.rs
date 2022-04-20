@@ -264,7 +264,7 @@ impl Generator {
                 let rboard = restore_from_index(&self.material, idx);
                 let out: Outcome = self
                     .all_pos
-                    .get(self.table.encode(&Chess::from(rboard.clone())))
+                    .get(self.table.encode(&rboard))
                     .map(|bc| bc.got(&rboard))
                     .unwrap_or_else(|| {
                         panic!(
