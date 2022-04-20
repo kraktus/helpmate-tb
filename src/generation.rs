@@ -145,7 +145,6 @@ impl Generator {
         piece_vec: &[Piece],
         setup: Setup,
         queue: &mut Queue,
-        all_pos: &mut Vec<ByColor<u8>>,
         pb: &ProgressBar,
     ) {
         match piece_vec {
@@ -157,7 +156,7 @@ impl Generator {
                     if setup.board.piece_at(sq).is_none() {
                         let mut new_setup = setup.clone();
                         new_setup.board.set_piece_at(sq, *piece);
-                        self.generate_positions_internal(tail, new_setup, queue, all_pos, pb);
+                        self.generate_positions_internal(tail, new_setup, queue, pb);
                     }
                     //println!("after {:?}", &new_setup);
                 }
@@ -187,7 +186,7 @@ impl Generator {
                                 c if c == self.winner => Outcome::Lose(0),
                                 _ => Outcome::Win(0),
                             };
-                            all_pos[all_pos_idx].set_to(&chess, outcome.into());
+                            self.all_pos[all_pos_idx].set_to(&chess, outcome.into());
                             if chess.turn() == self.winner {
                                 //println!("lost {:?}", rboard);
                                 queue.losing_pos_to_process.push_back(idx);
@@ -196,7 +195,7 @@ impl Generator {
                             }
                         } else {
                             // println!("{:?}, new idx: {idx}", self.all_pos.get(0).map(|x| x.key()));
-                            all_pos[all_pos_idx].set_to(&chess, Outcome::Draw.into());
+                            self.all_pos[all_pos_idx].set_to(&chess, Outcome::Draw.into());
                         }
                     }
                 }
@@ -209,7 +208,7 @@ impl Generator {
         let pb = self.get_progress_bar();
         self.counter = 0;
         let mut queue = Queue::default();
-        let mut all_pos_vec: Vec<ByColor<u8>> = vec![
+        self.all_pos = vec![
             ByColor {
                 black: 255,
                 white: 255
@@ -234,18 +233,16 @@ impl Generator {
                 &piece_vec,
                 new_setup,
                 &mut queue,
-                &mut all_pos_vec,
                 &pb,
             )
         }
         pb.finish_with_message("positions generated");
-        println!("all_pos_vec capacity: {}", all_pos_vec.capacity());
-        all_pos_vec.shrink_to_fit();
+        println!("all_pos_vec capacity: {}", self.all_pos.capacity());
+        self.all_pos.shrink_to_fit();
         println!(
             "all_pos_vec capacity: {} after shrinking",
-            all_pos_vec.capacity()
+            self.all_pos.capacity()
         );
-        self.all_pos = all_pos_vec;
         queue
     }
 
