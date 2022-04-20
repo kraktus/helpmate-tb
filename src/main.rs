@@ -40,10 +40,14 @@ fn main() {
     let mut win = 0;
     let mut lose = 0;
     let mut distrib: HashMap<Outcome, u64> = HashMap::new();
+    let mut max_index: usize = 0;
 
-    for by_color_outcome in gen.all_pos.iter() {
+    for (i, by_color_outcome) in gen.all_pos.iter().enumerate() {
         for value in by_color_outcome.iter() {
             let outcome: Outcome = (*value).into();
+            if outcome != Outcome::Unknown {
+                max_index = i;
+            }
             distrib.insert(outcome, *distrib.get(&outcome).unwrap_or(&0) + 1);
             match outcome {
                 Outcome::Draw => draw += 1,
@@ -54,8 +58,8 @@ fn main() {
         }
     }
     println!(
-        "From {:?} perspective, win: {:?}, draw: {:?}, lost: {:?}",
-        gen.winner, win, draw, lose
+        "From {:?} perspective, win: {:?}, draw: {:?}, lost: {:?}, max index: {:?}",
+        gen.winner, win, draw, lose, max_index
     );
     for i in 0..u8::MAX {
         if let Some(nb_win) = distrib.get(&Outcome::Win(i)) {
