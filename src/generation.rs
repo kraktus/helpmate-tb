@@ -215,7 +215,7 @@ impl Generator {
                 white: 255
             };
             self.get_nb_pos() as usize / 10 * 9
-        ]; // heuristic, less than 90% of pos are legals. Takes x4 more than number of legal positions
+        ]; // heuristic, less than 90% of pos are legals. Takes x2 (because each stored element is in fact 1 position, but with black and white to turn) more than number of legal positions
         let white_king_bb = Bitboard::EMPTY
             | Square::A1
             | Square::B1
