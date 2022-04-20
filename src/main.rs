@@ -43,6 +43,7 @@ fn main() {
     let mut max_index: usize = 0;
 
     for (i, by_color_outcome) in gen.all_pos.iter().enumerate() {
+        // println!("{:?}", by_color_outcome);
         for value in by_color_outcome.iter() {
             let outcome: Outcome = (*value).into();
             if outcome != Outcome::Unknown {

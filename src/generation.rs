@@ -213,19 +213,10 @@ impl Generator {
                 black: 255,
                 white: 255
             };
-            self.get_nb_pos() as usize / 10 * 9
+            1911251 // self.get_nb_pos() as usize / 10 * 9
         ]; // heuristic, less than 90% of pos are legals. Takes x2 (because each stored element is in fact 1 position, but with black and white to turn) more than number of legal positions
-        let white_king_bb = Bitboard::EMPTY
-            | Square::A1
-            | Square::B1
-            | Square::C1
-            | Square::D1
-            | Square::B2
-            | Square::C2
-            | Square::D2
-            | Square::C3
-            | Square::D3
-            | Square::D4;
+        let white_king_bb = Bitboard::from(135007759); // a1-d1-d4 triangle
+        println!("{:?}", white_king_bb.0);
         for white_king_sq in white_king_bb {
             let mut new_setup = Setup::empty();
             new_setup.board.set_piece_at(white_king_sq, White.king());
