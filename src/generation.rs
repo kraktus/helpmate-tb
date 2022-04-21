@@ -1,8 +1,8 @@
 use crate::{index, index_unchecked, restore_from_index, Material, Table};
 use retroboard::RetroBoard;
 use shakmaty::{
-    Bitboard, ByColor, CastlingMode, CastlingMode::Standard, Chess, Color, Color::Black,
-    Color::White, FromSetup, Piece, Position, PositionError, Setup, Square, Board
+    Bitboard, Board, ByColor, CastlingMode, CastlingMode::Standard, Chess, Color, Color::Black,
+    Color::White, FromSetup, Piece, Position, PositionError, Setup, Square,
 };
 use std::collections::VecDeque;
 use std::ops::{Add, Not};
@@ -130,6 +130,8 @@ pub struct Queue {
     pub losing_pos_to_process: VecDeque<u64>,
 }
 
+const A1_H8_DIAG: Bitboard = Bitboard(9241421688590303745);
+
 #[derive(Debug, Clone)]
 pub struct Generator {
     pub all_pos: Vec<ByColor<u8>>,
@@ -150,7 +152,11 @@ impl Generator {
         match piece_vec {
             [piece, tail @ ..] => {
                 //println!("{:?}, setup: {:?}", piece, &setup);
-                let squares = Bitboard::FULL; // white king handled in `generate_positions`
+                let squares = if A1_H8_DIAG.is_superset(setup.board.occupied()) {
+                    Bitboard(9277662557957324543) // a1-h1-h8 corner
+                } else {
+                    Bitboard::FULL // white king handled in `generate_positions`
+                };
                 for sq in squares {
                     //println!("before {:?}", &setup);
                     if setup.board.piece_at(sq).is_none() {
@@ -172,15 +178,22 @@ impl Generator {
                     }
                     // println!("{:?}", valid_setup);
                     if let Ok(chess) = to_chess_with_illegal_checks(valid_setup.clone()) {
-                        let rboard = RetroBoard::from_setup(valid_setup, Standard)
+                        let rboard = RetroBoard::from_setup(valid_setup, Standard) // DEBUG
                             .expect("if chess is valid then rboard should be too");
+                        // let expected_rboard = RetroBoard::new_no_pockets("8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1").unwrap();
                         let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
                         let all_pos_idx = self.table.encode(&chess);
-                        //println!("all_pos_idx: {all_pos_idx:?}");
-                        if all_pos_idx == 407750 {
-                            println!("{rboard:?}");
+                        if rboard.board().kings() == Bitboard::EMPTY | Square::C3 | Square::F3 {
+                            println!("rboard kings found {rboard:?}, idx: {all_pos_idx:?}");
                         }
-                        //assert!(Outcome::Unknown == all_pos[all_pos_idx].got(&chess).into()); // Check that position is generated for the first time/index schema is injective
+                        //println!("all_pos_idx: {all_pos_idx:?}");
+                        // Check that position is generated for the first time/index schema is injective
+                        if all_pos_idx == 1907795 {
+                            println!("Idx: {all_pos_idx:?}, rboard: {rboard:?}");
+                        }
+                        if Outcome::Unknown != self.all_pos[all_pos_idx].got(&chess).into() {
+                            panic!("Index {all_pos_idx} already generated, board: {rboard:?}");
+                        }
                         if chess.is_checkmate() {
                             let outcome = match chess.turn() {
                                 c if c == self.winner => Outcome::Lose(0),
@@ -215,17 +228,12 @@ impl Generator {
             };
             self.get_nb_pos() as usize / 10 * 9
         ]; // heuristic, less than 90% of pos are legals. Takes x2 (because each stored element is in fact 1 position, but with black and white to turn) more than number of legal positions
-        let white_king_bb = Bitboard::from(135007759); // a1-d1-d4 triangle
+        let white_king_bb = Bitboard(135007759); // a1-d1-d4 triangle
         println!("{:?}", white_king_bb.0);
         for white_king_sq in white_king_bb {
             let mut new_setup = Setup::empty();
             new_setup.board.set_piece_at(white_king_sq, White.king());
-            self.generate_positions_internal(
-                &piece_vec,
-                new_setup,
-                &mut queue,
-                &pb,
-            )
+            self.generate_positions_internal(&piece_vec, new_setup, &mut queue, &pb)
         }
         pb.finish_with_message("positions generated");
         println!("all_pos_vec capacity: {}", self.all_pos.capacity());
@@ -287,7 +295,7 @@ impl Generator {
                         .map(|bc| bc.got(&rboard_after_unmove))
                     {
                         None => {
-                            panic!("pos not found, illegal? {:?}", rboard_after_unmove)
+                            panic!("pos before: {rboard:?}, and after {m:?} pos not found, illegal? {rboard_after_unmove:?}, idx: {idx_all_pos_after_unmove:?}")
                         }
                         Some(outcome_u8) if Outcome::Draw == outcome_u8.into() => {
                             queue.push_back(idx_after_unmove);
@@ -295,7 +303,7 @@ impl Generator {
                                 .set_to(&rboard_after_unmove, (out + 1).into());
                         }
                         Some(outcome_u8) if Outcome::Unknown == outcome_u8.into() => {
-                            panic!("pos not found, illegal? {:?}", rboard_after_unmove)
+                            panic!("pos before: {rboard:?}, and after {m:?} pos not found, illegal? {rboard_after_unmove:?}, idx: {idx_all_pos_after_unmove:?}")
                         }
                         _ => (),
                     }
@@ -398,8 +406,7 @@ mod tests {
         chess = chess.swap_turn().unwrap();
         assert_eq!(*bc.got(&chess), 0);
         chess = chess.swap_turn().unwrap();
-        let x = bc.got_mut(&chess);
-        *x = 200;
+        bc.set_to(&chess, 200);
         assert_eq!(*bc.got(&rboard), 200);
     }
 }

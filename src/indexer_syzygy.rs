@@ -3,6 +3,8 @@ use itertools::Itertools as _;
 use shakmaty::Bitboard;
 use shakmaty::{File, Piece, Rank, Role, Square};
 
+use shakmaty::{fen::Fen, CastlingMode, Chess, Color::*, Role::*}; // DEBUG
+
 use crate::{Material, SideToMove};
 
 const fn binomial(mut n: u64, k: u64) -> u64 {
@@ -481,10 +483,28 @@ impl Table {
     // so KRPvKRP table
     // for black order is always [0,0]
 
-    pub fn new(pieces: Pieces) -> Self {
-        let material = Material::from_iter(pieces.clone());
+    pub fn new(_pieces: Pieces) -> Self {
+        let material = Material::from_iter(_pieces.clone());
+        let pieces: Pieces = ArrayVec::from_iter([
+            Piece {
+                color: Black,
+                role: King,
+            },
+            Piece {
+                color: White,
+                role: Bishop,
+            },
+            Piece {
+                color: White,
+                role: Knight,
+            },
+            Piece {
+                color: White,
+                role: King,
+            },
+        ]); // DEBUG
         let files: ArrayVec<FileData, 4> = ArrayVec::from([
-            FileData::new(pieces.clone(), [[1, 15], [0, 15]], 0),
+            FileData::new(pieces.clone(), [[1, 15], [1, 15]], 0),
             FileData::new(pieces.clone(), [[4, 2], [0, 15]], 1),
             FileData::new(pieces.clone(), [[2, 5], [0, 15]], 2),
             FileData::new(pieces.clone(), [[3, 5], [0, 15]], 3),
@@ -782,5 +802,42 @@ impl Table {
         // Ok(Some((side, idx)))
         // println!("{idx:?}");
         Ok(idx as usize) // u64
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use shakmaty::{fen::Fen, CastlingMode, Chess, Color::*, Role::*, Square};
+    use std::path::Path;
+
+    #[test]
+    fn text_encode_function_against_syzygy_value() {
+        let material = Material::from_str("KBNvK").unwrap();
+        let pieces: Pieces = ArrayVec::from_iter([
+            Piece {
+                color: Black,
+                role: King,
+            },
+            Piece {
+                color: White,
+                role: Bishop,
+            },
+            Piece {
+                color: White,
+                role: Knight,
+            },
+            Piece {
+                color: White,
+                role: King,
+            },
+        ]);
+        let table = Table::new(pieces);
+        let chess: Chess = Fen::from_ascii(b"8/8/8/8/8/8/8/KNBk4 w - - 0 1")
+            .unwrap()
+            .into_position(CastlingMode::Chess960)
+            .unwrap();
+        let idx = table.encode(&chess);
+        assert_eq!(idx, 484157);
     }
 }

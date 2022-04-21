@@ -1,9 +1,11 @@
+mod encoding;
 mod generation;
 mod indexer;
 mod indexer_syzygy;
 mod material;
 
-pub use generation::{Generator, Outcome,SideToMove};
+pub use encoding::get_info_table;
+pub use generation::{Generator, Outcome, SideToMove};
 pub use indexer::{index, index_unchecked, restore_from_index};
 pub use indexer_syzygy::{Pieces, Table};
 pub use material::Material;
