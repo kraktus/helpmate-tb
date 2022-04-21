@@ -3,8 +3,6 @@ use itertools::Itertools as _;
 use shakmaty::Bitboard;
 use shakmaty::{File, Piece, Rank, Role, Square};
 
- // DEBUG
-
 use crate::{get_info_table, Material, SideToMove};
 
 const fn binomial(mut n: u64, k: u64) -> u64 {

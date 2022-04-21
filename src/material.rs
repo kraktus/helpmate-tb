@@ -211,10 +211,6 @@ impl Material {
         pieces
     }
 
-    pub(crate) fn pieces(&self) -> Pieces {
-        self.pieces_with_white_king(true)
-    }
-
     pub(crate) fn pieces_without_white_king(&self) -> Pieces {
         self.pieces_with_white_king(false)
     }
