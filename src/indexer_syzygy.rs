@@ -338,21 +338,6 @@ impl Consts {
     }
 }
 
-/// Descripton of encoding and compression for both sides of a table.
-// #[derive(Debug, Clone)]
-// struct FileData {
-//     sides: ArrayVec<GroupData, 2>,
-// }
-
-// impl FileData {
-//     fn new(pieces: [Pieces; 2], orders: [[u8; 2]; 2], file: usize) -> Self {
-//         let group_0 = GroupData::new(pieces[0].clone(), orders[0], file);
-//         let group_1 = GroupData::new(pieces[1].clone(), orders[1], file);
-//         let sides = ArrayVec::from([group_0, group_1]);
-//         Self { sides }
-//     }
-// }
-
 /// A Syzygy table.
 #[derive(Debug, Clone)]
 pub struct Table {
@@ -466,26 +451,10 @@ impl GroupData {
     }
 }
 
-// /// Description of encoding and compression.
-// #[derive(Debug)]
-// pub struct PairsData {
-//     // Piece configuration encoding info.
-//     groups: GroupData,
-// }
-
 impl Table {
-    // for white
-    // order: [4, 2], file: 0
-    // order: [2, 5], file: 1
-    // order: [2, 1], file: 2
-    // order: [3, 5], file: 3
-    // taken from cr --example fathom -- --path norm_factor_table -- "r1k5/p7/2K5/8/8/8/6P1/7R w - - 0 1"
-    // so KRPvKRP table
-    // for black order is always [0,0]
 
     pub fn new(material: &Material) -> Self {
         let material_info = get_info_table().get(material).unwrap().clone();
-        // let pieces: Pieces = material_info
         let files: ArrayVec<ArrayVec<GroupData, 2>, 4> = material_info.iter()
             .enumerate()
             .map(|(file, infos)| {
@@ -783,9 +752,6 @@ impl Table {
             group_sq += side.lens[next];
             next += 1;
         }
-
-        // Ok(Some((side, idx)))
-        // println!("{idx:?}");
         Ok(idx as usize) // u64
     }
 }
