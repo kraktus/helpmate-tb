@@ -228,22 +228,6 @@ mod tests {
     use shakmaty::Color::{Black, White};
 
     #[test]
-    fn test_pieces_from_material() {
-        let mat = Material::from_str("KBNvKRQ").unwrap();
-        let pieces: Pieces = (&[
-            White.knight(),
-            White.bishop(),
-            White.king(),
-            Black.rook(),
-            Black.queen(),
-            Black.king(),
-        ] as &[_])
-            .try_into()
-            .unwrap();
-        assert_eq!(mat.pieces(), pieces)
-    }
-
-    #[test]
     fn test_pieces_without_white_king_from_material() {
         let mat = Material::from_str("KBNvKRQ").unwrap();
         let pieces: Pieces = (&[
