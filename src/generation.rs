@@ -322,7 +322,7 @@ impl Generator {
             all_pos: Vec::default(),
             winner: White,
             counter: 0,
-            table: Table::new(material.pieces()),
+            table: Table::new(&material),
             material,
         }
     }

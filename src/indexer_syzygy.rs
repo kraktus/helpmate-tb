@@ -5,7 +5,7 @@ use shakmaty::{File, Piece, Rank, Role, Square};
 
 use shakmaty::{Color::*, Role::*}; // DEBUG
 
-use crate::{Material, SideToMove};
+use crate::{get_info_table, Material, SideToMove};
 
 const fn binomial(mut n: u64, k: u64) -> u64 {
     if k > n {
@@ -24,7 +24,7 @@ const fn binomial(mut n: u64, k: u64) -> u64 {
     r
 }
 
-const MAX_PIECES: usize = 7; // DEBUG
+const MAX_PIECES: usize = 7;
 
 /// Maps squares into the a1-d1-d4 triangle.
 #[rustfmt::skip]
@@ -339,26 +339,26 @@ impl Consts {
 }
 
 /// Descripton of encoding and compression for both sides of a table.
-#[derive(Debug, Clone)]
-struct FileData {
-    sides: ArrayVec<GroupData, 2>,
-}
+// #[derive(Debug, Clone)]
+// struct FileData {
+//     sides: ArrayVec<GroupData, 2>,
+// }
 
-impl FileData {
-    fn new(pieces: Pieces, orders: [[u8; 2]; 2], file: usize) -> Self {
-        let group_0 = GroupData::new(pieces.clone(), orders[0], file);
-        let group_1 = GroupData::new(pieces.clone(), orders[1], file);
-        let sides = ArrayVec::from([group_0, group_1]);
-        Self { sides }
-    }
-}
+// impl FileData {
+//     fn new(pieces: [Pieces; 2], orders: [[u8; 2]; 2], file: usize) -> Self {
+//         let group_0 = GroupData::new(pieces[0].clone(), orders[0], file);
+//         let group_1 = GroupData::new(pieces[1].clone(), orders[1], file);
+//         let sides = ArrayVec::from([group_0, group_1]);
+//         Self { sides }
+//     }
+// }
 
 /// A Syzygy table.
 #[derive(Debug, Clone)]
 pub struct Table {
     num_unique_pieces: u8,
     min_like_man: u8,
-    files: ArrayVec<FileData, 4>,
+    files: ArrayVec<ArrayVec<GroupData, 2>, 4>,
 }
 
 /// Checks if a square is on the a1-h8 diagonal.
@@ -483,33 +483,18 @@ impl Table {
     // so KRPvKRP table
     // for black order is always [0,0]
 
-    pub fn new(_pieces: Pieces) -> Self {
-        let material = Material::from_iter(_pieces.clone());
-        let pieces: Pieces = ArrayVec::from_iter([
-            Piece {
-                color: Black,
-                role: King,
-            },
-            Piece {
-                color: White,
-                role: Bishop,
-            },
-            Piece {
-                color: White,
-                role: Knight,
-            },
-            Piece {
-                color: White,
-                role: King,
-            },
-        ]); // DEBUG
-        let files: ArrayVec<FileData, 4> = ArrayVec::from([
-            FileData::new(pieces.clone(), [[1, 15], [1, 15]], 0),
-            FileData::new(pieces.clone(), [[4, 2], [0, 15]], 1),
-            FileData::new(pieces.clone(), [[2, 5], [0, 15]], 2),
-            FileData::new(pieces.clone(), [[3, 5], [0, 15]], 3),
-        ]);
-        println!("files at the end {:?}", files[0].sides[0]);
+    pub fn new(material: &Material) -> Self {
+        let material_info = get_info_table().get(material).unwrap().clone();
+        // let pieces: Pieces = material_info
+        let files: ArrayVec<ArrayVec<GroupData, 2>, 4> = material_info.iter()
+            .enumerate()
+            .map(|(file, infos)| {
+                infos.iter()
+                    .map(|side| GroupData::new(side.pieces.clone(), side.order, file))
+                    .collect()
+            })
+            .collect();
+        println!("files at the end {:?}", files[0][0]);
         Self {
             num_unique_pieces: material.unique_pieces(),
             min_like_man: material.min_like_man(),
@@ -526,7 +511,7 @@ impl Table {
     /// the corresponding subtable.
     pub fn encode_checked(&self, pos: &dyn SideToMove) -> Result<usize, ()> {
         let key = Material::from_board(pos.board());
-        let material = Material::from_iter(self.files[0].sides[0].pieces.clone());
+        let material = Material::from_iter(self.files[0][0].pieces.clone());
         let key_check = key == material || key == material.clone().into_flipped();
 
         if !key_check {
@@ -545,7 +530,7 @@ impl Table {
         // For pawns there are subtables for each file (a, b, c, d) the
         // leading pawn can be placed on.
         let file = &self.files[if material.has_pawns() {
-            let reference_pawn = self.files[0].sides[0].pieces[0];
+            let reference_pawn = self.files[0][0].pieces[0];
             assert_eq!(reference_pawn.role, Role::Pawn);
             let color = reference_pawn.color ^ flip;
 
@@ -575,7 +560,7 @@ impl Table {
         }];
 
         // WDL tables have subtables for each side to move.
-        let side = &file.sides[if bside { file.sides.len() - 1 } else { 0 }];
+        let side = &file[if bside { file.len() - 1 } else { 0 }];
 
         // DTZ tables store only one side to move. It is possible that we have
         // to check the other side (by doing a 1-ply search).
@@ -809,30 +794,11 @@ impl Table {
 mod tests {
     use super::*;
     use shakmaty::{fen::Fen, CastlingMode, Chess};
-    
 
     #[test]
     fn text_encode_function_against_syzygy_value() {
-        let _material = Material::from_str("KBNvK").unwrap();
-        let pieces: Pieces = ArrayVec::from_iter([
-            Piece {
-                color: Black,
-                role: King,
-            },
-            Piece {
-                color: White,
-                role: Bishop,
-            },
-            Piece {
-                color: White,
-                role: Knight,
-            },
-            Piece {
-                color: White,
-                role: King,
-            },
-        ]);
-        let table = Table::new(pieces);
+        let material = Material::from_str("KBNvK").unwrap();
+        let table = Table::new(&material);
         let chess: Chess = Fen::from_ascii(b"8/8/8/8/8/8/8/KNBk4 w - - 0 1")
             .unwrap()
             .into_position(CastlingMode::Chess960)
