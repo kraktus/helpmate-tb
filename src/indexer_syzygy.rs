@@ -3,7 +3,7 @@ use itertools::Itertools as _;
 use shakmaty::Bitboard;
 use shakmaty::{File, Piece, Rank, Role, Square};
 
-use shakmaty::{fen::Fen, CastlingMode, Chess, Color::*, Role::*}; // DEBUG
+use shakmaty::{Color::*, Role::*}; // DEBUG
 
 use crate::{Material, SideToMove};
 
@@ -808,12 +808,12 @@ impl Table {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use shakmaty::{fen::Fen, CastlingMode, Chess, Color::*, Role::*, Square};
-    use std::path::Path;
+    use shakmaty::{fen::Fen, CastlingMode, Chess};
+    
 
     #[test]
     fn text_encode_function_against_syzygy_value() {
-        let material = Material::from_str("KBNvK").unwrap();
+        let _material = Material::from_str("KBNvK").unwrap();
         let pieces: Pieces = ArrayVec::from_iter([
             Piece {
                 color: Black,
