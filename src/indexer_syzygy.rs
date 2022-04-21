@@ -3,7 +3,7 @@ use itertools::Itertools as _;
 use shakmaty::Bitboard;
 use shakmaty::{File, Piece, Rank, Role, Square};
 
-use shakmaty::{Color::*, Role::*}; // DEBUG
+ // DEBUG
 
 use crate::{get_info_table, Material, SideToMove};
 
