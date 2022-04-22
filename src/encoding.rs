@@ -6,9 +6,9 @@ use arrayvec::ArrayVec;
 use serde;
 use serde::{de, Deserialize};
 use shakmaty::Piece;
+use std::collections::HashMap;
 use std::error::Error;
 use std::{fmt, fs};
- use std::collections::HashMap;
 
 #[derive(Clone, PartialEq, Eq, Hash, Deserialize)]
 pub struct GroupDataInfo {
