@@ -24,9 +24,6 @@ const fn binomial(mut n: u64, k: u64) -> u64 {
 
 const MAX_PIECES: usize = 7;
 
-pub const A1_H8_DIAG: Bitboard = Bitboard(9241421688590303745);
-pub const A8_H1_DIAG: Bitboard = Bitboard(72624976668147840);
-
 /// Maps squares into the a1-d1-d4 triangle.
 #[rustfmt::skip]
 const TRIANGLE: [u64; 64] = [
@@ -266,6 +263,10 @@ const PP_IDX: [[u64; 64]; 10] = [[
 /// The a7-a5-c5 triangle.
 const TEST45: Bitboard = Bitboard(0x1_0307_0000_0000);
 
+pub const A1_H8_DIAG: Bitboard = Bitboard(9241421688590303745);
+pub const A8_H1_DIAG: Bitboard = Bitboard(72624976668147840);
+const DIAGS: Bitboard = Bitboard(9241421688590303745 | 72624976668147840);
+
 const CONSTS: Consts = Consts::new();
 
 struct Consts {
@@ -349,7 +350,7 @@ pub struct Table {
 
 /// Checks if a square is on the a1-h8 diagonal.
 fn offdiag(sq: Square) -> bool {
-    sq.file().flip_diagonal() != sq.rank()
+    !A1_H8_DIAG.contains(sq)
 }
 
 /// Description of the encoding used for a piece configuration.
@@ -593,9 +594,10 @@ impl Table {
                 }
             }
 
-            for i in 0..dbg!(side.lens[0]) {
-                if squares[i].file().flip_diagonal() == squares[i].rank() {
             // println!("squares after flip_anti_diagonal {squares:?}");
+
+            for i in 0..material.count() {
+                if A1_H8_DIAG.contains(squares[i]) {
                     continue;
                 }
 
@@ -821,7 +823,7 @@ mod tests {
             .into_position(CastlingMode::Chess960)
             .unwrap();
         let idx = table.encode(&chess);
-        assert_eq!(idx, 0);
+        assert_eq!(idx, 1907795);
     }
 
     #[test]
@@ -833,7 +835,7 @@ mod tests {
             .into_position(CastlingMode::Chess960)
             .unwrap();
         let idx = table.encode(&chess);
-        assert_eq!(idx, 0);
+        assert_eq!(idx, 1907795);
     }
 
     #[test]

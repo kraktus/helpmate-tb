@@ -132,7 +132,6 @@ pub struct Queue {
 
 const A1_H1_H8: Bitboard = Bitboard(9277662557957324543);
 
-
 #[derive(Debug, Clone)]
 pub struct Generator {
     pub all_pos: Vec<ByColor<u8>>,
