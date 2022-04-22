@@ -450,14 +450,21 @@ impl GroupData {
 }
 
 impl Table {
-
     pub fn new(material: &Material) -> Self {
-        let material_info = get_info_table().get(material).unwrap().clone();
-        let files: ArrayVec<ArrayVec<GroupData, 2>, 4> = material_info.iter()
+        let material_info = get_info_table(material).unwrap();
+        let files: ArrayVec<ArrayVec<GroupData, 2>, 4> = material_info
+            .iter()
             .enumerate()
             .map(|(file, infos)| {
-                infos.iter()
-                    .map(|side| GroupData::new(ArrayVec::from_iter(side.pieces.clone().into_iter()), side.order, file))
+                infos
+                    .iter()
+                    .map(|side| {
+                        GroupData::new(
+                            ArrayVec::from_iter(side.pieces.clone().into_iter()),
+                            side.order,
+                            file,
+                        )
+                    })
                     .collect()
             })
             .collect();
