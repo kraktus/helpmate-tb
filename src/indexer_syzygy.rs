@@ -562,7 +562,7 @@ impl Table {
             used.add(square);
         }
 
-        println!("initial squares {squares:?}");
+        // println!("initial squares {squares:?}");
 
         assert!(squares.len() >= 2);
 
@@ -573,7 +573,7 @@ impl Table {
             }
         }
 
-        println!("squares after flip_horizontal {squares:?}");
+        // println!("squares after flip_horizontal {squares:?}");
 
         let mut idx = if material.has_pawns() {
             let mut idx = CONSTS.lead_pawn_idx[lead_pawns_count][usize::from(squares[0])];
@@ -595,6 +595,7 @@ impl Table {
 
             for i in 0..dbg!(side.lens[0]) {
                 if squares[i].file().flip_diagonal() == squares[i].rank() {
+            // println!("squares after flip_anti_diagonal {squares:?}");
                     continue;
                 }
 
@@ -606,7 +607,30 @@ impl Table {
 
                 break;
             }
-            println!("squares after flip_diagonal {squares:?}");
+            // println!("squares after flip_diagonal {squares:?}");
+            // let squares_bb = squares.iter().fold(Bitboard::EMPTY, |bb, sq| bb | *sq);
+            // dbg!(squares_bb);
+
+            // if DIAGS.is_superset(squares_bb) {
+            //     println!("{:?}", "GO");
+            //     for i in 0..dbg!(side.lens[0]) {
+            //         if A1_H8_DIAG.contains(squares[i]) {
+            //             println!("{:?}", "CONTINUE");
+            //             continue;
+            //         }
+
+            //         if squares[i].rank().flip_diagonal() > squares[i].file() {
+            //             println!("{:?}", "FLIP");
+            //             for square in &mut squares[i..] {
+            //                 *square = square.flip_diagonal();
+            //             }
+            //         }
+            //         println!("{:?}", "BREAK");
+            //         break;
+            //     }
+            // }
+
+            // println!("squares after flip_diagonal 2 {squares:?}");
 
             if self.num_unique_pieces > 2 {
                 let adjust1 = if squares[1] > squares[0] { 1 } else { 0 };
@@ -735,7 +759,7 @@ impl Table {
             }
         };
 
-        println!("idx before remaining pawns {idx}");
+        // println!("idx before remaining pawns {idx}");
         idx *= side.factors[0];
 
         // Encode remaining pawns.
@@ -747,7 +771,7 @@ impl Table {
             let (prev_squares, group_squares) = squares.split_at_mut(group_sq);
             let group_squares = &mut group_squares[..lens];
             group_squares.sort_unstable();
-            println!("prev {prev_squares:?}, group: {group_squares:?}");
+            // println!("prev {prev_squares:?}, group: {group_squares:?}");
 
             let mut n = 0;
 
