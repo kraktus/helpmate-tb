@@ -13,5 +13,5 @@ indicatif = "0.16.2"
 itertools = "0.10.3"
 dhat = "0.2.4"
 
-[profile.release] # for profiling only # dhat
-debug = 1
+# [profile.release] # for profiling only # dhat
+# debug = 1

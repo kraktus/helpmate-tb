@@ -457,7 +457,7 @@ impl Table {
             .enumerate()
             .map(|(file, infos)| {
                 infos.iter()
-                    .map(|side| GroupData::new(side.pieces.clone(), side.order, file))
+                    .map(|side| GroupData::new(ArrayVec::from_iter(side.pieces.clone().into_iter()), side.order, file))
                     .collect()
             })
             .collect();
