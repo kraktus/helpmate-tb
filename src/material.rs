@@ -19,9 +19,14 @@ use std::{
     fmt,
 };
 
+use serde::Deserialize;
+use serde::Deserializer;
 use shakmaty::{Board, ByColor, ByRole, Color, Piece, Role};
 
 use crate::Pieces;
+
+use serde;
+use serde::de;
 
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub(crate) struct MaterialSide {
@@ -219,6 +224,32 @@ impl Material {
 impl fmt::Display for Material {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}v{}", self.by_color.white, self.by_color.black)
+    }
+}
+
+struct MaterialVisitor;
+
+impl<'de> de::Visitor<'de> for MaterialVisitor {
+    type Value = Material;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a string containing json data")
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Material::from_str(v).unwrap())
+    }
+}
+
+impl<'de> Deserialize<'de> for Material {
+    fn deserialize<D>(deserializer: D) -> Result<Material, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_any(MaterialVisitor)
     }
 }
 

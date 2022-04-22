@@ -4,20 +4,17 @@ use crate::Material;
 use crate::Pieces;
 use arrayvec::ArrayVec;
 use serde;
-use serde::de;
+use serde::{de, Deserialize};
 use shakmaty::Piece;
 use std::error::Error;
 use std::{fmt, fs};
+ use std::collections::HashMap;
 
 #[derive(Clone, PartialEq, Eq, Hash, Deserialize)]
 pub struct GroupDataInfo {
     #[serde(deserialize_with = "deserialize_json_string")]
     pub pieces: Pieces,
     pub order: [u8; 2],
-}
-
-fn p(s: &str) -> Pieces {
-    s.chars().map(|c| Piece::from_char(c).unwrap()).collect()
 }
 
 fn deserialize_json_string<'de, D>(deserializer: D) -> Result<Pieces, D::Error>
@@ -39,7 +36,7 @@ where
         {
             // unfortunately we lose some typed information
             // from errors deserializing the json string
-            Ok(p(v))
+            Ok(v.chars().map(|c| Piece::from_char(c).unwrap()).collect())
         }
     }
 
@@ -50,6 +47,7 @@ where
 pub type InfoTable = ArrayVec<ArrayVec<GroupDataInfo, 2>, 4>;
 
 pub fn get_info_table(m: &Material) -> Result<InfoTable, Box<dyn Error>> {
-    let input = fs::read_to_string("encoding.json")?;
-    // let vec: Vec<String
+    let data = fs::read_to_string("encoding.json")?;
+    let map: HashMap<Material, InfoTable> = serde_json::from_str(&data)?;
+    Ok(map.get(m).unwrap().clone())
 }

@@ -183,9 +183,9 @@ impl Generator {
                         // let expected_rboard = RetroBoard::new_no_pockets("8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1").unwrap();
                         let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
                         let all_pos_idx = self.table.encode(&chess);
-                        if rboard.board().kings() == Bitboard::EMPTY | Square::C3 | Square::F3 {
-                            println!("rboard kings found {rboard:?}, idx: {all_pos_idx:?}");
-                        }
+                        // if rboard.board().kings() == Bitboard::EMPTY | Square::C3 | Square::F3 {
+                        //     println!("rboard kings found {rboard:?}, idx: {all_pos_idx:?}");
+                        // }
                         //println!("all_pos_idx: {all_pos_idx:?}");
                         // Check that position is generated for the first time/index schema is injective
                         if all_pos_idx == 1907795 {
