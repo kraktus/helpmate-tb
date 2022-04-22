@@ -131,6 +131,8 @@ pub struct Queue {
 }
 
 const A1_H8_DIAG: Bitboard = Bitboard(9241421688590303745);
+const A1_H1_H8: Bitboard = Bitboard(9277662557957324543);
+
 
 #[derive(Debug, Clone)]
 pub struct Generator {
@@ -152,8 +154,8 @@ impl Generator {
         match piece_vec {
             [piece, tail @ ..] => {
                 //println!("{:?}, setup: {:?}", piece, &setup);
-                let squares = if A1_H8_DIAG.is_superset(setup.board.occupied()) {
-                    Bitboard(9277662557957324543) // a1-h1-h8 corner
+                let squares = if false && A1_H8_DIAG.is_superset(setup.board.occupied()) {
+                    A1_H1_H8
                 } else {
                     Bitboard::FULL // white king handled in `generate_positions`
                 };
@@ -188,7 +190,7 @@ impl Generator {
                         // }
                         //println!("all_pos_idx: {all_pos_idx:?}");
                         // Check that position is generated for the first time/index schema is injective
-                        if all_pos_idx == 1907795 {
+                        if all_pos_idx == 242414 {
                             println!("Idx: {all_pos_idx:?}, rboard: {rboard:?}");
                         }
                         if Outcome::Unknown != self.all_pos[all_pos_idx].got(&chess).into() {
@@ -218,6 +220,7 @@ impl Generator {
 
     pub fn generate_positions(&mut self) -> Queue {
         let piece_vec = self.material.pieces_without_white_king();
+        println!("{piece_vec:?}");
         let pb = self.get_progress_bar();
         self.counter = 0;
         let mut queue = Queue::default();

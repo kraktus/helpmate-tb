@@ -559,6 +559,8 @@ impl Table {
             used.add(square);
         }
 
+        println!("initial squares {squares:?}");
+
         assert!(squares.len() >= 2);
 
         // Now we can compute the index according to the piece positions.
@@ -727,6 +729,7 @@ impl Table {
             }
         };
 
+        println!("idx before remaining pawns {idx}");
         idx *= side.factors[0];
 
         // Encode remaining pawns.
@@ -738,6 +741,7 @@ impl Table {
             let (prev_squares, group_squares) = squares.split_at_mut(group_sq);
             let group_squares = &mut group_squares[..lens];
             group_squares.sort_unstable();
+            println!("prev {prev_squares:?}, group: {group_squares:?}");
 
             let mut n = 0;
 
@@ -767,7 +771,7 @@ mod tests {
     use shakmaty::{fen::Fen, CastlingMode, Chess};
 
     #[test]
-    fn text_encode_function_against_syzygy_value() {
+    fn test_encode_function_against_syzygy_value() {
         let material = Material::from_str("KBNvK").unwrap();
         let table = Table::new(&material);
         let chess: Chess = Fen::from_ascii(b"8/8/8/8/8/8/8/KNBk4 w - - 0 1")
@@ -776,5 +780,72 @@ mod tests {
             .unwrap();
         let idx = table.encode(&chess);
         assert_eq!(idx, 484157);
+    }
+
+    #[test]
+    fn test_encode_non_recognised_symetry_syzygy_index_1() {
+        let material = Material::from_str("KBNvK").unwrap();
+        let table = Table::new(&material);
+        let chess: Chess = Fen::from_ascii(b"8/8/2B5/3N4/8/2k2K2/8/8 b - - 0 1")
+            .unwrap()
+            .into_position(CastlingMode::Chess960)
+            .unwrap();
+        let idx = table.encode(&chess);
+        assert_eq!(idx, 0);
+    }
+
+    #[test]
+    fn test_encode_non_recognised_symetry_syzygy_index_2() {
+        let material = Material::from_str("KBNvK").unwrap();
+        let table = Table::new(&material);
+        let chess: Chess = Fen::from_ascii(b"8/8/2K5/8/4N3/2k2B2/8/8 b - - 0 1")
+            .unwrap()
+            .into_position(CastlingMode::Chess960)
+            .unwrap();
+        let idx = table.encode(&chess);
+        assert_eq!(idx, 0);
+    }
+
+    #[test]
+    fn test_encode_recognised_symetry_syzygy_index_1() {
+        let material = Material::from_str("KBNvK").unwrap();
+        let table = Table::new(&material);
+        let chess: Chess = Fen::from_ascii(b"8/8/8/8/8/8/N7/KBk5 b - - 0 1")
+            .unwrap()
+            .into_position(CastlingMode::Chess960)
+            .unwrap();
+        let idx = table.encode(&chess);
+        assert_eq!(idx, 242414);
+    }
+
+    #[test]
+    fn test_encode_recognised_symetry_syzygy_index_2() {
+        let material = Material::from_str("KBNvK").unwrap();
+        let table = Table::new(&material);
+        let chess: Chess = Fen::from_ascii(b"8/8/8/8/8/k7/B7/KN6 b - - 0 1")
+            .unwrap()
+            .into_position(CastlingMode::Chess960)
+            .unwrap();
+        let idx = table.encode(&chess);
+        assert_eq!(idx, 242414);
+    }
+
+    #[test]
+    fn test_encode_switch_bishop_and_knight() {
+        let material = Material::from_str("KBNvK").unwrap();
+        let table = Table::new(&material);
+        let chess: Chess = Fen::from_ascii(b"8/8/2N5/3B4/8/2K2k2/8/8 b - - 0 1")
+            .unwrap()
+            .into_position(CastlingMode::Chess960)
+            .unwrap();
+
+        let chess_2: Chess = Fen::from_ascii(b"8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1")
+            .unwrap()
+            .into_position(CastlingMode::Chess960)
+            .unwrap();
+        let idx = table.encode(&chess);
+        let idx_2 = table.encode(&chess_2);
+        assert_eq!(idx, 1907429);
+        assert_eq!(idx_2, 1907795);
     }
 }
