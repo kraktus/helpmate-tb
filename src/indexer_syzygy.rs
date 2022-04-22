@@ -24,6 +24,9 @@ const fn binomial(mut n: u64, k: u64) -> u64 {
 
 const MAX_PIECES: usize = 7;
 
+pub const A1_H8_DIAG: Bitboard = Bitboard(9241421688590303745);
+pub const A8_H1_DIAG: Bitboard = Bitboard(72624976668147840);
+
 /// Maps squares into the a1-d1-d4 triangle.
 #[rustfmt::skip]
 const TRIANGLE: [u64; 64] = [
@@ -478,7 +481,7 @@ impl Table {
 
     pub fn encode(&self, pos: &dyn SideToMove) -> usize {
         self.encode_checked(pos)
-            .expect("Valid index, it not sure use `encode_checked`")
+            .expect("Valid index, if not sure use `encode_checked`")
     }
 
     /// Given a position, determine the unique (modulo symmetries) index into
@@ -570,6 +573,8 @@ impl Table {
             }
         }
 
+        println!("squares after flip_horizontal {squares:?}");
+
         let mut idx = if material.has_pawns() {
             let mut idx = CONSTS.lead_pawn_idx[lead_pawns_count][usize::from(squares[0])];
 
@@ -588,7 +593,7 @@ impl Table {
                 }
             }
 
-            for i in 0..side.lens[0] {
+            for i in 0..dbg!(side.lens[0]) {
                 if squares[i].file().flip_diagonal() == squares[i].rank() {
                     continue;
                 }
@@ -601,6 +606,7 @@ impl Table {
 
                 break;
             }
+            println!("squares after flip_diagonal {squares:?}");
 
             if self.num_unique_pieces > 2 {
                 let adjust1 = if squares[1] > squares[0] { 1 } else { 0 };
@@ -786,7 +792,7 @@ mod tests {
     fn test_encode_non_recognised_symetry_syzygy_index_1() {
         let material = Material::from_str("KBNvK").unwrap();
         let table = Table::new(&material);
-        let chess: Chess = Fen::from_ascii(b"8/8/2B5/3N4/8/2k2K2/8/8 b - - 0 1")
+        let chess: Chess = Fen::from_ascii(b"8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1")
             .unwrap()
             .into_position(CastlingMode::Chess960)
             .unwrap();
@@ -798,7 +804,7 @@ mod tests {
     fn test_encode_non_recognised_symetry_syzygy_index_2() {
         let material = Material::from_str("KBNvK").unwrap();
         let table = Table::new(&material);
-        let chess: Chess = Fen::from_ascii(b"8/8/2K5/8/4N3/2k2B2/8/8 b - - 0 1")
+        let chess: Chess = Fen::from_ascii(b"8/8/2k5/8/4N3/2K2B2/8/8 w - - 0 1")
             .unwrap()
             .into_position(CastlingMode::Chess960)
             .unwrap();

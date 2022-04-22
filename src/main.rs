@@ -7,7 +7,7 @@ mod material;
 pub use encoding::get_info_table;
 pub use generation::{Generator, Outcome, SideToMove};
 pub use indexer::{index, index_unchecked, restore_from_index};
-pub use indexer_syzygy::{Pieces, Table};
+pub use indexer_syzygy::{Pieces, Table, A1_H8_DIAG, A8_H1_DIAG};
 pub use material::Material;
 
 use std::collections::HashMap;

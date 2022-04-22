@@ -1,4 +1,4 @@
-use crate::{index, index_unchecked, restore_from_index, Material, Table};
+use crate::{index, index_unchecked, restore_from_index, Material, Table, A1_H8_DIAG};
 use retroboard::RetroBoard;
 use shakmaty::{
     Bitboard, Board, ByColor, CastlingMode, CastlingMode::Standard, Chess, Color, Color::Black,
@@ -130,7 +130,6 @@ pub struct Queue {
     pub losing_pos_to_process: VecDeque<u64>,
 }
 
-const A1_H8_DIAG: Bitboard = Bitboard(9241421688590303745);
 const A1_H1_H8: Bitboard = Bitboard(9277662557957324543);
 
 
