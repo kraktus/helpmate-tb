@@ -5,7 +5,7 @@ mod indexer_syzygy;
 mod material;
 
 pub use encoding::get_info_table;
-pub use generation::{Generator, Outcome, SideToMove};
+pub use generation::{Generator, Outcome, SideToMove, UNKNOWN_OUTCOME_BYCOLOR};
 pub use indexer::{index, index_unchecked, restore_from_index};
 pub use indexer_syzygy::{Pieces, Table, A1_H8_DIAG, A8_H1_DIAG};
 pub use material::Material;
@@ -42,27 +42,31 @@ fn main() {
     let mut win = 0;
     let mut lose = 0;
     let mut distrib: HashMap<Outcome, u64> = HashMap::new();
-    let mut max_index: usize = 0;
+    let mut unkown_outcome: usize = 0;
 
-    for (i, by_color_outcome) in gen.all_pos.iter().enumerate() {
-        // println!("{:?}", by_color_outcome);
+    for by_color_outcome in gen.all_pos.iter() {
+        if &UNKNOWN_OUTCOME_BYCOLOR == by_color_outcome {
+            unkown_outcome += 2;
+            continue;
+        };
         for value in by_color_outcome.iter() {
             let outcome: Outcome = (*value).into();
-            if outcome != Outcome::Unknown {
-                max_index = i;
-            }
             distrib.insert(outcome, *distrib.get(&outcome).unwrap_or(&0) + 1);
             match outcome {
                 Outcome::Draw => draw += 1,
                 Outcome::Win(_) => win += 1,
                 Outcome::Lose(_) => lose += 1,
-                Outcome::Unknown => (),
+                Outcome::Unknown => unkown_outcome += 1,
             }
         }
     }
     println!(
-        "From {:?} perspective, win: {:?}, draw: {:?}, lost: {:?}, max index: {:?}",
-        gen.winner, win, draw, lose, max_index
+        "From {:?} perspective, win: {win:?}, draw: {draw:?}, lost: {lose:?}",
+        gen.winner
+    );
+    println!(
+        "Index density = {:?}%",
+        (gen.all_pos.len() * 2 - unkown_outcome) * 100 / (gen.all_pos.len() * 2)
     );
     for i in 0..u8::MAX {
         if let Some(nb_win) = distrib.get(&Outcome::Win(i)) {

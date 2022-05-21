@@ -15,5 +15,5 @@ dhat = "0.2.4"
 serde_json = "1"
 serde = { version = "1.0", features = ["derive"] }
 
-# [profile.release] # for profiling only # dhat
-# debug = 1
+[profile.release] # for profiling only # dhat
+debug = 1

@@ -65,6 +65,11 @@ pub enum Outcome {
     Unknown,
 }
 
+pub const UNKNOWN_OUTCOME_BYCOLOR: ByColor<u8> = ByColor {
+    black: 255,
+    white: 255,
+};
+
 impl From<u8> for Outcome {
     fn from(u: u8) -> Self {
         match u {
@@ -152,7 +157,7 @@ impl Generator {
         match piece_vec {
             [piece, tail @ ..] => {
                 //println!("{:?}, setup: {:?}", piece, &setup);
-                let squares = if false && A1_H8_DIAG.is_superset(setup.board.occupied()) {
+                let squares = if A1_H8_DIAG.is_superset(setup.board.occupied()) {
                     A1_H1_H8
                 } else {
                     Bitboard::FULL // white king handled in `generate_positions`
@@ -222,13 +227,7 @@ impl Generator {
         let pb = self.get_progress_bar();
         self.counter = 0;
         let mut queue = Queue::default();
-        self.all_pos = vec![
-            ByColor {
-                black: 255,
-                white: 255
-            };
-            self.get_nb_pos() as usize / 10 * 9
-        ]; // heuristic, less than 90% of pos are legals. Takes x2 (because each stored element is in fact 1 position, but with black and white to turn) more than number of legal positions
+        self.all_pos = vec![UNKNOWN_OUTCOME_BYCOLOR; self.get_nb_pos() as usize / 10 * 9]; // heuristic, less than 90% of pos are legals. Takes x2 (because each stored element is in fact 1 position, but with black and white to turn) more than number of legal positions
         let white_king_bb = Bitboard(135007759); // a1-d1-d4 triangle
         println!("{:?}", white_king_bb.0);
         for white_king_sq in white_king_bb {
@@ -238,6 +237,10 @@ impl Generator {
         }
         pb.finish_with_message("positions generated");
         println!("all_pos_vec capacity: {}", self.all_pos.capacity());
+        while Some(&UNKNOWN_OUTCOME_BYCOLOR) == self.all_pos.last() {
+            self.all_pos.pop();
+        }
+
         self.all_pos.shrink_to_fit();
         println!(
             "all_pos_vec capacity: {} after shrinking",
