@@ -2,7 +2,7 @@ use crate::{index, index_unchecked, restore_from_index, Material, Table, A1_H8_D
 use retroboard::RetroBoard;
 use shakmaty::{
     Bitboard, Board, ByColor, CastlingMode, CastlingMode::Standard, Chess, Color, Color::Black,
-    Color::White, FromSetup, Piece, Position, PositionError, Setup, Square,
+    Color::White, FromSetup, Piece, Position, PositionError, Setup,
 };
 use std::collections::VecDeque;
 use std::ops::{Add, Not};

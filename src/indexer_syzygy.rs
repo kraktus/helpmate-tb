@@ -265,7 +265,6 @@ const TEST45: Bitboard = Bitboard(0x1_0307_0000_0000);
 
 pub const A1_H8_DIAG: Bitboard = Bitboard(9241421688590303745);
 pub const A8_H1_DIAG: Bitboard = Bitboard(72624976668147840);
-const DIAGS: Bitboard = Bitboard(9241421688590303745 | 72624976668147840);
 
 const CONSTS: Consts = Consts::new();
 
