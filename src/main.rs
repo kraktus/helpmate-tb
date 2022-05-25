@@ -1,3 +1,4 @@
+mod compression;
 mod encoding;
 mod generation;
 mod indexer;
@@ -5,7 +6,7 @@ mod indexer_syzygy;
 mod material;
 
 pub use encoding::get_info_table;
-pub use generation::{Generator, Outcome, SideToMove, UNKNOWN_OUTCOME_BYCOLOR};
+pub use generation::{Generator, Outcome, Outcomes, SideToMove, UNKNOWN_OUTCOME_BYCOLOR};
 pub use indexer::{index, index_unchecked, restore_from_index};
 pub use indexer_syzygy::{Pieces, Table, A1_H8_DIAG, A8_H1_DIAG};
 pub use material::Material;
@@ -71,6 +72,12 @@ fn main() {
     for i in 0..u8::MAX {
         if let Some(nb_win) = distrib.get(&Outcome::Win(i)) {
             println!("Win({}), {:?}", i, nb_win);
+        }
+    }
+
+    for i in 0..u8::MAX {
+        if let Some(nb_win) = distrib.get(&Outcome::Lose(i)) {
+            println!("Lose({}), {:?}", i, nb_win);
         }
     }
 }

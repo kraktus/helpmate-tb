@@ -10,6 +10,7 @@ use std::ops::{Add, Not};
 use indicatif::{ProgressBar, ProgressStyle};
 
 // Allow to use both `Chess` and `RetroBoard`
+// TODO replace all `dyn SideToMove` by enum using `enum_trait` crate for example
 pub trait SideToMove {
     // side to **move**, so opposite of side to unmove
     fn side_to_move(&self) -> Color;
@@ -55,6 +56,8 @@ impl SideToMoveGetter for ByColor<u8> {
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct OutcomeOutOfBound;
+
+pub type Outcomes = Vec<ByColor<u8>>;
 
 /// According to winnner set in `Generator`
 #[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
@@ -139,7 +142,7 @@ const A1_H1_H8: Bitboard = Bitboard(9277662557957324543);
 
 #[derive(Debug, Clone)]
 pub struct Generator {
-    pub all_pos: Vec<ByColor<u8>>,
+    pub all_pos: Outcomes,
     pub winner: Color,
     pub counter: u64,
     material: Material,
