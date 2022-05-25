@@ -1,4 +1,4 @@
-use std::io::{self, Write, ErrorKind::InvalidData};
+use std::io::{self, ErrorKind::InvalidData, Write};
 
 use deku::prelude::*;
 use positioned_io::ReadAt;
@@ -91,9 +91,10 @@ impl<T: ReadAt> EncoderDecoder<T> {
 
     fn decompress_block(&self, byte_offset: u64) -> io::Result<Outcomes> {
         let block_header = self.decompress_block_header(byte_offset)?;
-        let mut block_buf: Vec<u8> = Vec::with_capacity(BlockHeader::BYTE_SIZE + block_header.block_size as usize); // we read the header a second time but not a big deal
+        let mut block_buf: Vec<u8> =
+            Vec::with_capacity(BlockHeader::BYTE_SIZE + block_header.block_size as usize); // we read the header a second time but not a big deal
         self.inner.read_exact_at(byte_offset, &mut block_buf)?;
-        todo!()
+        from_bytes_exact::<Block>(&block_buf)?.decompress_outcomes()
     }
 }
 
@@ -120,7 +121,11 @@ struct RawOutcomes([OutcomeByColor; BLOCK_ELEMENTS]);
 
 impl From<RawOutcomes> for Outcomes {
     fn from(raw_outcomes: RawOutcomes) -> Self {
-        raw_outcomes.0.into_iter().map(<ByColor<u8>>::from).collect()
+        raw_outcomes
+            .0
+            .into_iter()
+            .map(<ByColor<u8>>::from)
+            .collect()
     }
 }
 
@@ -135,10 +140,11 @@ impl Block {
 }
 
 fn from_bytes_exact<'a, T: deku::DekuContainerRead<'a>>(buf: &'a [u8]) -> io::Result<T> {
-        let ((byte_not_read, bit_offset), t) = T::from_bytes((buf, 0)).map_err(|e| io::Error::new(InvalidData, e))?;
-        assert!(byte_not_read.is_empty());  // since we read the exact number of byte needed to build the struct, there should be no byte left.
-        assert_eq!(bit_offset, 0); // there should never be **bit** offset neither when reader the header or after it.
-        Ok(t)
+    let ((byte_not_read, bit_offset), t) =
+        T::from_bytes((buf, 0)).map_err(|e| io::Error::new(InvalidData, e))?;
+    assert!(byte_not_read.is_empty()); // since we read the exact number of byte needed to build the struct, there should be no byte left.
+    assert_eq!(bit_offset, 0); // there should never be **bit** offset neither when reader the header or after it.
+    Ok(t)
 }
 
 #[cfg(test)]
@@ -148,7 +154,6 @@ mod tests {
 
     #[test]
     fn test_block_header_size() {
-        assert_eq!(Size::of::<BlockHeader>(),Size::Bits(BYTE_SIZE * 8))
+        assert_eq!(Size::of::<BlockHeader>(), Size::Bits(BYTE_SIZE * 8))
     }
-
 }
