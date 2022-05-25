@@ -76,7 +76,7 @@ impl<T: Write> EncoderDecoder<T> {
 
                 compressed_outcome,
             };
-            self.inner.write(&block.to_bytes().unwrap())?;
+            self.inner.write_all(&block.to_bytes().unwrap())?;
         }
         Ok(())
     }
@@ -102,7 +102,7 @@ impl<T: ReadAt> EncoderDecoder<T> {
 struct BlockHeader {
     pub index_from: u64, // inclusive
     pub index_to: u64,   // exclusive
-    pub block_size: u64, // number of bytes the actual size of the block. Should be close to `BLOCK_SIZE`, except for the last block
+    pub block_size: u64, // number of bytes the actual size of the block. Should be close to `BLOCK_SIZE` / 10, except for the last block
 }
 
 impl BlockHeader {
@@ -131,11 +131,11 @@ impl From<RawOutcomes> for Outcomes {
 
 impl Block {
     pub fn decompress_outcomes(&self) -> io::Result<Outcomes> {
-        let mut uncompressed_outcome_writer: Vec<u8> = Vec::with_capacity(BLOCK_SIZE); // TODO switch to array
+        let mut uncompressed_outcome_writer: Vec<u8> = Vec::with_capacity(BLOCK_SIZE);
         let mut decoder = ZstdDecoder::new(&mut uncompressed_outcome_writer)?;
-        decoder.write(&self.compressed_outcome)?;
+        decoder.write_all(&self.compressed_outcome)?;
         decoder.flush()?;
-        from_bytes_exact::<RawOutcomes>(&decoder.into_inner()).map(Outcomes::from)
+        from_bytes_exact::<RawOutcomes>(decoder.into_inner()).map(Outcomes::from)
     }
 }
 
