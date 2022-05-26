@@ -1,10 +1,12 @@
 mod compression;
 mod encoding;
+mod file_handler;
 mod generation;
 mod indexer;
 mod indexer_syzygy;
 mod material;
 
+pub use compression::EncoderDecoder;
 pub use encoding::get_info_table;
 pub use generation::{Generator, Outcome, Outcomes, SideToMove, UNKNOWN_OUTCOME_BYCOLOR};
 pub use indexer::{index, index_unchecked, restore_from_index};
@@ -22,7 +24,7 @@ static ALLOCATOR: DhatAlloc = DhatAlloc;
 
 fn main() {
     let _dhat = Dhat::start_heap_profiling();
-    let mut gen = Generator::new("KBNvK");
+    let mut gen = Generator::new("KQvK");
     let mut q = gen.generate_positions();
     println!("nb pos {:?}", gen.all_pos.len());
     println!("counter {:?}", gen.counter);
@@ -45,6 +47,7 @@ fn main() {
     let mut distrib: HashMap<Outcome, u64> = HashMap::new();
     let mut unkown_outcome: usize = 0;
 
+    println!("{:?}", gen.all_pos);
     for by_color_outcome in gen.all_pos.iter() {
         if &UNKNOWN_OUTCOME_BYCOLOR == by_color_outcome {
             unkown_outcome += 2;

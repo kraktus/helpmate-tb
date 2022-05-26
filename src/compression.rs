@@ -51,7 +51,7 @@ impl<T> EncoderDecoder<T> {
 
 impl<T: Write> EncoderDecoder<T> {
     pub fn compress(&mut self, outcomes: &Outcomes) -> io::Result<()> {
-        for (i, elements) in outcomes.chunks(BLOCK_ELEMENTS).enumerate() {
+        Ok(for (i, elements) in outcomes.chunks(BLOCK_ELEMENTS).enumerate() {
             let index_from = u64::try_from(BLOCK_ELEMENTS * i).unwrap();
             let block_size = u64::try_from(elements.len()).unwrap();
             let index_to = index_from + block_size;
@@ -77,8 +77,7 @@ impl<T: Write> EncoderDecoder<T> {
                 compressed_outcome,
             };
             self.inner.write_all(&block.to_bytes().unwrap())?;
-        }
-        Ok(())
+        })
     }
 }
 
@@ -154,6 +153,15 @@ mod tests {
 
     #[test]
     fn test_block_header_size() {
-        assert_eq!(Size::of::<BlockHeader>(), Size::Bits(BYTE_SIZE * 8))
+        assert_eq!(Size::of::<BlockHeader>(), Size::Bits(BlockHeader::BYTE_SIZE * 8))
+    }
+
+
+    #[test]
+    fn test_compression_soundness() {
+        // let outcomes: Outcomes = vec![ByColor { black: 134, white: 137 }, ByColor { black: 134, white: 255 }, ByColor { black: 134, white: 137 }, ByColor { black: 136, white: 137 }, ByColor { black: 134, white: 137 }, ByColor { black: 134, white: 255 }, ByColor { black: 134, white: 137 }, ByColor { black: 134, white: 137 }];
+        // let writer: Vec<u8> = Vec::new();
+        // let encoder = EncoderDecoder::new(writer);
+
     }
 }
