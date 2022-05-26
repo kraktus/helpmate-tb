@@ -100,7 +100,7 @@ impl fmt::Display for MaterialSide {
 impl fmt::Debug for MaterialSide {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.count() > 0 {
-            self.fmt(f)
+            <Self as fmt::Display>::fmt(self, f)
         } else {
             f.write_str("-")
         }
