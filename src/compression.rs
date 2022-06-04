@@ -3,9 +3,9 @@ use std::io::{self, ErrorKind::InvalidData, Write};
 use deku::prelude::*;
 use positioned_io::ReadAt;
 use shakmaty::ByColor;
-use zstd::stream::write::{Decoder as ZstdDecoder, Encoder as ZstdEncoder};
+use zstd::stream::{decode_all, encode_all};
 
-use crate::Outcomes;
+use crate::{Outcomes, OutcomesSlice};
 
 // in byte, the size of the uncompressed block we want
 const BLOCK_SIZE: usize = 500 * 1000000;
@@ -50,35 +50,22 @@ impl<T> EncoderDecoder<T> {
     }
 }
 
+
+// TODO replace by inlined function
+macro_rules! to_u64 {
+    ($expression:expr) => {
+        u64::try_from($expression).unwrap()
+    };
+}
+
 impl<T: Write> EncoderDecoder<T> {
     pub fn compress(&mut self, outcomes: &Outcomes) -> io::Result<()> {
         Ok(
             for (i, elements) in outcomes.chunks(BLOCK_ELEMENTS).enumerate() {
-                let index_from = u64::try_from(BLOCK_ELEMENTS * i).unwrap();
-                let block_size = u64::try_from(elements.len()).unwrap();
-                let index_to = index_from + block_size;
-                let block_elements: Vec<u8> = elements
-                    .iter()
-                    .flat_map(|c| OutcomeByColor::from(c).to_bytes().unwrap())
-                    .collect();
-                let compressed_outcome_writer: Vec<u8> = Vec::with_capacity(BLOCK_ELEMENTS); // writing in memory is much faster than in a file
-                let mut encoder = ZstdEncoder::new(compressed_outcome_writer, 21)?; // set compression level to the maximum
-                let compressed_block_size = encoder.write(&dbg!(block_elements))?;
-                println!(
-                    "Compression ratio of the block {:?}",
-                    block_size / u64::try_from(compressed_block_size).unwrap()
-                );
-                let compressed_outcome = encoder.finish()?;
-                let block = Block {
-                    header: dbg!(BlockHeader {
-                        index_from,
-                        index_to,
-                        block_size,
-                    }),
-
-                    compressed_outcome,
-                };
-                self.inner.write_all(&block.to_bytes().unwrap())?;
+                let index_from = to_u64!(BLOCK_ELEMENTS * i);
+                let index_to = index_from + to_u64!(elements.len());
+                let block = Block::new(elements, index_from, index_to)?;
+                self.inner.write_all(&dbg!(block).to_bytes().unwrap())?;
             },
         )
     }
@@ -88,14 +75,26 @@ impl<T: ReadAt> EncoderDecoder<T> {
     fn decompress_block_header(&self, byte_offset: u64) -> io::Result<BlockHeader> {
         let mut header_buf: [u8; BlockHeader::BYTE_SIZE] = [0; BlockHeader::BYTE_SIZE];
         self.inner.read_exact_at(byte_offset, &mut header_buf)?;
-        from_bytes_exact::<BlockHeader>(&header_buf)
+        dbg!(from_bytes_exact::<BlockHeader>(&header_buf))
     }
 
     fn decompress_block(&self, byte_offset: u64) -> io::Result<Block> {
         let block_header = self.decompress_block_header(byte_offset)?;
-        let mut block_buf: Vec<u8> = Vec::with_capacity(block_header.size_including_headers()); // we read the header a second time but not a big deal
-        self.inner.read_exact_at(byte_offset, &mut block_buf)?;
-        from_bytes_exact::<Block>(&block_buf)
+        // println!("size_including_headers {:?}", block_header.size_including_headers());
+        // let mut block_buf: Vec<u8> = Vec::with_capacity(block_header.size_including_headers());//vec![0; block_header.size_including_headers()]; // we read the header a second time but not a big deal
+        // for _ in 0..block_header.size_including_headers() {
+        //     block_buf.push(0);
+        // }
+        Ok(
+        Block {
+            header: block_header,
+            compressed_outcome: Vec::new(),
+        }
+        )
+        //println!("{block_buf:?}");
+        //Block::new(&[ByColor {white: 0, black: 0}], 0, 1) // DEBUG
+        // self.inner.read_exact_at(byte_offset, &mut block_buf)?;
+        // dbg!(from_bytes_exact::<Block>(dbg!(&block_buf)))
     }
 
     fn decompress(&self) -> io::Result<Outcomes> {
@@ -107,7 +106,7 @@ impl<T: ReadAt> EncoderDecoder<T> {
                     byte_offset += block.header.size_including_headers() as u64;
                     outcomes.extend(block.decompress_outcomes()?);
                 }
-                Err(ref err) if err.kind() == io::ErrorKind::UnexpectedEof => break,
+                Err(ref err) if err.kind() == io::ErrorKind::Interrupted => break, // or UnexpectedEof?
                 Err(err) => return Err(err),
             }
         }
@@ -153,12 +152,31 @@ impl From<RawOutcomes> for Outcomes {
 }
 
 impl Block {
+    pub fn new(elements: OutcomesSlice, index_from: u64, index_to: u64) -> io::Result<Block> {
+        let block_elements: Vec<u8> = elements
+            .iter()
+            .flat_map(|c| OutcomeByColor::from(c).to_bytes().unwrap())
+            .collect();
+        encode_all(block_elements.as_slice(), 21).map(|compressed_outcome| {
+            let block_size = to_u64!(compressed_outcome.len());
+            println!(
+                "Compression ratio of the block {:?}",
+                to_u64!(block_elements.len()) / block_size
+            );
+            Self {
+                header: dbg!(BlockHeader {
+                    index_from,
+                    index_to,
+                    block_size,
+                }),
+
+                compressed_outcome,
+            }
+        })
+    }
     pub fn decompress_outcomes(&self) -> io::Result<Outcomes> {
-        let mut uncompressed_outcome_writer: Vec<u8> = Vec::with_capacity(BLOCK_SIZE);
-        let mut decoder = ZstdDecoder::new(&mut uncompressed_outcome_writer)?;
-        decoder.write_all(&self.compressed_outcome)?;
-        decoder.flush()?;
-        from_bytes_exact::<RawOutcomes>(decoder.into_inner()).map(Outcomes::from)
+        from_bytes_exact::<RawOutcomes>(&decode_all(self.compressed_outcome.as_slice())?)
+            .map(Outcomes::from)
     }
 }
 
@@ -175,21 +193,45 @@ mod tests {
     use super::*;
     use deku::ctx::Size;
 
+    const DUMMY_NUMBER: usize = 10000;
+
+    fn dummy_outcomes() -> Outcomes {
+        let mut outcomes = Outcomes::with_capacity(DUMMY_NUMBER);
+        for i in 0..DUMMY_NUMBER {
+            let j = u8::try_from(i % 256).unwrap();
+            outcomes.push(ByColor { black: j, white: j })
+        }
+        outcomes
+    }
+
     #[test]
     fn test_block_header_size() {
+        let test = BlockHeader {
+            index_from: 0,
+            index_to: 1,
+            block_size: 0,
+        };
+        assert_eq!(BlockHeader::BYTE_SIZE, test.to_bytes().unwrap().len());
         assert_eq!(
             Size::of::<BlockHeader>(),
-            Size::Bits(BlockHeader::BYTE_SIZE * 8)
+            Size::Bits(BlockHeader::BYTE_SIZE * 8),
         )
     }
 
     #[test]
+    fn test_block_byte_serialisation() {
+        let block = Block::new(&dummy_outcomes(), 0, to_u64!(DUMMY_NUMBER)).unwrap();
+        assert_eq!(
+            block.to_bytes().unwrap().len(),
+            block.header.size_including_headers()
+        );
+        let block_2 = from_bytes_exact::<Block>(&block.to_bytes().unwrap()).unwrap();
+        assert_eq!(block, block_2);
+    }
+
+    #[test]
     fn test_compression_soundness() {
-        let mut outcomes = Outcomes::with_capacity(10000);
-        for i in 0..10000 {
-            let j = u8::try_from(i % 256).unwrap();
-            outcomes.push(ByColor { black: j, white: j })
-        }
+        let outcomes = dummy_outcomes();
         let mut encoder = EncoderDecoder::new(Vec::<u8>::new());
         encoder.compress(&outcomes).expect("compression failed");
         println!("{:?}", encoder);

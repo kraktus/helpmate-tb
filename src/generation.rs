@@ -58,6 +58,7 @@ impl SideToMoveGetter for ByColor<u8> {
 pub struct OutcomeOutOfBound;
 
 pub type Outcomes = Vec<ByColor<u8>>;
+pub type OutcomesSlice<'a> = &'a [ByColor<u8>];
 
 /// According to winnner set in `Generator`
 #[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
