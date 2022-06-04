@@ -80,21 +80,22 @@ impl<T: ReadAt> EncoderDecoder<T> {
 
     fn decompress_block(&self, byte_offset: u64) -> io::Result<Block> {
         let block_header = self.decompress_block_header(byte_offset)?;
-        // println!("size_including_headers {:?}", block_header.size_including_headers());
-        // let mut block_buf: Vec<u8> = Vec::with_capacity(block_header.size_including_headers());//vec![0; block_header.size_including_headers()]; // we read the header a second time but not a big deal
-        // for _ in 0..block_header.size_including_headers() {
-        //     block_buf.push(0);
-        // }
-        Ok(
+        println!("size_including_headers {:?}", block_header.size_including_headers());
+        let mut block_buf: Vec<u8> = Vec::with_capacity(block_header.size_including_headers());//vec![0; block_header.size_including_headers()]; // we read the header a second time but not a big deal
+        for _ in 0..block_header.size_including_headers() {
+            block_buf.push(0);
+        }
+        //self.inner.read_exact_at(byte_offset, &mut block_buf)?; // comment out to get (signal: 11, SIGSEGV: invalid memory reference)
+        Ok( // DEBUG
         Block {
             header: block_header,
             compressed_outcome: Vec::new(),
         }
         )
-        //println!("{block_buf:?}");
-        //Block::new(&[ByColor {white: 0, black: 0}], 0, 1) // DEBUG
-        // self.inner.read_exact_at(byte_offset, &mut block_buf)?;
-        // dbg!(from_bytes_exact::<Block>(dbg!(&block_buf)))
+        // println!("{block_buf:?}");
+        // Block::new(&[ByColor {white: 0, black: 0}], 0, 1) // DEBUG
+        // // 
+        // // dbg!(from_bytes_exact::<Block>(dbg!(&block_buf)))
     }
 
     fn decompress(&self) -> io::Result<Outcomes> {
