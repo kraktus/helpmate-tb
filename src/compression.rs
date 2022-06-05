@@ -85,17 +85,17 @@ impl<T: ReadAt> EncoderDecoder<T> {
         for _ in 0..block_header.size_including_headers() {
             block_buf.push(0);
         }
-        //self.inner.read_exact_at(byte_offset, &mut block_buf)?; // comment out to get (signal: 11, SIGSEGV: invalid memory reference)
-        Ok( // DEBUG
-        Block {
-            header: block_header,
-            compressed_outcome: Vec::new(),
-        }
-        )
+        self.inner.read_exact_at(byte_offset, &mut block_buf)?; // comment out to get (signal: 11, SIGSEGV: invalid memory reference)
+        // Ok( // DEBUG
+        // Block {
+        //     header: block_header,
+        //     compressed_outcome: Vec::new(),
+        // }
+        // )
         // println!("{block_buf:?}");
         // Block::new(&[ByColor {white: 0, black: 0}], 0, 1) // DEBUG
         // // 
-        // // dbg!(from_bytes_exact::<Block>(dbg!(&block_buf)))
+        dbg!(from_bytes_exact::<Block>(dbg!(&block_buf)))
     }
 
     fn decompress(&self) -> io::Result<Outcomes> {
