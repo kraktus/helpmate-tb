@@ -1,6 +1,7 @@
 use std::io::{self, ErrorKind::InvalidData, Write};
 
-use deku::prelude::*;
+use deku::bitvec::{BitSlice, Msb0, BitView};
+use deku::{ctx::Limit, prelude::*};
 use positioned_io::ReadAt;
 use shakmaty::ByColor;
 use zstd::stream::{decode_all, encode_all};
@@ -15,13 +16,14 @@ const BLOCK_SIZE: usize = 500 * 1000000;
 // considering each elements takes 2byte
 const BLOCK_ELEMENTS: usize = BLOCK_SIZE / 2;
 
+/// Deku compatible struct
 #[derive(Debug, Clone, PartialEq, DekuRead, DekuWrite, Eq)]
-struct OutcomeByColor {
+struct RawOutcome {
     black: u8,
     white: u8,
 }
 
-impl From<&ByColor<u8>> for OutcomeByColor {
+impl From<&ByColor<u8>> for RawOutcome {
     fn from(c: &ByColor<u8>) -> Self {
         Self {
             black: c.black,
@@ -30,8 +32,8 @@ impl From<&ByColor<u8>> for OutcomeByColor {
     }
 }
 
-impl From<OutcomeByColor> for ByColor<u8> {
-    fn from(c: OutcomeByColor) -> Self {
+impl From<RawOutcome> for ByColor<u8> {
+    fn from(c: RawOutcome) -> Self {
         Self {
             black: c.black,
             white: c.white,
@@ -50,7 +52,6 @@ impl<T> EncoderDecoder<T> {
     }
 }
 
-
 // TODO replace by inlined function
 macro_rules! to_u64 {
     ($expression:expr) => {
@@ -63,9 +64,8 @@ impl<T: Write> EncoderDecoder<T> {
         Ok(
             for (i, elements) in outcomes.chunks(BLOCK_ELEMENTS).enumerate() {
                 let index_from = to_u64!(BLOCK_ELEMENTS * i);
-                let index_to = index_from + to_u64!(elements.len());
-                let block = Block::new(elements, index_from, index_to)?;
-                self.inner.write_all(&dbg!(block).to_bytes().unwrap())?;
+                let block = Block::new(elements, index_from)?;
+                self.inner.write_all(&dbg!(block.to_bytes().unwrap()))?;
             },
         )
     }
@@ -80,22 +80,27 @@ impl<T: ReadAt> EncoderDecoder<T> {
 
     fn decompress_block(&self, byte_offset: u64) -> io::Result<Block> {
         let block_header = self.decompress_block_header(byte_offset)?;
-        println!("size_including_headers {:?}", block_header.size_including_headers());
-        let mut block_buf: Vec<u8> = Vec::with_capacity(block_header.size_including_headers());//vec![0; block_header.size_including_headers()]; // we read the header a second time but not a big deal
+        println!(
+            "size_including_headers {:?}",
+            block_header.size_including_headers()
+        );
+        let mut block_buf: Vec<u8> = Vec::with_capacity(block_header.size_including_headers()); //vec![0; block_header.size_including_headers()]; // we read the header a second time but not a big deal
         for _ in 0..block_header.size_including_headers() {
             block_buf.push(0);
         }
-        self.inner.read_exact_at(byte_offset, &mut block_buf)?; // comment out to get (signal: 11, SIGSEGV: invalid memory reference)
-        // Ok( // DEBUG
-        // Block {
-        //     header: block_header,
-        //     compressed_outcome: Vec::new(),
-        // }
-        // )
+        //self.inner.read_exact_at(byte_offset, &mut block_buf)?; // comment out to get (signal: 11, SIGSEGV: invalid memory reference)
+        dbg!(&block_buf);
+        Ok(
+            // DEBUG
+            Block {
+                header: block_header,
+                compressed_outcome: Vec::new(),
+            },
+        )
         // println!("{block_buf:?}");
         // Block::new(&[ByColor {white: 0, black: 0}], 0, 1) // DEBUG
-        // // 
-        dbg!(from_bytes_exact::<Block>(dbg!(&block_buf)))
+        // //
+        //from_bytes_exact::<Block>(&block_buf)
     }
 
     fn decompress(&self) -> io::Result<Outcomes> {
@@ -124,39 +129,28 @@ struct BlockHeader {
 
 impl BlockHeader {
     const BYTE_SIZE: usize = 8 * 3;
-}
 
-impl BlockHeader {
     pub fn size_including_headers(&self) -> usize {
         Self::BYTE_SIZE + self.block_size as usize
     }
-}
 
-#[derive(Debug, PartialEq, DekuRead, DekuWrite, Eq)]
+    pub const fn nb_elements(&self) -> usize {
+        (self.index_to - self.index_from) as usize
+    }
+}
+#[derive(Debug, PartialEq, DekuWrite, Eq)]
 struct Block {
     header: BlockHeader,
-    #[deku(count = "header.block_size")]
-    pub compressed_outcome: Vec<u8>, // compressed version of `Outcomes`
-}
-
-#[derive(Debug, PartialEq, DekuRead, DekuWrite, Eq)]
-struct RawOutcomes([OutcomeByColor; BLOCK_ELEMENTS]);
-
-impl From<RawOutcomes> for Outcomes {
-    fn from(raw_outcomes: RawOutcomes) -> Self {
-        raw_outcomes
-            .0
-            .into_iter()
-            .map(<ByColor<u8>>::from)
-            .collect()
-    }
+    #[deku(reader = "Block::deku_read(deku::output, &self.header)")]
+    pub outcomes: Outcomes, // compressed when serializing, decompressed at de-serializing
 }
 
 impl Block {
-    pub fn new(elements: OutcomesSlice, index_from: u64, index_to: u64) -> io::Result<Block> {
+    pub fn new(elements: OutcomesSlice, index_from: u64) -> io::Result<Block> {
+        let index_to = index_from + to_u64!(elements.len());
         let block_elements: Vec<u8> = elements
             .iter()
-            .flat_map(|c| OutcomeByColor::from(c).to_bytes().unwrap())
+            .flat_map(|c| RawOutcome::from(c).to_bytes().unwrap())
             .collect();
         encode_all(block_elements.as_slice(), 21).map(|compressed_outcome| {
             let block_size = to_u64!(compressed_outcome.len());
@@ -175,10 +169,36 @@ impl Block {
             }
         })
     }
-    pub fn decompress_outcomes(&self) -> io::Result<Outcomes> {
-        from_bytes_exact::<RawOutcomes>(&decode_all(self.compressed_outcome.as_slice())?)
-            .map(Outcomes::from)
+
+    fn deku_read<'a>(
+        rest: &'a BitSlice<Msb0, u8>,
+        header: &'a BlockHeader,
+    ) -> Result<(&'a BitSlice<Msb0, u8>, Outcomes), DekuError> {
+        let nb_elements = header.nb_elements();
+        Vec::<u8>::read(rest, Limit::new_count(header.block_size as usize)).and_then(
+            |(rest_2, compressed_outcomes_bytes)| {
+                decode_all(compressed_outcomes_bytes.as_slice())
+                    .map_err(|err| DekuError::Parse(format!("{err:?}")))
+                    .and_then(|decompressed_outcomes_bytes| {
+                        Vec::<RawOutcome>::read(
+                            decompressed_outcomes_bytes.view_bits(),
+                            Limit::new_count(nb_elements),
+                        )
+                        .map(|(inner_rest, raw_outcomes)| {
+                            (rest_2, raw_outcomes
+                                .into_iter()
+                                .map(<ByColor<u8>>::from)
+                                .collect())
+                        })
+                    })
+            },
+        )
     }
+
+    // pub fn decompress_outcomes(&self) -> io::Result<Outcomes> {
+    //     from_bytes_exact::<RawOutcomes>(&decode_all(self.compressed_outcome.as_slice())?)
+    //         .map(Outcomes::from)
+    // }
 }
 
 fn from_bytes_exact<'a, T: deku::DekuContainerRead<'a>>(buf: &'a [u8]) -> io::Result<T> {
@@ -221,13 +241,21 @@ mod tests {
 
     #[test]
     fn test_block_byte_serialisation() {
-        let block = Block::new(&dummy_outcomes(), 0, to_u64!(DUMMY_NUMBER)).unwrap();
+        let block = Block::new(&dummy_outcomes(), 0).unwrap();
         assert_eq!(
             block.to_bytes().unwrap().len(),
             block.header.size_including_headers()
         );
+        println!("{:?}", block.header.size_including_headers());
         let block_2 = from_bytes_exact::<Block>(&block.to_bytes().unwrap()).unwrap();
         assert_eq!(block, block_2);
+    }
+
+    #[test]
+    fn test_outcome_decompression() {
+        let outcomes = dummy_outcomes();
+        let block = Block::new(&outcomes, 0).unwrap();
+        assert_eq!(block.decompress_outcomes().unwrap(), outcomes, "not equal");
     }
 
     #[test]
@@ -235,8 +263,11 @@ mod tests {
         let outcomes = dummy_outcomes();
         let mut encoder = EncoderDecoder::new(Vec::<u8>::new());
         encoder.compress(&outcomes).expect("compression failed");
-        println!("{:?}", encoder);
-        let decompressed = encoder.decompress().expect("decompression failed");
+        let decompressed = encoder
+            .decompress_block(0)
+            .expect("block retrieval failed")
+            .decompress_outcomes()
+            .expect("decompression failed");
         assert_eq!(outcomes, decompressed)
     }
 }
