@@ -52,11 +52,9 @@ impl<T> EncoderDecoder<T> {
     }
 }
 
-// TODO replace by inlined function
-macro_rules! to_u64 {
-    ($expression:expr) => {
-        u64::try_from($expression).unwrap()
-    };
+#[inline]
+fn to_u64(x: usize) -> u64 {
+    x.try_into().unwrap()
 }
 
 impl<T: Write> EncoderDecoder<T> {
@@ -132,14 +130,14 @@ struct Block {
 
 impl Block {
     pub fn new(outcomes: OutcomesSlice, index_from_usize: usize) -> io::Result<Self> {
-        let index_from = to_u64!(index_from_usize);
-        let index_to = to_u64!(index_from_usize + outcomes.len());
+        let index_from = to_u64(index_from_usize);
+        let index_to = to_u64(index_from_usize + outcomes.len());
         let raw_outcomes: Vec<u8> = outcomes
             .iter()
             .flat_map(|c| RawOutcome::from(c).to_bytes().unwrap())
             .collect();
         encode_all(raw_outcomes.as_slice(), 21).map(|compressed_outcomes| {
-            let block_size = to_u64!(compressed_outcomes.len());
+            let block_size = to_u64(compressed_outcomes.len());
             Self {
                 header: BlockHeader {
                     index_from,
