@@ -83,22 +83,8 @@ impl<T: ReadAt> EncoderDecoder<T> {
             "size_including_headers {:?}",
             block_header.size_including_headers()
         );
-        let mut block_buf: Vec<u8> = Vec::with_capacity(block_header.size_including_headers()); //vec![0; block_header.size_including_headers()]; // we read the header a second time but not a big deal
-        for _ in 0..block_header.size_including_headers() {
-            block_buf.push(0);
-        }
-        self.inner.read_exact_at(byte_offset, &mut block_buf)?; // comment out to get (signal: 11, SIGSEGV: invalid memory reference)
-                                                                // dbg!(&block_buf);
-                                                                // Ok(
-                                                                //     // DEBUG
-                                                                //     Block {
-                                                                //         header: block_header,
-                                                                //         compressed_outcomes: Vec::new(),
-                                                                //     },
-                                                                // )
-                                                                // println!("{block_buf:?}");
-                                                                // Block::new(&[ByColor {white: 0, black: 0}], 0, 1) // DEBUG
-                                                                // //
+        let mut block_buf: Vec<u8> = vec![0; block_header.size_including_headers()];
+        self.inner.read_exact_at(byte_offset, &mut block_buf)?;
         from_bytes_exact::<Block>(&block_buf)
     }
 
@@ -165,33 +151,6 @@ impl Block {
         })
     }
 
-    fn deku_read<'a>(
-        rest: &'a BitSlice<Msb0, u8>,
-        header: &'a BlockHeader,
-    ) -> Result<(&'a BitSlice<Msb0, u8>, Outcomes), DekuError> {
-        let nb_elements = header.nb_elements();
-        // first we need the get the raw bytes of encoding to decode it, then parse it into an intermediate struct
-        // that implements `DekuRead`, then we can finally convert it to `Outcomes`
-        Vec::<u8>::read(rest, Limit::new_count(header.block_size as usize)).and_then(
-            |(rest_2, compressed_outcomes_bytes)| {
-                decode_all(compressed_outcomes_bytes.as_slice())
-                    .map_err(|err| DekuError::Parse(format!("{err:?}")))
-                    .and_then(|decompressed_outcomes_bytes| {
-                        Vec::<RawOutcome>::read(
-                            decompressed_outcomes_bytes.view_bits(),
-                            Limit::new_count(nb_elements),
-                        )
-                        .map(|(inner_rest, raw_outcomes)| {
-                            (
-                                rest_2,
-                                raw_outcomes.into_iter().map(<ByColor<u8>>::from).collect(),
-                            )
-                        })
-                    })
-            },
-        )
-    }
-
     pub fn decompress_outcomes(&self) -> io::Result<Outcomes> {
         decode_all(self.compressed_outcomes.as_slice()).and_then(|decompressed_outcomes_bytes| {
             Vec::<RawOutcome>::read(
@@ -199,7 +158,10 @@ impl Block {
                 Limit::new_count(self.header.nb_elements()),
             )
             .map_err(|e| io::Error::new(InvalidData, e))
-            .map(|(_, raw_outcomes)| raw_outcomes.into_iter().map(<ByColor<u8>>::from).collect())
+            .map(|(inner_rest, raw_outcomes)| {
+                assert!(inner_rest.is_empty());
+                raw_outcomes.into_iter().map(<ByColor<u8>>::from).collect()
+            })
         })
     }
 }
@@ -258,11 +220,11 @@ mod tests {
     fn test_outcome_decompression() {
         let outcomes = dummy_outcomes();
         let block = Block::new(&outcomes, 0).unwrap();
-        assert_eq!(block.decompress_outcomes().unwrap(), outcomes, "not equal");
+        assert_eq!(block.decompress_outcomes().unwrap(), outcomes);
     }
 
     #[test]
-    fn test_compression_soundness() {
+    fn test_block_compression_soundness() {
         let outcomes = dummy_outcomes();
         let mut encoder = EncoderDecoder::new(Vec::<u8>::new());
         encoder.compress(&outcomes).expect("compression failed");
