@@ -63,8 +63,7 @@ impl<T: Write> EncoderDecoder<T> {
     pub fn compress(&mut self, outcomes: &Outcomes) -> io::Result<()> {
         Ok(
             for (i, elements) in outcomes.chunks(BLOCK_ELEMENTS).enumerate() {
-                let index_from = to_u64!(BLOCK_ELEMENTS * i);
-                let block = Block::new(elements, index_from);
+                let block = Block::new(elements, BLOCK_ELEMENTS * i)?;
                 self.inner.write_all(&dbg!(block.to_bytes().unwrap()))?;
             },
         )
@@ -88,19 +87,19 @@ impl<T: ReadAt> EncoderDecoder<T> {
         for _ in 0..block_header.size_including_headers() {
             block_buf.push(0);
         }
-        //self.inner.read_exact_at(byte_offset, &mut block_buf)?; // comment out to get (signal: 11, SIGSEGV: invalid memory reference)
-        dbg!(&block_buf);
-        Ok(
-            // DEBUG
-            Block {
-                header: block_header,
-                compressed_outcome: Vec::new(),
-            },
-        )
-        // println!("{block_buf:?}");
-        // Block::new(&[ByColor {white: 0, black: 0}], 0, 1) // DEBUG
-        // //
-        //from_bytes_exact::<Block>(&block_buf)
+        self.inner.read_exact_at(byte_offset, &mut block_buf)?; // comment out to get (signal: 11, SIGSEGV: invalid memory reference)
+                                                                // dbg!(&block_buf);
+                                                                // Ok(
+                                                                //     // DEBUG
+                                                                //     Block {
+                                                                //         header: block_header,
+                                                                //         compressed_outcomes: Vec::new(),
+                                                                //     },
+                                                                // )
+                                                                // println!("{block_buf:?}");
+                                                                // Block::new(&[ByColor {white: 0, black: 0}], 0, 1) // DEBUG
+                                                                // //
+        from_bytes_exact::<Block>(&block_buf)
     }
 
     fn decompress(&self) -> io::Result<Outcomes> {
@@ -138,26 +137,32 @@ impl BlockHeader {
         (self.index_to - self.index_from) as usize
     }
 }
-#[derive(Debug, PartialEq, DekuWrite, Eq)]
+#[derive(Debug, PartialEq, DekuRead, DekuWrite, Eq)]
 struct Block {
     header: BlockHeader,
-    #[deku(
-        reader = "Block::deku_read(deku::rest, &self.header)",
-        writer = "Block::deku_write(deku::output)"
-    )]
-    pub outcomes: Outcomes, // compressed when serializing, decompressed at de-serializing
+    #[deku(count = "header.block_size")]
+    pub compressed_outcomes: Vec<u8>, // compressed bytes of `Outcomes`
 }
 
 impl Block {
-
-    pub fn new(outcomes: Outcomes, index_from: usize) -> Self {
-        let index_to = index_from + to_u64!(outcomes.len());
-        Self {
-            header: BlockHeader {
-                index_from,
-                index_to,
+    pub fn new(outcomes: OutcomesSlice, index_from_usize: usize) -> io::Result<Self> {
+        let index_from = to_u64!(index_from_usize);
+        let index_to = to_u64!(index_from_usize + outcomes.len());
+        let raw_outcomes: Vec<u8> = outcomes
+            .iter()
+            .flat_map(|c| RawOutcome::from(c).to_bytes().unwrap())
+            .collect();
+        encode_all(raw_outcomes.as_slice(), 21).map(|compressed_outcomes| {
+            let block_size = to_u64!(compressed_outcomes.len());
+            Self {
+                header: BlockHeader {
+                    index_from,
+                    index_to,
+                    block_size,
+                },
+                compressed_outcomes,
             }
-        }
+        })
     }
 
     fn deku_read<'a>(
@@ -187,16 +192,15 @@ impl Block {
         )
     }
 
-    fn deku_write<'a>(output: &mut BitVec<Msb0, u8>) -> Result<(), DekuError> {
-        let block_elements: Vec<u8> = elements
-            .iter()
-            .flat_map(|c| RawOutcome::from(c).to_bytes().unwrap())
-            .collect();
-        encode_all(block_elements.as_slice(), 21)
-            .map_err(|err| DekuError::Parse(format!("{err:?}")))
-            .map(|compressed_outcome| {
-                compressed_outcome.write(output, ());
-            })
+    pub fn decompress_outcomes(&self) -> io::Result<Outcomes> {
+        decode_all(self.compressed_outcomes.as_slice()).and_then(|decompressed_outcomes_bytes| {
+            Vec::<RawOutcome>::read(
+                decompressed_outcomes_bytes.view_bits(),
+                Limit::new_count(self.header.nb_elements()),
+            )
+            .map_err(|e| io::Error::new(InvalidData, e))
+            .map(|(_, raw_outcomes)| raw_outcomes.into_iter().map(<ByColor<u8>>::from).collect())
+        })
     }
 }
 
