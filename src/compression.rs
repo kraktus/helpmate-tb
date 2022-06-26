@@ -62,7 +62,7 @@ impl<T: Write> EncoderDecoder<T> {
         Ok(
             for (i, elements) in outcomes.chunks(BLOCK_ELEMENTS).enumerate() {
                 let block = Block::new(elements, BLOCK_ELEMENTS * i)?;
-                self.inner.write_all(&dbg!(block.to_bytes().unwrap()))?;
+                self.inner.write_all(&block.to_bytes().unwrap())?;
             },
         )
     }
@@ -72,7 +72,7 @@ impl<T: ReadAt> EncoderDecoder<T> {
     fn decompress_block_header(&self, byte_offset: u64) -> io::Result<BlockHeader> {
         let mut header_buf: [u8; BlockHeader::BYTE_SIZE] = [0; BlockHeader::BYTE_SIZE];
         self.inner.read_exact_at(byte_offset, &mut header_buf)?;
-        dbg!(from_bytes_exact::<BlockHeader>(&header_buf))
+        from_bytes_exact::<BlockHeader>(&header_buf)
     }
 
     fn decompress_block(&self, byte_offset: u64) -> io::Result<Block> {
@@ -86,7 +86,7 @@ impl<T: ReadAt> EncoderDecoder<T> {
         from_bytes_exact::<Block>(&block_buf)
     }
 
-    fn decompress(&self) -> io::Result<Outcomes> {
+    fn decompress_file(&self) -> io::Result<Outcomes> {
         let mut outcomes = Outcomes::new();
         let mut byte_offset = 0;
         loop {
@@ -95,7 +95,8 @@ impl<T: ReadAt> EncoderDecoder<T> {
                     byte_offset += block.header.size_including_headers() as u64;
                     outcomes.extend(block.decompress_outcomes()?);
                 }
-                Err(ref err) if err.kind() == io::ErrorKind::Interrupted => break, // or UnexpectedEof?
+                // we have reached the end of the file
+                Err(ref err) if err.kind() == io::ErrorKind::UnexpectedEof => break,
                 Err(err) => return Err(err),
             }
         }
@@ -121,6 +122,10 @@ impl BlockHeader {
         (self.index_to - self.index_from) as usize
     }
 }
+
+#[derive(Debug, PartialEq, DekuWrite, Eq)]
+struct RawOutcomes(pub Vec<RawOutcome>);
+
 #[derive(Debug, PartialEq, DekuRead, DekuWrite, Eq)]
 struct Block {
     header: BlockHeader,
@@ -132,11 +137,16 @@ impl Block {
     pub fn new(outcomes: OutcomesSlice, index_from_usize: usize) -> io::Result<Self> {
         let index_from = to_u64(index_from_usize);
         let index_to = to_u64(index_from_usize + outcomes.len());
-        let raw_outcomes: Vec<u8> = outcomes
+        println!("turning into raw outcomes");
+        let raw_outcomes = RawOutcomes(outcomes
             .iter()
-            .flat_map(|c| RawOutcome::from(c).to_bytes().unwrap())
-            .collect();
-        encode_all(raw_outcomes.as_slice(), 21).map(|compressed_outcomes| {
+            .map(RawOutcome::from)
+            .collect());
+
+        println!("turning raw outcomes into bytes");
+        let raw_outcomes_bytes = raw_outcomes.to_bytes().unwrap();
+        println!("Compressing block");
+        encode_all(raw_outcomes_bytes.as_slice(), 21).map(|compressed_outcomes| {
             let block_size = to_u64(compressed_outcomes.len());
             Self {
                 header: BlockHeader {
@@ -179,13 +189,23 @@ mod tests {
 
     const DUMMY_NUMBER: usize = 10000;
 
-    fn dummy_outcomes() -> Outcomes {
-        let mut outcomes = Outcomes::with_capacity(DUMMY_NUMBER);
-        for i in 0..DUMMY_NUMBER {
-            let j = u8::try_from(i % 256).unwrap();
+    fn gen_outcomes(nb: usize) -> Outcomes {
+        let mut outcomes = Outcomes::with_capacity(nb);
+        let mut j: u8 = 0;
+        let mut x: u16 = 0;
+        for i in 0..nb {
+            j = j.checked_add(1).unwrap_or(0);
+            x = x.checked_add(1).unwrap_or(0);
+            if x == 0 {
+                // println!("{i}");
+            }
             outcomes.push(ByColor { black: j, white: j })
         }
         outcomes
+    }
+
+    fn dummy_outcomes() -> Outcomes {
+        gen_outcomes(DUMMY_NUMBER)
     }
 
     #[test]
@@ -233,4 +253,14 @@ mod tests {
             .expect("decompression failed");
         assert_eq!(outcomes, decompressed)
     }
+
+    // deku is too slow with debug information to run
+    // #[test]
+    // fn test_file_compression_soundness() {
+    //     let outcomes = gen_outcomes(BLOCK_ELEMENTS * 2 + BLOCK_ELEMENTS / 2);
+    //     let mut encoder = EncoderDecoder::new(Vec::<u8>::new());
+    //     encoder.compress(&outcomes).expect("compression failed");
+    //     let decompressed = encoder.decompress_file().unwrap();
+    //     assert_eq!(outcomes, decompressed)
+    // }
 }
