@@ -123,6 +123,7 @@ impl BlockHeader {
     }
 }
 
+// Empty wrap because `deku` does not implement `DekuWrite` for Vec<T: DekuWrite>
 #[derive(Debug, PartialEq, DekuWrite, Eq)]
 struct RawOutcomes(pub Vec<RawOutcome>);
 
