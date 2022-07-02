@@ -60,6 +60,36 @@ impl MaterialSide {
     fn unique_roles(&self) -> u8 {
         self.by_role.iter().filter(|c| **c == 1).sum()
     }
+
+    /// All `MaterialSide` configuration than can be possible from this setup using legal moves
+    fn descendants(&self) -> Vec<MaterialSide> {
+        let mut descendants: Vec<MaterialSide> = Vec::with_capacity(6); // arbitrary
+                                                                        // a pawn can be promoted
+        if self.has_pawns() {
+            for role in [Role::Bishop, Role::Knight, Role::Rook, Role::Queen] {
+                let mut descendant = self.clone();
+                descendant.by_role.pawn -= 1;
+                *descendant.by_role.get_mut(role) += 1;
+                descendants.push(descendant)
+            }
+        }
+        // all pieces but king can be taken
+        for role in [
+            Role::Pawn,
+            Role::Bishop,
+            Role::Knight,
+            Role::Rook,
+            Role::Queen,
+        ] {
+            if *self.by_role.get(role) >= 1 {
+                let mut descendant = self.clone();
+                *descendant.by_role.get_mut(role) -= 1;
+                descendants.push(descendant)
+            }
+        }
+
+        descendants
+    }
 }
 
 impl std::ops::Deref for MaterialSide {
@@ -202,6 +232,10 @@ impl Material {
         *self.by_color.get(piece.color).get(piece.role)
     }
 
+    pub(crate) fn pieces(&self) -> Pieces {
+        self.pieces_with_white_king(true)
+    }
+
     fn pieces_with_white_king(&self, with_white_king: bool) -> Pieces {
         let mut pieces = Pieces::new();
         for color in Color::ALL {
@@ -258,6 +292,7 @@ impl<'de> Deserialize<'de> for Material {
 mod tests {
     use super::*;
     use shakmaty::Color::{Black, White};
+    use std::collections::HashSet;
 
     #[test]
     fn test_pieces_without_white_king_from_material() {
@@ -272,5 +307,28 @@ mod tests {
             .try_into()
             .unwrap();
         assert_eq!(mat.pieces_without_white_king(), pieces)
+    }
+
+    #[test]
+    fn test_material_side_descendants() {
+        // (ancester, descendants)
+        for test_config in [
+            ("KN", vec!["K"]),
+            ("KP", vec!["K", "KN", "KB", "KR", "KQ"]),
+            ("KPP", vec!["KP", "KPN", "KPB", "KPR", "KPQ"]),
+            ("KRR", vec!["KR"]),
+            ("K", vec![]),
+        ] {
+            let mat = MaterialSide::from_str_part(test_config.0).unwrap();
+            assert_eq!(
+                HashSet::from_iter(mat.descendants().into_iter()),
+                HashSet::<MaterialSide>::from_iter(
+                    test_config
+                        .1
+                        .iter()
+                        .map(|s| MaterialSide::from_str_part(s).unwrap())
+                )
+            );
+        }
     }
 }

@@ -139,10 +139,7 @@ impl Block {
         let index_from = to_u64(index_from_usize);
         let index_to = to_u64(index_from_usize + outcomes.len());
         println!("turning into raw outcomes");
-        let raw_outcomes = RawOutcomes(outcomes
-            .iter()
-            .map(RawOutcome::from)
-            .collect());
+        let raw_outcomes = RawOutcomes(outcomes.iter().map(RawOutcome::from).collect());
 
         println!("turning raw outcomes into bytes");
         let raw_outcomes_bytes = raw_outcomes.to_bytes().unwrap();
