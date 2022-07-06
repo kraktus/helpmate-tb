@@ -33,6 +33,23 @@ pub(crate) struct MaterialSide {
     by_role: ByRole<u8>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Hash, Copy)]
+enum CanMate {
+    Yes,
+    No,
+    NeedHelp,
+}
+
+impl CanMate {
+    fn is_mate_possible(self, other_side: CanMate) -> bool {
+        match self {
+            Self::Yes => true,
+            Self::No => other_side == Self::Yes,
+            Self::NeedHelp => other_side != Self::No,
+        }
+    }
+}
+
 impl MaterialSide {
     fn empty() -> MaterialSide {
         MaterialSide {
@@ -62,7 +79,7 @@ impl MaterialSide {
     }
 
     /// All `MaterialSide` configuration than can be possible from this setup using legal moves
-    fn descendants(&self) -> Vec<MaterialSide> {
+    pub fn descendants(&self) -> Vec<MaterialSide> {
         let mut descendants: Vec<MaterialSide> = Vec::with_capacity(6); // arbitrary
                                                                         // a pawn can be promoted
         if self.has_pawns() {
@@ -81,7 +98,7 @@ impl MaterialSide {
             Role::Rook,
             Role::Queen,
         ] {
-            if *self.by_role.get(role) >= 1 {
+            if *self.by_role.get(role) > 0 {
                 let mut descendant = self.clone();
                 *descendant.by_role.get_mut(role) -= 1;
                 descendants.push(descendant)
@@ -89,6 +106,22 @@ impl MaterialSide {
         }
 
         descendants
+    }
+
+    /// Can this side mate the other one with this material config?
+    /// Not taking into accounts bishops on the same color issue
+    fn can_mate(&self) -> CanMate {
+        if self.count() > 2 || self.by_role.rook > 0 || self.by_role.queen > 0 || self.has_pawns() {
+            CanMate::Yes
+        } else if self.count() == 2 {
+            // should have a knight or bishop only
+            CanMate::NeedHelp
+        } else {
+            // only king
+            assert!(self.count() == 1);
+            assert!(self.by_role.king == 1);
+            CanMate::No
+        }
     }
 }
 
@@ -222,6 +255,16 @@ impl Material {
         }
     }
 
+    /// For any color
+    pub(crate) fn is_mate_possible(&self) -> bool {
+        // order is arbitrary
+        let (white, black) = (
+            self.by_color.white.can_mate(),
+            self.by_color.black.can_mate(),
+        );
+        white.is_mate_possible(black)
+    }
+
     // pub(crate) fn into_normalized(self) -> Material {
     //     Material {
     //         by_color: self.by_color.into_normalized(),
@@ -329,6 +372,42 @@ mod tests {
                         .map(|s| MaterialSide::from_str_part(s).unwrap())
                 )
             );
+        }
+    }
+
+    #[test]
+    fn test_material_side_can_mate() {
+        for test_config in [
+            ("KN", CanMate::NeedHelp),
+            ("KB", CanMate::NeedHelp),
+            ("KBB", CanMate::Yes),
+            ("KNN", CanMate::Yes),
+            ("KP", CanMate::Yes),
+            ("KPP", CanMate::Yes),
+            ("KRR", CanMate::Yes),
+            ("K", CanMate::No),
+        ] {
+            let mat = MaterialSide::from_str_part(test_config.0).unwrap();
+            assert_eq!(mat.can_mate(), test_config.1);
+        }
+    }
+
+    #[test]
+    fn test_is_mate_possible() {
+        for test_config in [
+            ("KBNvKRQ", true),
+            ("KNvKB", true),
+            ("KBvK", false),
+            ("KvKB", false),
+            ("KNvK", false),
+            ("KvK", false),
+            ("KPvK", true),
+            ("KPvKP", true),
+            ("KRvP", true),
+            ("KQvP", true),
+        ] {
+            let mat = Material::from_str(test_config.0).unwrap();
+            assert_eq!(mat.is_mate_possible(), test_config.1);
         }
     }
 }
