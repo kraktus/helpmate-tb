@@ -79,9 +79,9 @@ impl MaterialSide {
     }
 
     /// All `MaterialSide` configuration than can be possible from this setup using legal moves
-    pub fn descendants(&self) -> Vec<MaterialSide> {
-        let mut descendants: Vec<MaterialSide> = Vec::with_capacity(6); // arbitrary
-                                                                        // a pawn can be promoted
+    pub fn descendants(&self) -> Vec<Self> {
+        let mut descendants: Vec<Self> = Vec::with_capacity(6); // arbitrary
+                                                                // a pawn can be promoted
         if self.has_pawns() {
             for role in [Role::Bishop, Role::Knight, Role::Rook, Role::Queen] {
                 let mut descendant = self.clone();
@@ -265,11 +265,41 @@ impl Material {
         white.is_mate_possible(black)
     }
 
-    // pub(crate) fn into_normalized(self) -> Material {
-    //     Material {
-    //         by_color: self.by_color.into_normalized(),
-    //     }
-    // }
+    /// For any color
+    fn descendants(&self) -> impl Iterator<Item = Self> + '_ {
+        self.by_color
+            .white
+            .descendants()
+            .into_iter()
+            .flat_map(|white_descendant| {
+                self.by_color
+                    .black
+                    .descendants()
+                    .into_iter()
+                    .map(move |black_descendant| {
+                        Self {
+                            by_color: ByColor {
+                                white: white_descendant.clone(),
+                                black: black_descendant,
+                            },
+                        }
+                        .into_normalized()
+                    })
+            })
+    }
+
+    /// For any color
+    fn descendants_not_draw(&self) -> impl Iterator<Item = Self> + '_ {
+        self.descendants()
+            .into_iter()
+            .filter(Self::is_mate_possible)
+    }
+
+    pub(crate) fn into_normalized(self) -> Material {
+        Material {
+            by_color: self.by_color.into_normalized(),
+        }
+    }
 
     pub(crate) fn by_piece(&self, piece: Piece) -> u8 {
         *self.by_color.get(piece.color).get(piece.role)
