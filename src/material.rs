@@ -19,6 +19,7 @@ use std::{
     fmt,
 };
 
+use itertools::Itertools as _;
 use serde::Deserialize;
 use serde::Deserializer;
 use shakmaty::{Board, ByColor, ByRole, Color, Piece, Role};
@@ -173,7 +174,7 @@ impl fmt::Debug for MaterialSide {
 }
 
 /// A material key.
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Clone, Eq, PartialEq, Hash)]
 pub struct Material {
     pub(crate) by_color: ByColor<MaterialSide>,
 }
@@ -268,35 +269,28 @@ impl Material {
     /// For any color
     fn descendants(&self) -> impl Iterator<Item = Self> + '_ {
         self.by_color
-            .white
-            .descendants()
-            .into_iter()
-            .flat_map(|white_descendant| {
-                self.by_color
-                    .black
-                    .descendants()
-                    .into_iter()
-                    .map(move |black_descendant| {
-                        Self {
-                            by_color: ByColor {
-                                white: white_descendant.clone(),
-                                black: black_descendant,
-                            },
-                        }
-                        .into_normalized()
-                    })
+            .iter()
+            .circular_tuple_windows()
+            .flat_map(|(mat_1, mat_2)| {
+                mat_1.descendants().into_iter().map(|mat_1_descendant| {
+                    Self {
+                        by_color: ByColor {
+                            white: mat_1_descendant,
+                            black: mat_2.clone(),
+                        },
+                    }
+                    .into_normalized()
+                })
             })
     }
 
     /// For any color
     fn descendants_not_draw(&self) -> impl Iterator<Item = Self> + '_ {
-        self.descendants()
-            .into_iter()
-            .filter(Self::is_mate_possible)
+        self.descendants().filter(Self::is_mate_possible)
     }
 
-    pub(crate) fn into_normalized(self) -> Material {
-        Material {
+    pub(crate) fn into_normalized(self) -> Self {
+        Self {
             by_color: self.by_color.into_normalized(),
         }
     }
@@ -329,7 +323,7 @@ impl Material {
     }
 }
 
-impl fmt::Display for Material {
+impl fmt::Debug for Material {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}v{}", self.by_color.white, self.by_color.black)
     }
@@ -438,6 +432,27 @@ mod tests {
         ] {
             let mat = Material::from_str(test_config.0).unwrap();
             assert_eq!(mat.is_mate_possible(), test_config.1);
+        }
+    }
+
+    #[test]
+    fn test_material_descendants() {
+        for test_config in [
+            ("KvK", vec![]),
+            ("KBvK", vec!["KvK"]),
+            ("KNvK", vec!["KvK"]),
+            ("KRvK", vec!["KvK"]),
+            ("KQvK", vec!["KvK"]),
+            ("KBNvK", vec!["KBvK", "KNvK"]),
+            ("KPvK", vec!["KBvK", "KNvK", "KRvK", "KQvK", "KvK"]),
+        ] {
+            let mat = Material::from_str(test_config.0).unwrap();
+            assert_eq!(
+                HashSet::from_iter(mat.descendants()),
+                HashSet::<Material>::from_iter(
+                    test_config.1.iter().map(|s| Material::from_str(s).unwrap())
+                )
+            );
         }
     }
 }
