@@ -444,11 +444,37 @@ mod tests {
             ("KRvK", vec!["KvK"]),
             ("KQvK", vec!["KvK"]),
             ("KBNvK", vec!["KBvK", "KNvK"]),
+            ("KRRvK", vec!["KRvK"]),
             ("KPvK", vec!["KBvK", "KNvK", "KRvK", "KQvK", "KvK"]),
         ] {
             let mat = Material::from_str(test_config.0).unwrap();
             assert_eq!(
                 HashSet::from_iter(mat.descendants()),
+                HashSet::<Material>::from_iter(
+                    test_config.1.iter().map(|s| Material::from_str(s).unwrap())
+                )
+            );
+        }
+    }
+
+
+    #[test]
+    fn test_material_descendants_not_draw() {
+        for test_config in [
+            ("KvK", vec![]),
+            ("KBvK", vec![]),
+            ("KNvK", vec![]),
+            ("KRvK", vec![]),
+            ("KQvK", vec![]),
+            ("KBNvK", vec![]),
+            ("KRRvK", vec!["KRvK"]),
+            ("KPvK", vec!["KRvK", "KQvK"]),
+            ("KQRvK", vec!["KQvK", "KRvK"]),
+            ("KRvQK", vec!["KQvK", "KRvK"]),
+        ] {
+            let mat = Material::from_str(test_config.0).unwrap();
+            assert_eq!(
+                HashSet::from_iter(mat.descendants_not_draw()),
                 HashSet::<Material>::from_iter(
                     test_config.1.iter().map(|s| Material::from_str(s).unwrap())
                 )
