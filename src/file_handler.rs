@@ -21,7 +21,7 @@ impl FileHandler {
     }
 }
 
-struct TableBase(HashMap<Material, FileHandler>);
+pub struct TableBase(HashMap<Material, FileHandler>);
 
 impl TableBase {
     pub fn new(mat: &Material) -> Self {

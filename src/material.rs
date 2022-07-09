@@ -316,10 +316,6 @@ impl Material {
         *self.by_color.get(piece.color).get(piece.role)
     }
 
-    pub(crate) fn pieces(&self) -> Pieces {
-        self.pieces_with_white_king(true)
-    }
-
     fn pieces_with_white_king(&self, with_white_king: bool) -> Pieces {
         let mut pieces = Pieces::new();
         for color in Color::ALL {
