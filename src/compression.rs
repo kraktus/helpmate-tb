@@ -86,7 +86,7 @@ impl<T: ReadAt> EncoderDecoder<T> {
         from_bytes_exact::<Block>(&block_buf)
     }
 
-    fn decompress_file(&self) -> io::Result<Outcomes> {
+    pub fn decompress_file(&self) -> io::Result<Outcomes> {
         let mut outcomes = Outcomes::new();
         let mut byte_offset = 0;
         loop {

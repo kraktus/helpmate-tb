@@ -9,7 +9,8 @@ mod material;
 pub use compression::EncoderDecoder;
 pub use encoding::get_info_table;
 pub use generation::{
-    Generator, Outcome, Outcomes, OutcomesSlice, SideToMove, UNKNOWN_OUTCOME_BYCOLOR,
+    Generator, Outcome, Outcomes, OutcomesSlice, SideToMove, SideToMoveGetter,
+    UNKNOWN_OUTCOME_BYCOLOR,
 };
 pub use indexer::{index, index_unchecked, restore_from_index};
 pub use indexer_syzygy::{Pieces, Table, A1_H8_DIAG, A8_H1_DIAG};

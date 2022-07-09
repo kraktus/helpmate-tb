@@ -36,7 +36,7 @@ impl SideToMove for RetroBoard {
     }
 }
 
-trait SideToMoveGetter {
+pub trait SideToMoveGetter {
     type T;
     // chose `got` and not `get` not to shadow the original methods
     fn got(&self, pos: &dyn SideToMove) -> &Self::T;
@@ -339,7 +339,7 @@ impl Generator {
 // instead of 64**4 get 64*63*62*61
 #[inline]
 const fn pow_minus_1(exp: u64, left: usize) -> u64 {
-    if left >= 1 {
+    if left > 0 {
         exp * pow_minus_1(exp - 1, left - 1)
     } else {
         1

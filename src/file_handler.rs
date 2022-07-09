@@ -1,28 +1,45 @@
-use itertools::Itertools as _;
+use std::collections::HashMap;
+
 use positioned_io::RandomAccessFile;
-use shakmaty::Color::{Black, White};
-use shakmaty::Role::King;
 
-use crate::{EncoderDecoder, Material};
+use crate::{EncoderDecoder, Material, Outcomes, SideToMove, SideToMoveGetter, Table};
 
-struct FileHandler(RandomAccessFile);
+struct FileHandler {
+    pub table: Table,
+    pub outcomes: Outcomes,
+}
 
 impl FileHandler {
     pub fn new(mat: &Material) -> Self {
-        let nb_pieces = mat.count();
-        // TODO handle promotion
-        let downstream_materials_iter = mat
-            .pieces()
-            .into_iter()
-            .filter(|p| p.role != King)
-            .combinations(nb_pieces - 1)
-            .map(|subset_pieces_wo_kings| {
-                subset_pieces_wo_kings
-                    .into_iter()
-                    .chain([Black.king(), White.king()].into_iter())
-            })
-            .map(Material::from_iter);
+        let raf = RandomAccessFile::open(format!("table/{:?}", mat))
+            .expect("table file to be generated and accessible");
+        let outcomes = EncoderDecoder::new(raf)
+            .decompress_file()
+            .expect("File well formated and readable");
+        let table = Table::new(mat);
+        Self { table, outcomes }
+    }
+}
 
-        todo!()
+struct TableBase(HashMap<Material, FileHandler>);
+
+impl TableBase {
+    pub fn new(mat: &Material) -> Self {
+        Self(
+            mat.descendants_not_draw()
+                .map(|m| {
+                    let file_handler = FileHandler::new(&m);
+                    (m, file_handler)
+                })
+                .collect(),
+        )
+    }
+
+    /// Returns the distance to helpmate in the descendant table, or panics
+    pub fn retrieve_outcome(&self, pos: &dyn SideToMove) -> u8 {
+        let mat: Material = pos.board().material().into();
+        let handler = self.0.get(&mat).expect("Position to be among descendants");
+        let idx = handler.table.encode(pos);
+        *handler.outcomes[idx].got(pos)
     }
 }

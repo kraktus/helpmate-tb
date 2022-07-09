@@ -34,6 +34,12 @@ pub(crate) struct MaterialSide {
     by_role: ByRole<u8>,
 }
 
+impl From<ByRole<u8>> for MaterialSide {
+    fn from(by_role: ByRole<u8>) -> Self {
+        Self { by_role }
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Copy)]
 enum CanMate {
     Yes,
@@ -42,7 +48,7 @@ enum CanMate {
 }
 
 impl CanMate {
-    fn is_mate_possible(self, other_side: CanMate) -> bool {
+    fn is_mate_possible(self, other_side: Self) -> bool {
         match self {
             Self::Yes => true,
             Self::No => other_side == Self::Yes,
@@ -52,14 +58,14 @@ impl CanMate {
 }
 
 impl MaterialSide {
-    fn empty() -> MaterialSide {
-        MaterialSide {
+    fn empty() -> Self {
+        Self {
             by_role: ByRole::default(),
         }
     }
 
-    fn from_str_part(s: &str) -> Result<MaterialSide, ()> {
-        let mut side = MaterialSide::empty();
+    fn from_str_part(s: &str) -> Result<Self, ()> {
+        let mut side = Self::empty();
         for ch in s.as_bytes() {
             let role = Role::from_char(char::from(*ch)).ok_or(())?;
             *side.by_role.get_mut(role) += 1;
@@ -179,16 +185,27 @@ pub struct Material {
     pub(crate) by_color: ByColor<MaterialSide>,
 }
 
+impl From<ByColor<ByRole<u8>>> for Material {
+    fn from(by_color: ByColor<ByRole<u8>>) -> Self {
+        Self {
+            by_color: ByColor {
+                black: by_color.black.into(),
+                white: by_color.white.into(),
+            },
+        }
+    }
+}
+
 impl Material {
-    fn empty() -> Material {
-        Material {
+    fn empty() -> Self {
+        Self {
             by_color: ByColor::new_with(|_| MaterialSide::empty()),
         }
     }
 
     /// Get the material configuration for a [`Board`].
-    pub fn from_board(board: &Board) -> Material {
-        Material {
+    pub fn from_board(board: &Board) -> Self {
+        Self {
             by_color: ByColor::new_with(|color| MaterialSide {
                 by_role: board.material_side(color),
             }),
@@ -285,7 +302,7 @@ impl Material {
     }
 
     /// For any color
-    fn descendants_not_draw(&self) -> impl Iterator<Item = Self> + '_ {
+    pub fn descendants_not_draw(&self) -> impl Iterator<Item = Self> + '_ {
         self.descendants().filter(Self::is_mate_possible)
     }
 
@@ -457,7 +474,6 @@ mod tests {
         }
     }
 
-
     #[test]
     fn test_material_descendants_not_draw() {
         for test_config in [
@@ -478,6 +494,20 @@ mod tests {
                 HashSet::<Material>::from_iter(
                     test_config.1.iter().map(|s| Material::from_str(s).unwrap())
                 )
+            );
+        }
+    }
+
+    #[test]
+    fn test_material_from_bycolor_u8() {
+        for test_config in [
+            "KvK", "KBvK", "KNvK", "KRvK", "KQvK", "KBNvK", "KRRvK", "KRvK", "KPvK", "KRvK",
+            "KQvK", "KQRvK", "KQvK", "KRvK", "KRvQK", "KQvK", "KRvK",
+        ] {
+            let mat = Material::from_str(test_config).unwrap();
+            assert_eq!(
+                mat.clone(),
+                mat.by_color.map(|mat_side| mat_side.by_role).into()
             );
         }
     }
