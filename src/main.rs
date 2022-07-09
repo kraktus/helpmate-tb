@@ -17,6 +17,7 @@ pub use indexer_syzygy::{Pieces, Table, A1_H8_DIAG, A8_H1_DIAG};
 pub use material::Material;
 
 use std::collections::HashMap;
+use std::fs::File;
 
 use dhat::{Dhat, DhatAlloc};
 
@@ -44,13 +45,16 @@ fn main() {
     // need to process FIRST winning positions, then losing ones.
     gen.process_positions(&mut q.winning_pos_to_process);
     gen.process_positions(&mut q.losing_pos_to_process);
+    let mut encoder =
+        EncoderDecoder::new(File::create(format!("table/{:?}", &gen.material)).unwrap());
+    encoder.compress(&gen.all_pos);
     let mut draw = 0;
     let mut win = 0;
     let mut lose = 0;
     let mut distrib: HashMap<Outcome, u64> = HashMap::new();
     let mut unkown_outcome: usize = 0;
 
-    println!("{:?}", gen.all_pos);
+    //println!("{:?}", gen.all_pos);
     for by_color_outcome in gen.all_pos.iter() {
         if &UNKNOWN_OUTCOME_BYCOLOR == by_color_outcome {
             unkown_outcome += 2;

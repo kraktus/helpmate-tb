@@ -146,7 +146,7 @@ pub struct Generator {
     pub all_pos: Outcomes,
     pub winner: Color,
     pub counter: u64,
-    material: Material,
+    pub material: Material,
     table: Table,
 }
 

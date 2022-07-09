@@ -1,6 +1,6 @@
 use std::io::{self, ErrorKind::InvalidData, Write};
 
-use deku::bitvec::{BitSlice, BitVec, BitView, Msb0};
+use deku::bitvec::BitView;
 use deku::{ctx::Limit, prelude::*};
 use positioned_io::ReadAt;
 use shakmaty::ByColor;
@@ -191,7 +191,7 @@ mod tests {
         let mut outcomes = Outcomes::with_capacity(nb);
         let mut j: u8 = 0;
         let mut x: u16 = 0;
-        for i in 0..nb {
+        for _i in 0..nb {
             j = j.checked_add(1).unwrap_or(0);
             x = x.checked_add(1).unwrap_or(0);
             if x == 0 {
