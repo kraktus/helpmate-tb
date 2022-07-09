@@ -139,7 +139,7 @@ pub struct Queue {
     pub losing_pos_to_process: VecDeque<u64>,
 }
 
-const A1_H1_H8: Bitboard = Bitboard(9277662557957324543);
+const A1_H1_H8: Bitboard = Bitboard(0x80c0e0f0f8fcfeff);
 
 #[derive(Debug, Clone)]
 pub struct Generator {
@@ -363,6 +363,11 @@ impl Default for Queue {
 mod tests {
     use super::*;
     use shakmaty::fen::Fen;
+
+    #[test]
+    fn test_a1_h8_bb() {
+        assert_eq!(A1_H1_H8, Bitboard(9277662557957324543))
+    }
 
     #[test]
     fn test_pow_minus_1() {

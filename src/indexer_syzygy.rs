@@ -263,8 +263,8 @@ const PP_IDX: [[u64; 64]; 10] = [[
 /// The a7-a5-c5 triangle.
 const TEST45: Bitboard = Bitboard(0x1_0307_0000_0000);
 
-pub const A1_H8_DIAG: Bitboard = Bitboard(9241421688590303745);
-pub const A8_H1_DIAG: Bitboard = Bitboard(72624976668147840);
+pub const A1_H8_DIAG: Bitboard = Bitboard(0x8040201008040201);
+pub const A8_H1_DIAG: Bitboard = Bitboard(0x102040810204080);
 
 const CONSTS: Consts = Consts::new();
 
@@ -800,6 +800,12 @@ impl Table {
 mod tests {
     use super::*;
     use shakmaty::{fen::Fen, CastlingMode, Chess};
+
+    #[test]
+    fn test_bb() {
+        assert_eq!(A1_H8_DIAG, Bitboard(9241421688590303745));
+        assert_eq!(A8_H1_DIAG, Bitboard(72624976668147840));
+    }
 
     #[test]
     fn test_encode_function_against_syzygy_value() {
