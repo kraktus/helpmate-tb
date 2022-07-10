@@ -4,10 +4,12 @@ use positioned_io::RandomAccessFile;
 
 use crate::{EncoderDecoder, Material, Outcomes, SideToMove, SideToMoveGetter, Table};
 
+#[derive(Debug)]
 struct FileHandler {
     pub table: Table,
     pub outcomes: Outcomes,
 }
+
 
 impl FileHandler {
     pub fn new(mat: &Material) -> Self {
@@ -21,6 +23,7 @@ impl FileHandler {
     }
 }
 
+#[derive(Debug)]
 pub struct TableBase(HashMap<Material, FileHandler>);
 
 impl TableBase {

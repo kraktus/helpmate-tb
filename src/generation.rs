@@ -1,4 +1,4 @@
-use crate::{index, index_unchecked, restore_from_index, Material, Table, A1_H8_DIAG};
+use crate::{index, index_unchecked, restore_from_index, Material, Table, TableBase, A1_H8_DIAG};
 use retroboard::RetroBoard;
 use shakmaty::{
     Bitboard, Board, ByColor, CastlingMode, CastlingMode::Standard, Chess, Color, Color::Black,
@@ -141,13 +141,14 @@ pub struct Queue {
 
 const A1_H1_H8: Bitboard = Bitboard(0x80c0e0f0f8fcfeff);
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Generator {
     pub all_pos: Outcomes,
     pub winner: Color,
     pub counter: u64,
     pub material: Material,
-    table: Table,
+    index_table: Table,
+    tablebase: TableBase, // access to the DTM of descendants (different material config, following a capture/promotion)
 }
 
 impl Generator {
@@ -191,7 +192,7 @@ impl Generator {
                             .expect("if chess is valid then rboard should be too");
                         // let expected_rboard = RetroBoard::new_no_pockets("8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1").unwrap();
                         let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
-                        let all_pos_idx = self.table.encode(&chess);
+                        let all_pos_idx = self.index_table.encode(&chess);
                         // if rboard.board().kings() == Bitboard::EMPTY | Square::C3 | Square::F3 {
                         //     println!("rboard kings found {rboard:?}, idx: {all_pos_idx:?}");
                         // }
@@ -280,7 +281,7 @@ impl Generator {
                 let rboard = restore_from_index(&self.material, idx);
                 let out: Outcome = self
                     .all_pos
-                    .get(self.table.encode(&rboard))
+                    .get(self.index_table.encode(&rboard))
                     .map(|bc| bc.got(&rboard))
                     .unwrap_or_else(|| {
                         panic!(
@@ -296,7 +297,7 @@ impl Generator {
                     rboard_after_unmove.push(&m);
                     // let chess_after_unmove: Chess = rboard_after_unmove.clone().into();
                     let idx_after_unmove = index(&rboard_after_unmove);
-                    let idx_all_pos_after_unmove = self.table.encode(&rboard_after_unmove);
+                    let idx_all_pos_after_unmove = self.index_table.encode(&rboard_after_unmove);
                     match self
                         .all_pos
                         .get(idx_all_pos_after_unmove)
@@ -330,7 +331,8 @@ impl Generator {
             all_pos: Vec::default(),
             winner: White,
             counter: 0,
-            table: Table::new(&material),
+            index_table: Table::new(&material),
+            tablebase: TableBase::new(&material),
             material,
         }
     }

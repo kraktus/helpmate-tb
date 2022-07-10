@@ -6,6 +6,7 @@ mod indexer;
 mod indexer_syzygy;
 mod material;
 
+pub use crate::file_handler::TableBase;
 pub use compression::EncoderDecoder;
 pub use encoding::get_info_table;
 pub use generation::{
@@ -25,6 +26,12 @@ use dhat::{Dhat, DhatAlloc};
 static ALLOCATOR: DhatAlloc = DhatAlloc;
 // 3 pieces before using index At t-gmax: 19,080,095 bytes (100%) in 47 blocks (100%), avg size 405,959.47 bytes
 // 4 pieces before using index At t-gmax: 610,457,858 bytes (100%) in 199 blocks (100%), avg size 3,067,627.43 bytes
+
+
+// struct Ops {
+    
+// }
+
 
 fn main() {
     let _dhat = Dhat::start_heap_profiling();
@@ -47,7 +54,7 @@ fn main() {
     gen.process_positions(&mut q.losing_pos_to_process);
     let mut encoder =
         EncoderDecoder::new(File::create(format!("table/{:?}", &gen.material)).unwrap());
-    encoder.compress(&gen.all_pos);
+    encoder.compress(&gen.all_pos).expect("Compression failed");
     let mut draw = 0;
     let mut win = 0;
     let mut lose = 0;
