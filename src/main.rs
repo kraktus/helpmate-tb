@@ -6,6 +6,8 @@ mod indexer;
 mod indexer_syzygy;
 mod material;
 
+use std::iter;
+
 pub use crate::file_handler::TableBase;
 pub use compression::EncoderDecoder;
 pub use encoding::get_info_table;
@@ -62,8 +64,19 @@ fn main() {
         .default_format()
         .target(Target::Stdout)
         .init();
-    // let mats =
-    let mut gen = Generator::new(&args.material);
+    let root_material = Material::from_str(&args.material).expect("Valid material config");
+    let materials = iter::once(root_material.clone()).chain(if args.recursive {
+        vec![].into_iter()
+    } else {
+        root_material.descendants_not_draw_recursive().into_iter()
+    });
+    for mat in materials {
+        gen_one_material(mat)
+    }
+}
+
+fn gen_one_material(mat: Material) {
+    let mut gen = Generator::new(mat);
     let mut q = gen.generate_positions();
     debug!("nb pos {:?}", gen.all_pos.len());
     debug!("counter {:?}", gen.counter);
@@ -83,6 +96,10 @@ fn main() {
     let mut encoder =
         EncoderDecoder::new(File::create(format!("table/{:?}", &gen.material)).unwrap());
     encoder.compress(&gen.all_pos).expect("Compression failed");
+    stats(&gen)
+}
+
+fn stats(gen: &Generator) {
     let mut draw = 0;
     let mut win = 0;
     let mut lose = 0;

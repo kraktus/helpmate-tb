@@ -325,8 +325,7 @@ impl Generator {
         pb.finish_with_message("positions processed");
     }
 
-    pub fn new(fen_config: &str) -> Self {
-        let material = Material::from_str(fen_config).expect("valid fen config to init Material");
+    pub fn new(material: Material) -> Self {
         Self {
             all_pos: Vec::default(),
             winner: White,

@@ -340,7 +340,7 @@ impl Material {
     }
 
     /// Sorted vec containing all unique material configurations
-    fn descendants_not_draw_recursive(&self) -> Vec<Self> {
+    pub fn descendants_not_draw_recursive(&self) -> Vec<Self> {
         let mut descendants_recursive: Vec<Self> = self.descendants_not_draw_recursive_internal();
         println!("{:?}", descendants_recursive);
         descendants_recursive.sort();
