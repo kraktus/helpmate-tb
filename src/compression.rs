@@ -2,6 +2,7 @@ use std::io::{self, ErrorKind::InvalidData, Write};
 
 use deku::bitvec::BitView;
 use deku::{ctx::Limit, prelude::*};
+use log::trace;
 use positioned_io::ReadAt;
 use shakmaty::ByColor;
 use zstd::stream::{decode_all, encode_all};
@@ -77,7 +78,7 @@ impl<T: ReadAt> EncoderDecoder<T> {
 
     fn decompress_block(&self, byte_offset: u64) -> io::Result<Block> {
         let block_header = self.decompress_block_header(byte_offset)?;
-        println!(
+        trace!(
             "size_including_headers {:?}",
             block_header.size_including_headers()
         );
@@ -138,12 +139,12 @@ impl Block {
     pub fn new(outcomes: OutcomesSlice, index_from_usize: usize) -> io::Result<Self> {
         let index_from = to_u64(index_from_usize);
         let index_to = to_u64(index_from_usize + outcomes.len());
-        println!("turning into raw outcomes");
+        trace!("turning into raw outcomes");
         let raw_outcomes = RawOutcomes(outcomes.iter().map(RawOutcome::from).collect());
 
-        println!("turning raw outcomes into bytes");
+        trace!("turning raw outcomes into bytes");
         let raw_outcomes_bytes = raw_outcomes.to_bytes().unwrap();
-        println!("Compressing block");
+        trace!("Compressing block");
         encode_all(raw_outcomes_bytes.as_slice(), 21).map(|compressed_outcomes| {
             let block_size = to_u64(compressed_outcomes.len());
             Self {

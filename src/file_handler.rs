@@ -10,7 +10,6 @@ struct FileHandler {
     pub outcomes: Outcomes,
 }
 
-
 impl FileHandler {
     pub fn new(mat: &Material) -> Self {
         let raf = RandomAccessFile::open(format!("table/{:?}", mat))

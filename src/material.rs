@@ -25,6 +25,7 @@ use serde::Deserializer;
 use shakmaty::{Board, ByColor, ByRole, Color, Piece, Role};
 
 use crate::Pieces;
+use std::iter;
 
 use serde;
 use serde::de;
@@ -141,7 +142,7 @@ impl std::ops::Deref for MaterialSide {
 }
 
 impl Ord for MaterialSide {
-    fn cmp(&self, other: &MaterialSide) -> Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
         self.count()
             .cmp(&other.count())
             .then(self.by_role.king.cmp(&other.by_role.king))
@@ -154,7 +155,7 @@ impl Ord for MaterialSide {
 }
 
 impl PartialOrd for MaterialSide {
-    fn partial_cmp(&self, other: &MaterialSide) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
@@ -185,6 +186,7 @@ pub struct Material {
     pub(crate) by_color: ByColor<MaterialSide>,
 }
 
+// TODO merge with `Material::from_board`
 impl From<ByColor<ByRole<u8>>> for Material {
     fn from(by_color: ByColor<ByRole<u8>>) -> Self {
         Self {
@@ -193,6 +195,36 @@ impl From<ByColor<ByRole<u8>>> for Material {
                 white: by_color.white.into(),
             },
         }
+    }
+}
+
+impl Ord for Material {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // TODO use into_normalised every time `Material` instance is created
+        // making this check useless
+        let normalised_self = self.clone().into_normalized();
+        let normalised_other = other.clone().into_normalized();
+        normalised_self
+            .count()
+            .cmp(&normalised_other.count())
+            .then(
+                normalised_self
+                    .by_color
+                    .white
+                    .cmp(&normalised_other.by_color.white),
+            )
+            .then(
+                normalised_self
+                    .by_color
+                    .black
+                    .cmp(&normalised_other.by_color.black),
+            )
+    }
+}
+
+impl PartialOrd for Material {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
 
@@ -212,11 +244,11 @@ impl Material {
         }
     }
 
-    pub(crate) fn from_iter<I>(iter: I) -> Material
+    pub(crate) fn from_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = Piece>,
     {
-        let mut material = Material::empty();
+        let mut material = Self::empty();
         for piece in iter {
             *material
                 .by_color
@@ -227,13 +259,13 @@ impl Material {
         material
     }
 
-    pub(crate) fn from_str(s: &str) -> Result<Material, ()> {
+    pub(crate) fn from_str(s: &str) -> Result<Self, ()> {
         if s.len() > 64 + 1 {
             return Err(());
         }
 
         let (white, black) = s.split_once('v').ok_or(())?;
-        Ok(Material {
+        Ok(Self {
             by_color: ByColor {
                 white: MaterialSide::from_str_part(white)?,
                 black: MaterialSide::from_str_part(black)?,
@@ -301,9 +333,28 @@ impl Material {
             })
     }
 
-    /// For any color
+    /// For any color, depth 1 descendants not trivially drawn
+    /// If looking for all descendants, incluring indirect ones, use `Material::descendants_not_draw_recursive` instead
     pub fn descendants_not_draw(&self) -> impl Iterator<Item = Self> + '_ {
         self.descendants().filter(Self::is_mate_possible)
+    }
+
+    /// Sorted vec containing all unique material configurations
+    fn descendants_not_draw_recursive(&self) -> Vec<Self> {
+        let mut descendants_recursive: Vec<Self> = self.descendants_not_draw_recursive_internal();
+        println!("{:?}", descendants_recursive);
+        descendants_recursive.sort();
+        descendants_recursive.dedup();
+        descendants_recursive
+    }
+
+    #[inline]
+    fn descendants_not_draw_recursive_internal(&self) -> Vec<Self> {
+        self.descendants_not_draw()
+            .flat_map(|x| {
+                iter::once(x.clone()).chain(x.descendants_not_draw_recursive_internal().into_iter())
+            })
+            .collect()
     }
 
     pub(crate) fn into_normalized(self) -> Self {
@@ -490,6 +541,30 @@ mod tests {
                 HashSet::<Material>::from_iter(
                     test_config.1.iter().map(|s| Material::from_str(s).unwrap())
                 )
+            );
+        }
+    }
+
+    #[test]
+    fn test_material_descendants_not_draw_recursive() {
+        for test_config in [
+            ("KvK", vec![]),
+            ("KBvK", vec![]),
+            ("KNvK", vec![]),
+            ("KRvK", vec![]),
+            ("KQvK", vec![]),
+            ("KBNvK", vec![]),
+            ("KRRvK", vec!["KRvK"]),
+            ("KPvK", vec!["KRvK", "KQvK"]),
+            ("KQRvK", vec!["KRvK", "KQvK"]),
+            ("KRvQK", vec!["KRvK", "KQvK"]),
+            ("KRBNvK", vec!["KRvK", "KBNvK", "KRNvK", "KRBvK"]),
+        ] {
+            let mat = Material::from_str(test_config.0).unwrap();
+            println!("{mat:?}",);
+            assert_eq!(
+                mat.descendants_not_draw_recursive(),
+                Vec::from_iter(test_config.1.iter().map(|s| Material::from_str(s).unwrap()))
             );
         }
     }
