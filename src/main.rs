@@ -41,7 +41,7 @@ static ALLOCATOR: DhatAlloc = DhatAlloc;
 struct Opt {
     #[clap(short, long, value_parser, help = "example \"KQvK\"")]
     material: String,
-    #[clap(parse(from_flag))]
+    #[clap(short, long, parse(from_flag))]
     recursive: bool,
     #[clap(short, long, action = clap::ArgAction::Count, default_value_t = 2)]
     verbose: u8,
@@ -65,11 +65,12 @@ fn main() {
         .target(Target::Stdout)
         .init();
     let root_material = Material::from_str(&args.material).expect("Valid material config");
-    let materials = iter::once(root_material.clone()).chain(if args.recursive {
-        vec![].into_iter()
+    let mut materials = if args.recursive {
+        root_material.descendants_not_draw_recursive()
     } else {
-        root_material.descendants_not_draw_recursive().into_iter()
-    });
+        vec![]
+    };
+    materials.push(root_material);
     for mat in materials {
         gen_one_material(mat)
     }
