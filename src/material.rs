@@ -19,6 +19,8 @@ use std::{
     fmt,
 };
 
+use std::ops::Deref;
+
 use itertools::Itertools as _;
 use serde::Deserialize;
 use serde::Deserializer;
@@ -133,7 +135,7 @@ impl MaterialSide {
     }
 }
 
-impl std::ops::Deref for MaterialSide {
+impl Deref for MaterialSide {
     type Target = ByRole<u8>;
 
     fn deref(&self) -> &Self::Target {
@@ -180,10 +182,30 @@ impl fmt::Debug for MaterialSide {
     }
 }
 
+/// Wrapper to ensure `Material` is always normalised
+/// There should be no way to mutate it, and only one way to create it:
+/// `From<ByColor<MaterialSide>>`
+#[derive(Clone, Eq, PartialEq, Hash)]
+pub struct ByColorNormalisedMaterialSide(ByColor<MaterialSide>);
+
+impl From<ByColor<MaterialSide>> for ByColorNormalisedMaterialSide {
+    fn from(by_color: ByColor<MaterialSide>) -> Self {
+        Self(by_color.into_normalized())
+    }
+}
+
+impl Deref for ByColorNormalisedMaterialSide {
+    type Target = ByColor<MaterialSide>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// A material key.
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct Material {
-    pub by_color: ByColor<MaterialSide>,
+    pub by_color: ByColorNormalisedMaterialSide,
 }
 
 // TODO merge with `Material::from_board`
@@ -193,32 +215,18 @@ impl From<ByColor<ByRole<u8>>> for Material {
             by_color: ByColor {
                 black: by_color.black.into(),
                 white: by_color.white.into(),
-            },
+            }
+            .into(),
         }
     }
 }
 
 impl Ord for Material {
     fn cmp(&self, other: &Self) -> Ordering {
-        // TODO use into_normalised every time `Material` instance is created
-        // making this check useless
-        let normalised_self = self.clone().into_normalized();
-        let normalised_other = other.clone().into_normalized();
-        normalised_self
-            .count()
-            .cmp(&normalised_other.count())
-            .then(
-                normalised_self
-                    .by_color
-                    .white
-                    .cmp(&normalised_other.by_color.white),
-            )
-            .then(
-                normalised_self
-                    .by_color
-                    .black
-                    .cmp(&normalised_other.by_color.black),
-            )
+        self.count()
+            .cmp(&other.count())
+            .then(self.by_color.white.cmp(&other.by_color.white))
+            .then(self.by_color.black.cmp(&other.by_color.black))
     }
 }
 
@@ -229,18 +237,13 @@ impl PartialOrd for Material {
 }
 
 impl Material {
-    fn empty() -> Self {
-        Self {
-            by_color: ByColor::new_with(|_| MaterialSide::empty()),
-        }
-    }
-
     /// Get the material configuration for a [`Board`].
     pub fn from_board(board: &Board) -> Self {
         Self {
             by_color: ByColor::new_with(|color| MaterialSide {
                 by_role: board.material_side(color),
-            }),
+            })
+            .into(),
         }
     }
 
@@ -248,15 +251,13 @@ impl Material {
     where
         I: IntoIterator<Item = Piece>,
     {
-        let mut material = Self::empty();
+        let mut by_color = ByColor::new_with(|_| MaterialSide::empty());
         for piece in iter {
-            *material
-                .by_color
-                .get_mut(piece.color)
-                .by_role
-                .get_mut(piece.role) += 1;
+            *by_color.get_mut(piece.color).by_role.get_mut(piece.role) += 1;
         }
-        material
+        Self {
+            by_color: by_color.into(),
+        }
     }
 
     pub fn from_str(s: &str) -> Result<Self, ()> {
@@ -269,7 +270,8 @@ impl Material {
             by_color: ByColor {
                 white: MaterialSide::from_str_part(white)?,
                 black: MaterialSide::from_str_part(black)?,
-            },
+            }
+            .into(),
         })
     }
 
@@ -299,12 +301,6 @@ impl Material {
             .unwrap_or(0)
     }
 
-    pub fn into_flipped(self) -> Material {
-        Material {
-            by_color: self.by_color.into_flipped(),
-        }
-    }
-
     /// For any color
     pub fn is_mate_possible(&self) -> bool {
         // order is arbitrary
@@ -321,15 +317,16 @@ impl Material {
             .iter()
             .circular_tuple_windows()
             .flat_map(|(mat_1, mat_2)| {
-                mat_1.descendants().into_iter().map(|mat_1_descendant| {
-                    Self {
+                mat_1
+                    .descendants()
+                    .into_iter()
+                    .map(|mat_1_descendant| Self {
                         by_color: ByColor {
                             white: mat_1_descendant,
                             black: mat_2.clone(),
-                        },
-                    }
-                    .into_normalized()
-                })
+                        }
+                        .into(),
+                    })
             })
     }
 
@@ -355,12 +352,6 @@ impl Material {
                 iter::once(x.clone()).chain(x.descendants_not_draw_recursive_internal().into_iter())
             })
             .collect()
-    }
-
-    pub fn into_normalized(self) -> Self {
-        Self {
-            by_color: self.by_color.into_normalized(),
-        }
     }
 
     pub fn by_piece(&self, piece: Piece) -> u8 {
@@ -427,12 +418,12 @@ mod tests {
 
     #[test]
     fn test_pieces_without_white_king_from_material() {
-        let mat = Material::from_str("KBNvKRQ").unwrap();
+        let mat = Material::from_str("KRQvKBN").unwrap();
         let pieces: Pieces = (&[
-            White.knight(),
-            White.bishop(),
-            Black.rook(),
-            Black.queen(),
+            White.rook(),
+            White.queen(),
+            Black.knight(),
+            Black.bishop(),
             Black.king(),
         ] as &[_])
             .try_into()
@@ -578,7 +569,7 @@ mod tests {
             let mat = Material::from_str(test_config).unwrap();
             assert_eq!(
                 mat.clone(),
-                mat.by_color.map(|mat_side| mat_side.by_role).into()
+                Material::from(mat.by_color.0.map(|mat_side| mat_side.by_role))
             );
         }
     }

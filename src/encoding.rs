@@ -49,5 +49,5 @@ pub type InfoTable = ArrayVec<ArrayVec<GroupDataInfo, 2>, 4>;
 pub fn get_info_table(m: &Material) -> Result<InfoTable, Box<dyn Error>> {
     let data = fs::read_to_string("encoding.json")?;
     let map: HashMap<Material, InfoTable> = serde_json::from_str(&data)?;
-    Ok(map.get(&m.clone().into_normalized()).unwrap().clone())
+    Ok(map.get(&m).unwrap().clone())
 }

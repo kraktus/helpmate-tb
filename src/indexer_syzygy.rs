@@ -489,12 +489,12 @@ impl Table {
     pub fn encode_checked(&self, pos: &dyn SideToMove) -> Result<usize, ()> {
         let key = Material::from_board(pos.board());
         let material = Material::from_iter(self.files[0][0].pieces.clone());
-        let key_check = key == material || key == material.clone().into_flipped();
+        // let key_check = key == material || key == material.clone().into_flipped();
 
-        if !key_check {
-            println!("{:?}", &pos.board());
-        }
-        assert!(key_check);
+        // if !key_check {
+        //     println!("{:?}", &pos.board());
+        // }
+        // assert!(key_check);
 
         let symmetric_btm = material.is_symmetric() && pos.side_to_move().is_black();
         let black_stronger = key != material;

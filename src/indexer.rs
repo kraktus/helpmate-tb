@@ -161,9 +161,9 @@ mod tests {
 
     #[test]
     fn test_index_unchecked_overflow() {
-        let high_value_board = RetroBoard::new_no_pockets("3bnqqk/8/8/8/3K4/8/8/8 b").unwrap();
+        let high_value_board = RetroBoard::new_no_pockets("3BNQQk/8/8/8/3K4/8/8/8 b - -").unwrap();
         let idx = index_unchecked(&high_value_board);
-        let config = mat("KvKBNQQ");
+        let config = mat("KBNQQvK");
         println!("{config:?}");
         let high_value_from_idx = restore_from_index(&config, idx);
         //assert_eq!(idx, 21474565947);
