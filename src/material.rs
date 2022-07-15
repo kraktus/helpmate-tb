@@ -31,7 +31,7 @@ use serde;
 use serde::de;
 
 #[derive(Clone, Eq, PartialEq, Hash)]
-pub(crate) struct MaterialSide {
+pub struct MaterialSide {
     by_role: ByRole<u8>,
 }
 
@@ -74,11 +74,11 @@ impl MaterialSide {
         Ok(side)
     }
 
-    pub(crate) fn count(&self) -> usize {
+    pub fn count(&self) -> usize {
         self.by_role.iter().map(|c| usize::from(*c)).sum()
     }
 
-    pub(crate) fn has_pawns(&self) -> bool {
+    pub fn has_pawns(&self) -> bool {
         self.by_role.pawn > 0
     }
 
@@ -183,7 +183,7 @@ impl fmt::Debug for MaterialSide {
 /// A material key.
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct Material {
-    pub(crate) by_color: ByColor<MaterialSide>,
+    pub by_color: ByColor<MaterialSide>,
 }
 
 // TODO merge with `Material::from_board`
@@ -244,7 +244,7 @@ impl Material {
         }
     }
 
-    pub(crate) fn from_iter<I>(iter: I) -> Self
+    pub fn from_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = Piece>,
     {
@@ -259,7 +259,7 @@ impl Material {
         material
     }
 
-    pub(crate) fn from_str(s: &str) -> Result<Self, ()> {
+    pub fn from_str(s: &str) -> Result<Self, ()> {
         if s.len() > 64 + 1 {
             return Err(());
         }
@@ -273,23 +273,23 @@ impl Material {
         })
     }
 
-    pub(crate) fn count(&self) -> usize {
+    pub fn count(&self) -> usize {
         self.by_color.iter().map(|side| side.count()).sum()
     }
 
-    pub(crate) fn is_symmetric(&self) -> bool {
+    pub fn is_symmetric(&self) -> bool {
         self.by_color.white == self.by_color.black
     }
 
-    pub(crate) fn has_pawns(&self) -> bool {
+    pub fn has_pawns(&self) -> bool {
         self.by_color.iter().any(|side| side.has_pawns())
     }
 
-    pub(crate) fn unique_pieces(&self) -> u8 {
+    pub fn unique_pieces(&self) -> u8 {
         self.by_color.iter().map(|side| side.unique_roles()).sum()
     }
 
-    pub(crate) fn min_like_man(&self) -> u8 {
+    pub fn min_like_man(&self) -> u8 {
         self.by_color
             .iter()
             .flat_map(|side| side.by_role.iter())
@@ -299,14 +299,14 @@ impl Material {
             .unwrap_or(0)
     }
 
-    pub(crate) fn into_flipped(self) -> Material {
+    pub fn into_flipped(self) -> Material {
         Material {
             by_color: self.by_color.into_flipped(),
         }
     }
 
     /// For any color
-    pub(crate) fn is_mate_possible(&self) -> bool {
+    pub fn is_mate_possible(&self) -> bool {
         // order is arbitrary
         let (white, black) = (
             self.by_color.white.can_mate(),
@@ -357,13 +357,13 @@ impl Material {
             .collect()
     }
 
-    pub(crate) fn into_normalized(self) -> Self {
+    pub fn into_normalized(self) -> Self {
         Self {
             by_color: self.by_color.into_normalized(),
         }
     }
 
-    pub(crate) fn by_piece(&self, piece: Piece) -> u8 {
+    pub fn by_piece(&self, piece: Piece) -> u8 {
         *self.by_color.get(piece.color).get(piece.role)
     }
 
@@ -382,7 +382,7 @@ impl Material {
         pieces
     }
 
-    pub(crate) fn pieces_without_white_king(&self) -> Pieces {
+    pub fn pieces_without_white_king(&self) -> Pieces {
         self.pieces_with_white_king(false)
     }
 }
