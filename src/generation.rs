@@ -8,7 +8,7 @@ use std::collections::VecDeque;
 use std::ops::{Add, Not};
 
 use std::cmp::{Ord, Ordering, PartialOrd};
-use std::ops::Deref;
+
 
 use indicatif::{ProgressBar, ProgressStyle};
 

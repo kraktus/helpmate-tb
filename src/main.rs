@@ -6,7 +6,7 @@ mod indexer;
 mod indexer_syzygy;
 mod material;
 
-use std::iter;
+
 
 pub use crate::file_handler::TableBase;
 pub use compression::EncoderDecoder;
