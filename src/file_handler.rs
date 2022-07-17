@@ -39,7 +39,7 @@ impl TableBase {
 
     /// Returns the distance to helpmate in the descendant table, or panics
     pub fn retrieve_outcome(&self, pos: &dyn SideToMove) -> u8 {
-        let mat: Material = pos.board().material().into();
+        let mat = Material::from_board(pos.board());
         let handler = self.0.get(&mat).expect("Position to be among descendants");
         let idx = handler.table.encode(pos);
         *handler.outcomes[idx].got(pos)

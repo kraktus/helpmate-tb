@@ -208,19 +208,6 @@ pub struct Material {
     pub by_color: ByColorNormalisedMaterialSide,
 }
 
-// TODO merge with `Material::from_board`
-impl From<ByColor<ByRole<u8>>> for Material {
-    fn from(by_color: ByColor<ByRole<u8>>) -> Self {
-        Self {
-            by_color: ByColor {
-                black: by_color.black.into(),
-                white: by_color.white.into(),
-            }
-            .into(),
-        }
-    }
-}
-
 impl Ord for Material {
     fn cmp(&self, other: &Self) -> Ordering {
         self.count()
@@ -482,8 +469,8 @@ mod tests {
             ("KvK", false),
             ("KPvK", true),
             ("KPvKP", true),
-            ("KRvP", true),
-            ("KQvP", true),
+            ("KRvKP", true),
+            ("KQvKP", true),
         ] {
             let mat = Material::from_str(test_config.0).unwrap();
             assert_eq!(mat.is_mate_possible(), test_config.1);
@@ -561,15 +548,19 @@ mod tests {
     }
 
     #[test]
-    fn test_material_from_bycolor_u8() {
+    fn test_material_buildin_normalisation() {
         for test_config in [
-            "KvK", "KBvK", "KNvK", "KRvK", "KQvK", "KBNvK", "KRRvK", "KRvK", "KPvK", "KRvK",
-            "KQvK", "KQRvK", "KQvK", "KRvK", "KRvQK", "KQvK", "KRvK",
+            ("KBNvKRQ", "KRQvKBN"),
+            ("KNvKB", "KBvKN"),
+            ("KBvK", "KvKB"),
+            ("KNvK", "KvKN"),
+            ("KPvK", "KvKP"),
+            ("KRvKP", "KPvKR"),
+            ("KQvKP", "KPvKQ"),
         ] {
-            let mat = Material::from_str(test_config).unwrap();
             assert_eq!(
-                mat.clone(),
-                Material::from(mat.by_color.0.map(|mat_side| mat_side.by_role))
+                Material::from_str(test_config.0).unwrap(),
+                Material::from_str(test_config.1).unwrap()
             );
         }
     }
