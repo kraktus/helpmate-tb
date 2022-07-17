@@ -11,7 +11,7 @@ pub use compression::EncoderDecoder;
 pub use encoding::get_info_table;
 pub use generation::{
     Generator, Outcome, Outcomes, OutcomesSlice, SideToMove, SideToMoveGetter,
-    UNKNOWN_OUTCOME_BYCOLOR,
+    UNDEFINED_OUTCOME_BYCOLOR,
 };
 pub use indexer::{index, index_unchecked, restore_from_index};
 pub use indexer_syzygy::{Pieces, Table, A1_H8_DIAG, A8_H1_DIAG};
@@ -103,12 +103,12 @@ fn stats(gen: &Generator) {
     let mut win = 0;
     let mut lose = 0;
     let mut distrib: HashMap<Outcome, u64> = HashMap::new();
-    let mut unkown_outcome: usize = 0;
+    let mut undefined_outcome: usize = 0;
 
     //println!("{:?}", gen.all_pos);
     for by_color_outcome in gen.all_pos.iter() {
-        if &UNKNOWN_OUTCOME_BYCOLOR == by_color_outcome {
-            unkown_outcome += 2;
+        if &UNDEFINED_OUTCOME_BYCOLOR == by_color_outcome {
+            undefined_outcome += 2;
             continue;
         };
         for value in by_color_outcome.iter() {
@@ -118,7 +118,7 @@ fn stats(gen: &Generator) {
                 Outcome::Draw => draw += 1,
                 Outcome::Win(_) => win += 1,
                 Outcome::Lose(_) => lose += 1,
-                Outcome::Unknown => unkown_outcome += 1,
+                Outcome::Undefined => undefined_outcome += 1,
             }
         }
     }
@@ -128,7 +128,7 @@ fn stats(gen: &Generator) {
     );
     debug!(
         "Index density = {:?}%",
-        (gen.all_pos.len() * 2 - unkown_outcome) * 100 / (gen.all_pos.len() * 2)
+        (gen.all_pos.len() * 2 - undefined_outcome) * 100 / (gen.all_pos.len() * 2)
     );
     for i in 0..u8::MAX {
         if let Some(nb_win) = distrib.get(&Outcome::Win(i)) {

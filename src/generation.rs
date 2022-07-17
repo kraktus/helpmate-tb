@@ -67,11 +67,11 @@ pub type OutcomesSlice<'a> = &'a [ByColor<u8>];
 pub enum Outcome {
     Win(u8), // Need to be between 0 and 125 due to conversion to u8
     Draw,
-    Lose(u8), // Need to be between 0 and 125 due to conversion to u8
-    Unknown,  // Should we use Option<Outcome> without that variant instead?
+    Lose(u8),  // Need to be between 0 and 125 due to conversion to u8
+    Undefined, // Should we use Option<Outcome> without that variant instead?
 }
 
-pub const UNKNOWN_OUTCOME_BYCOLOR: ByColor<u8> = ByColor {
+pub const UNDEFINED_OUTCOME_BYCOLOR: ByColor<u8> = ByColor {
     black: 255,
     white: 255,
 };
@@ -80,7 +80,7 @@ impl From<u8> for Outcome {
     fn from(u: u8) -> Self {
         match u {
             0 => Self::Draw,
-            255 => Self::Unknown,
+            255 => Self::Undefined,
             w if w >= 128 => Self::Win(w - 128),
             l => Self::Lose(l - 1),
         }
@@ -103,7 +103,7 @@ impl Ord for Outcome {
             (Self::Draw, Self::Lose(_)) => Ordering::Greater,
             (Self::Lose(x), Self::Lose(y)) => x.cmp(y), // losing in many moves is better,
             (Self::Lose(_), Self::Win(_) | Self::Draw) => Ordering::Less,
-            (Self::Unknown, _) | (_, Self::Unknown) => panic!("No unknown in comparison"),
+            (Self::Undefined, _) | (_, Self::Undefined) => panic!("No Undefined in comparison"),
         }
     }
 }
@@ -117,7 +117,7 @@ impl PartialOrd for Outcome {
 fn try_into_util(o: Outcome) -> Result<u8, OutcomeOutOfBound> {
     match o {
         Outcome::Draw => Ok(0),
-        Outcome::Unknown => Ok(255),
+        Outcome::Undefined => Ok(255),
         Outcome::Win(w) if w <= 126 => Ok(w + 128),
         Outcome::Lose(l) if l <= 126 => Ok(l + 1),
         _ => Err(OutcomeOutOfBound),
@@ -138,7 +138,7 @@ impl Not for Outcome {
             Self::Win(x) => Self::Lose(x),
             Self::Lose(x) => Self::Win(x),
             Self::Draw => Self::Draw,
-            Self::Unknown => Self::Unknown,
+            Self::Undefined => Self::Undefined,
         }
     }
 }
@@ -151,7 +151,7 @@ impl Add<u8> for Outcome {
             Self::Win(x) => Self::Win(x + rhs),
             Self::Lose(x) => Self::Lose(x + rhs),
             Self::Draw => Self::Draw,
-            Self::Unknown => Self::Unknown,
+            Self::Undefined => Self::Undefined,
         }
     }
 }
@@ -224,7 +224,7 @@ impl Generator {
                         if all_pos_idx == 242414 {
                             println!("Idx: {all_pos_idx:?}, rboard: {rboard:?}");
                         }
-                        if Outcome::Unknown != self.all_pos[all_pos_idx].got(&chess).into() {
+                        if Outcome::Undefined != self.all_pos[all_pos_idx].got(&chess).into() {
                             panic!("Index {all_pos_idx} already generated, board: {rboard:?}");
                         }
                         if chess.is_checkmate() {
@@ -255,7 +255,7 @@ impl Generator {
         let pb = self.get_progress_bar();
         self.counter = 0;
         let mut queue = Queue::default();
-        self.all_pos = vec![UNKNOWN_OUTCOME_BYCOLOR; self.get_nb_pos() as usize / 10 * 9]; // heuristic, less than 90% of pos are legals. Takes x2 (because each stored element is in fact 1 position, but with black and white to turn) more than number of legal positions
+        self.all_pos = vec![UNDEFINED_OUTCOME_BYCOLOR; self.get_nb_pos() as usize / 10 * 9]; // heuristic, less than 90% of pos are legals. Takes x2 (because each stored element is in fact 1 position, but with black and white to turn) more than number of legal positions
         let white_king_bb = Bitboard(135007759); // a1-d1-d4 triangle
         println!("{:?}", white_king_bb.0);
         for white_king_sq in white_king_bb {
@@ -265,7 +265,7 @@ impl Generator {
         }
         pb.finish_with_message("positions generated");
         println!("all_pos_vec capacity: {}", self.all_pos.capacity());
-        while Some(&UNKNOWN_OUTCOME_BYCOLOR) == self.all_pos.last() {
+        while Some(&UNDEFINED_OUTCOME_BYCOLOR) == self.all_pos.last() {
             self.all_pos.pop();
         }
 
@@ -334,7 +334,7 @@ impl Generator {
                             self.all_pos[idx_all_pos_after_unmove]
                                 .set_to(&rboard_after_unmove, (out + 1).into());
                         }
-                        Some(outcome_u8) if Outcome::Unknown == outcome_u8.into() => {
+                        Some(outcome_u8) if Outcome::Undefined == outcome_u8.into() => {
                             panic!("pos before: {rboard:?}, and after {m:?} pos not found, illegal? {rboard_after_unmove:?}, idx: {idx_all_pos_after_unmove:?}")
                         }
                         _ => (),
@@ -402,7 +402,7 @@ mod tests {
     #[test]
     fn test_outcome_to_u8() {
         assert_eq!(u8::try_from(Outcome::Draw).unwrap(), 0);
-        assert_eq!(u8::try_from(Outcome::Unknown).unwrap(), 255);
+        assert_eq!(u8::try_from(Outcome::Undefined).unwrap(), 255);
         assert_eq!(u8::try_from(Outcome::Lose(0)).unwrap(), 1);
         assert_eq!(u8::try_from(Outcome::Lose(125)).unwrap(), 126);
     }
@@ -459,6 +459,6 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_ord_outcome_panic() {
-        let _ = Outcome::Unknown > Outcome::Win(1);
+        let _ = Outcome::Undefined > Outcome::Win(1);
     }
 }
