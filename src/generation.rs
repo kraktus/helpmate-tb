@@ -7,6 +7,9 @@ use shakmaty::{
 use std::collections::VecDeque;
 use std::ops::{Add, Not};
 
+use std::cmp::{Ord, Ordering, PartialOrd};
+use std::ops::Deref;
+
 use indicatif::{ProgressBar, ProgressStyle};
 
 // Allow to use both `Chess` and `RetroBoard`
@@ -66,7 +69,7 @@ pub enum Outcome {
     Win(u8), // Need to be between 0 and 125 due to conversion to u8
     Draw,
     Lose(u8), // Need to be between 0 and 125 due to conversion to u8
-    Unknown,
+    Unknown,  // Should we use Option<Outcome> without that variant instead?
 }
 
 pub const UNKNOWN_OUTCOME_BYCOLOR: ByColor<u8> = ByColor {
@@ -91,6 +94,27 @@ impl From<&u8> for Outcome {
     }
 }
 
+impl Ord for Outcome {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self, other) {
+            (Self::Win(x), Self::Win(y)) => x.cmp(y).reverse(), // short win is better,
+            (Self::Win(_), Self::Draw | Self::Lose(_)) => Ordering::Greater, // if other is not a Win, we're greater
+            (Self::Draw, Self::Win(_)) => Ordering::Less,
+            (Self::Draw, Self::Draw) => Ordering::Equal,
+            (Self::Draw, Self::Lose(_)) => Ordering::Greater,
+            (Self::Lose(x), Self::Lose(y)) => x.cmp(y), // losing in many moves is better,
+            (Self::Lose(_), Self::Win(_) | Self::Draw) => Ordering::Less,
+            (Self::Unknown, _) | (_, Self::Unknown) => panic!("No unknown in comparison"),
+        }
+    }
+}
+
+impl PartialOrd for Outcome {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 fn try_into_util(o: Outcome) -> Result<u8, OutcomeOutOfBound> {
     match o {
         Outcome::Draw => Ok(0),
@@ -112,10 +136,10 @@ impl Not for Outcome {
 
     fn not(self) -> Self::Output {
         match self {
-            Outcome::Win(x) => Outcome::Lose(x),
-            Outcome::Lose(x) => Outcome::Win(x),
-            Outcome::Draw => Outcome::Draw,
-            Outcome::Unknown => Outcome::Unknown,
+            Self::Win(x) => Self::Lose(x),
+            Self::Lose(x) => Self::Win(x),
+            Self::Draw => Self::Draw,
+            Self::Unknown => Self::Unknown,
         }
     }
 }
@@ -125,10 +149,10 @@ impl Add<u8> for Outcome {
 
     fn add(self, rhs: u8) -> Self {
         match self {
-            Outcome::Win(x) => Outcome::Win(x + rhs),
-            Outcome::Lose(x) => Outcome::Lose(x + rhs),
-            Outcome::Draw => Outcome::Draw,
-            Outcome::Unknown => Outcome::Unknown,
+            Self::Win(x) => Self::Win(x + rhs),
+            Self::Lose(x) => Self::Lose(x + rhs),
+            Self::Draw => Self::Draw,
+            Self::Unknown => Self::Unknown,
         }
     }
 }
@@ -422,5 +446,15 @@ mod tests {
         chess = chess.swap_turn().unwrap();
         bc.set_to(&chess, 200);
         assert_eq!(*bc.got(&rboard), 200);
+    }
+
+    #[test]
+    fn test_ord_outcome() {
+        assert!(Outcome::Win(1) > Outcome::Win(2));
+        assert!(Outcome::Win(100) > Outcome::Draw);
+        assert!(Outcome::Win(100) > Outcome::Lose(1));
+        assert!(Outcome::Draw > Outcome::Lose(1));
+        assert!(Outcome::Lose(2) > Outcome::Lose(1));
+
     }
 }
