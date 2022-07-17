@@ -455,4 +455,10 @@ mod tests {
         assert!(Outcome::Draw > Outcome::Lose(1));
         assert!(Outcome::Lose(2) > Outcome::Lose(1));
     }
+
+    #[test]
+    #[should_panic]
+    fn test_ord_outcome_panic() {
+        let _ = Outcome::Unknown > Outcome::Win(1);
+    }
 }
