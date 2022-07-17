@@ -9,7 +9,6 @@ use std::ops::{Add, Not};
 
 use std::cmp::{Ord, Ordering, PartialOrd};
 
-
 use indicatif::{ProgressBar, ProgressStyle};
 
 // Allow to use both `Chess` and `RetroBoard`
@@ -455,6 +454,5 @@ mod tests {
         assert!(Outcome::Win(100) > Outcome::Lose(1));
         assert!(Outcome::Draw > Outcome::Lose(1));
         assert!(Outcome::Lose(2) > Outcome::Lose(1));
-
     }
 }

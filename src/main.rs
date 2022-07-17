@@ -6,8 +6,6 @@ mod indexer;
 mod indexer_syzygy;
 mod material;
 
-
-
 pub use crate::file_handler::TableBase;
 pub use compression::EncoderDecoder;
 pub use encoding::get_info_table;
