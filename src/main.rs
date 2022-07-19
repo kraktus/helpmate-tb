@@ -3,14 +3,16 @@ mod encoding;
 mod file_handler;
 mod generation;
 mod indexer;
+mod outcome;
 mod indexer_syzygy;
 mod material;
 
 pub use crate::file_handler::TableBase;
 pub use compression::EncoderDecoder;
+pub use crate::outcome::{Outcome, Outcomes, OutcomesSlice};
 pub use encoding::get_info_table;
 pub use generation::{
-    Generator, Outcome, Outcomes, OutcomesSlice, SideToMove, SideToMoveGetter,
+    Generator, SideToMove, SideToMoveGetter,
     UNDEFINED_OUTCOME_BYCOLOR,
 };
 pub use indexer::{index, index_unchecked, restore_from_index};
