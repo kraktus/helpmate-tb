@@ -6,9 +6,6 @@ use shakmaty::{
     Color::White, FromSetup, Piece, Position, PositionError, Setup,
 };
 use std::collections::VecDeque;
-use std::ops::{Add, Not};
-
-use std::cmp::{Ord, Ordering, PartialOrd};
 
 use indicatif::{ProgressBar, ProgressStyle};
 
