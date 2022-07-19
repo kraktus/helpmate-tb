@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 
 use positioned_io::RandomAccessFile;
+use shakmaty::Chess;
+use shakmaty::Position;
 
-use crate::{EncoderDecoder, Material, Outcomes, SideToMove, SideToMoveGetter, Table};
+use crate::{EncoderDecoder, Material, Outcome, Outcomes, SideToMoveGetter, Table};
 
 #[derive(Debug)]
 struct FileHandler {
@@ -38,10 +40,27 @@ impl TableBase {
     }
 
     /// Returns the distance to helpmate in the descendant table, or panics
-    pub fn retrieve_outcome(&self, pos: &dyn SideToMove) -> u8 {
+    fn retrieve_outcome(&self, pos: &Chess) -> Outcome {
         let mat = Material::from_board(pos.board());
-        let handler = self.0.get(&mat).expect("Position to be among descendants");
-        let idx = handler.table.encode(pos);
-        *handler.outcomes[idx].got(pos)
+        let table_file = self.0.get(&mat).expect("Position to be among descendants");
+        let idx = table_file.table.encode(pos);
+        Outcome::from(*table_file.outcomes[idx].got(pos))
+    }
+
+    /// For the given position, compute all moves that are either captures and/or promotion,
+    /// and return the best result
+    /// Example:
+    /// "KPvRK" where the pawn can take and promote then mate in 4, or just promote and mate in 2, will return `Outcome::Win(2)`
+    pub fn outcome_from_captures_promotion(&self, pos: &Chess) -> Option<Outcome> {
+        let mut moves = pos.legal_moves();
+        moves.retain(|m| m.is_capture() || m.is_promotion());
+        moves
+            .iter()
+            .map(|chess_move| {
+                let mut pos_after_move = pos.clone();
+                pos_after_move.play_unchecked(chess_move);
+                self.retrieve_outcome(&pos_after_move)
+            })
+            .max()
     }
 }

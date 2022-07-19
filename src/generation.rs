@@ -241,7 +241,14 @@ impl Generator {
                             }
                         } else {
                             // println!("{:?}, new idx: {idx}", self.all_pos.get(0).map(|x| x.key()));
-                            self.all_pos[all_pos_idx].set_to(&chess, Outcome::Draw.into());
+                            // If there are no legal moves, it's either checkmate or stalemate. Normally checkmate is checked earlier, so **should** be stalemate
+                            self.all_pos[all_pos_idx].set_to(
+                                &chess,
+                                self.tablebase
+                                    .outcome_from_captures_promotion(&chess)
+                                    .unwrap_or(Outcome::Draw)
+                                    .into(),
+                            );
                         }
                     }
                 }
@@ -315,6 +322,7 @@ impl Generator {
                         )
                     })
                     .into();
+                assert_ne!(out, Outcome::Undefined);
                 for m in rboard.legal_unmoves() {
                     let mut rboard_after_unmove = rboard.clone();
                     rboard_after_unmove.push(&m);
@@ -323,21 +331,29 @@ impl Generator {
                     let idx_all_pos_after_unmove = self.index_table.encode(&rboard_after_unmove);
                     match self
                         .all_pos
-                        .get(idx_all_pos_after_unmove)
+                        .get(idx_all_pos_after_unmove) // TODO use direct index self.all_pos[idx_all_pos_after_unmove]
                         .map(|bc| bc.got(&rboard_after_unmove))
                     {
                         None => {
                             panic!("pos before: {rboard:?}, and after {m:?} pos not found, illegal? {rboard_after_unmove:?}, idx: {idx_all_pos_after_unmove:?}")
                         }
-                        Some(outcome_u8) if Outcome::Draw == outcome_u8.into() => {
-                            queue.push_back(idx_after_unmove);
-                            self.all_pos[idx_all_pos_after_unmove]
-                                .set_to(&rboard_after_unmove, (out + 1).into());
-                        }
                         Some(outcome_u8) if Outcome::Undefined == outcome_u8.into() => {
                             panic!("pos before: {rboard:?}, and after {m:?} pos not found, illegal? {rboard_after_unmove:?}, idx: {idx_all_pos_after_unmove:?}")
                         }
-                        _ => (),
+                        Some(outcome_u8) => {
+                            queue.push_back(idx_after_unmove);
+                            let fetched_outcomd: Outcome = outcome_u8.into();
+                            // if the outcome fetched is Draw, it means no result is stored yet
+                            let written_outcome = if fetched_outcomd == Outcome::Draw {
+                                out + 1
+                            } else {
+                                // if some actual result is written (because found by a capture/promotion/other position)
+                                // we write the best outcome
+                                (out + 1).max(fetched_outcomd)
+                            };
+                            self.all_pos[idx_all_pos_after_unmove]
+                                .set_to(&rboard_after_unmove, written_outcome.into());
+                        }
                     }
                     //println!("{:?}", (!out) + 1);
                 }
