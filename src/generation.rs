@@ -65,23 +65,25 @@ pub type OutcomesSlice<'a> = &'a [ByColor<u8>];
 /// According to winnner set in `Generator`
 #[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
 pub enum Outcome {
-    Win(u8), // Need to be between 0 and 125 due to conversion to u8
+    // TODO replace by u7
+    Win(u8), // Need to be between 0 and 63 excluded due to conversion to u7
     Draw,
-    Lose(u8),  // Need to be between 0 and 125 due to conversion to u8
+    // TODO replace by u7
+    Lose(u8),  // Need to be between 0 and 63 excluded due to conversion to u7
     Undefined, // Should we use Option<Outcome> without that variant instead?
 }
 
 pub const UNDEFINED_OUTCOME_BYCOLOR: ByColor<u8> = ByColor {
-    black: 255,
-    white: 255,
+    black: 127,
+    white: 127,
 };
 
 impl From<u8> for Outcome {
     fn from(u: u8) -> Self {
         match u {
             0 => Self::Draw,
-            255 => Self::Undefined,
-            w if w >= 128 => Self::Win(w - 128),
+            127 => Self::Undefined,
+            w if w > 63 => Self::Win(w - 63),
             l => Self::Lose(l - 1),
         }
     }
@@ -117,9 +119,9 @@ impl PartialOrd for Outcome {
 fn try_into_util(o: Outcome) -> Result<u8, OutcomeOutOfBound> {
     match o {
         Outcome::Draw => Ok(0),
-        Outcome::Undefined => Ok(255),
-        Outcome::Win(w) if w <= 126 => Ok(w + 128),
-        Outcome::Lose(l) if l <= 126 => Ok(l + 1),
+        Outcome::Undefined => Ok(127),
+        Outcome::Win(w) if w <= 63 => Ok(w + 63),
+        Outcome::Lose(l) if l <= 63 => Ok(l + 1),
         _ => Err(OutcomeOutOfBound),
     }
 }
@@ -418,14 +420,14 @@ mod tests {
     #[test]
     fn test_outcome_to_u8() {
         assert_eq!(u8::try_from(Outcome::Draw).unwrap(), 0);
-        assert_eq!(u8::try_from(Outcome::Undefined).unwrap(), 255);
+        assert_eq!(u8::try_from(Outcome::Undefined).unwrap(), 127);
         assert_eq!(u8::try_from(Outcome::Lose(0)).unwrap(), 1);
-        assert_eq!(u8::try_from(Outcome::Lose(125)).unwrap(), 126);
+        assert_eq!(u8::try_from(Outcome::Lose(62)).unwrap(), 63);
     }
 
     #[test]
     fn test_u8_to_outcome() {
-        for i in 0..u8::MAX {
+        for i in 0..127 {
             assert_eq!(u8::try_from(Outcome::from(i)).unwrap(), i)
         }
     }
