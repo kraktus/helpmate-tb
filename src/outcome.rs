@@ -1,7 +1,7 @@
+use shakmaty::ByColor;
+use std::cmp::Ordering;
 use std::ops::Add;
 use std::ops::Not;
-use std::cmp::Ordering;
-use shakmaty::ByColor;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct OutcomeOutOfBound;

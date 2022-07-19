@@ -1,4 +1,5 @@
 use crate::{index, index_unchecked, restore_from_index, Material, Table, TableBase, A1_H8_DIAG};
+use crate::{Outcome, Outcomes, UNDEFINED_OUTCOME_BYCOLOR};
 use retroboard::RetroBoard;
 use shakmaty::{
     Bitboard, Board, ByColor, CastlingMode, CastlingMode::Standard, Chess, Color, Color::Black,
