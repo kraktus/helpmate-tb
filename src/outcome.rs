@@ -9,6 +9,43 @@ pub struct OutcomeOutOfBound;
 pub type Outcomes = Vec<ByColor<u8>>;
 pub type OutcomesSlice<'a> = &'a [ByColor<u8>];
 
+/// Wrapper around `Outcome` to track if it has already been processed (ie retro moves generated) or not
+/// When a position is generated it's `Unprocessed` by default.
+#[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
+pub enum Report {
+    Unprocessed(Outcome),
+    Processed(Outcome),
+}
+
+// impl Report {
+//     #[inline]
+//     fn outcome(&self) -> &Outcome {
+//         match self {
+//             Self::Unprocessed(ref outcome) => outcome,
+//             Self::Processed(ref outcome) => outcome,
+//         }
+//     }
+// }
+
+impl From<Report> for u8 {
+    fn from(r: Report) -> Self {
+        match r {
+            Report::Unprocessed(outcome) => u8::from(outcome),
+            Report::Processed(outcome) => u8::from(outcome) + 128,
+        }
+    }
+}
+
+impl From<u8> for Report {
+    fn from(u: u8) -> Self {
+        if u > 127 {
+            Self::Processed((u - 128).into())
+        } else {
+            Self::Unprocessed(u.into())
+        }
+    }
+}
+
 /// According to winnner set in `Generator`
 #[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
 pub enum Outcome {
@@ -101,6 +138,46 @@ impl Add<u8> for Outcome {
             Self::Lose(x) => Self::Lose(x + rhs),
             Self::Draw => Self::Draw,
             Self::Undefined => Self::Undefined,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_outcome_to_u7() {
+        assert_eq!(u8::try_from(Outcome::Draw).unwrap(), 0);
+        assert_eq!(u8::try_from(Outcome::Undefined).unwrap(), 127);
+        assert_eq!(u8::try_from(Outcome::Lose(0)).unwrap(), 1);
+        assert_eq!(u8::try_from(Outcome::Lose(62)).unwrap(), 63);
+    }
+
+    #[test]
+    fn test_u7_to_outcome() {
+        for i in 0..127 {
+            assert_eq!(u8::try_from(Outcome::from(i)).unwrap(), i)
+        }
+    }
+
+    #[test]
+    fn test_report_to_u8() {
+        for outcome in [
+            Outcome::Win(10),
+            Outcome::Draw,
+            Outcome::Lose(62),
+            Outcome::Win(62),
+            Outcome::Undefined,
+        ] {
+            println!("{:?}", outcome);
+            assert_eq!(
+                Report::Unprocessed(outcome),
+                u8::from(Report::Unprocessed(outcome)).into()
+            );
+            assert_eq!(
+                Report::Processed(outcome),
+                u8::from(Report::Processed(outcome)).into()
+            );
         }
     }
 }

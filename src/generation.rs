@@ -314,21 +314,6 @@ mod tests {
     }
 
     #[test]
-    fn test_outcome_to_u8() {
-        assert_eq!(u8::try_from(Outcome::Draw).unwrap(), 0);
-        assert_eq!(u8::try_from(Outcome::Undefined).unwrap(), 127);
-        assert_eq!(u8::try_from(Outcome::Lose(0)).unwrap(), 1);
-        assert_eq!(u8::try_from(Outcome::Lose(62)).unwrap(), 63);
-    }
-
-    #[test]
-    fn test_u8_to_outcome() {
-        for i in 0..127 {
-            assert_eq!(u8::try_from(Outcome::from(i)).unwrap(), i)
-        }
-    }
-
-    #[test]
     fn test_side_to_move() {
         let fen = "4k3/8/8/8/8/8/PPPPPPPP/RNBQKBNR w KQ - 0 1";
         let rboard = RetroBoard::new_no_pockets(fen).unwrap();
