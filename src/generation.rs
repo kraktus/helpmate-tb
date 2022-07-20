@@ -144,7 +144,6 @@ impl Generator {
                             }
                             None => {
                                 // println!("{:?}, new idx: {idx}", self.all_pos.get(0).map(|x| x.key()));
-                                // If there are no legal moves, it's either checkmate or stalemate. Normally checkmate is checked earlier, so **should** be stalemate
                                 self.all_pos[all_pos_idx].set_to(
                                     &chess,
                                     Report::Unprocessed(
