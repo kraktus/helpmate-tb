@@ -98,67 +98,74 @@ impl Generator {
                     //println!("after {:?}", &new_setup);
                 }
             }
-            [] => {
-                // setup is complete, check if valid
-                for color in [Black, White] {
-                    let mut valid_setup = setup.clone();
-                    valid_setup.turn = color;
-                    self.counter += 1;
-                    if self.counter % 100000 == 0 {
-                        pb.set_position(self.counter);
-                    }
-                    // println!("{:?}", valid_setup);
-                    if let Ok(chess) = to_chess_with_illegal_checks(valid_setup.clone()) {
-                        let rboard = RetroBoard::from_setup(valid_setup, Standard) // DEBUG
-                            .expect("if chess is valid then rboard should be too");
-                        // let expected_rboard = RetroBoard::new_no_pockets("8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1").unwrap();
-                        let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
-                                                            // if the position is a stalemate, index is not unique, must be sorted later
-                        let all_pos_idx = self.index_table.encode(&chess);
-                        // if rboard.board().kings() == Bitboard::EMPTY | Square::C3 | Square::F3 {
-                        //     println!("rboard kings found {rboard:?}, idx: {all_pos_idx:?}");
-                        // }
-                        //println!("all_pos_idx: {all_pos_idx:?}");
-                        // Check that position is generated for the first time/index schema is injective
-                        if all_pos_idx == 23506 {
-                            println!("Idx: {all_pos_idx:?}, rboard: {rboard:?}");
-                        }
-                        if Outcome::Undefined != self.all_pos[all_pos_idx].got(&chess).outcome() {
-                            panic!("Index {all_pos_idx} already generated, board: {rboard:?}");
-                        }
-                        match chess_outcome(&chess) {
-                            Some(ChessOutcome::Decisive { winner }) => {
-                                // we know the result is exact, since the game is over
-                                let outcome = Report::Processed(if winner == self.winner {
-                                    Outcome::Win(0)
-                                } else {
-                                    Outcome::Lose(0)
-                                });
-                                self.all_pos[all_pos_idx].set_to(&chess, outcome);
-                                if winner == self.winner {
-                                    //println!("lost {:?}", rboard);
-                                    queue.losing_pos_to_process.push_back(idx);
-                                } else {
-                                    queue.winning_pos_to_process.push_back(idx);
-                                }
-                            }
-                            None => {
-                                // println!("{:?}, new idx: {idx}", self.all_pos.get(0).map(|x| x.key()));
-                                self.all_pos[all_pos_idx].set_to(
-                                    &chess,
-                                    Report::Unprocessed(
-                                        self.tablebase
-                                            .as_ref()
-                                            .and_then(|tb| {
-                                                tb.outcome_from_captures_promotion(&chess)
-                                            })
-                                            .unwrap_or(Outcome::Draw),
-                                    ),
-                                );
-                            },
-                            Some(ChessOutcome::Draw) => () // Stalemate positions. Nothing to do result is known, and cannot be stored because they induce collision with Syzygy indexer
+            [] => Self::generate_positions_check_position(self, setup, queue, pb),
+        }
+    }
+
+    // TODO split the `Generator` in two `Generator` and `Processor`, not to move around these parameters so much
+    fn generate_positions_check_position(
+        &mut self,
+        setup: Setup,
+        queue: &mut Queue,
+        pb: &ProgressBar,
+    ) {
+        // setup is complete, check if valid
+        for color in [Black, White] {
+            let mut valid_setup = setup.clone();
+            valid_setup.turn = color;
+            self.counter += 1;
+            if self.counter % 100000 == 0 {
+                pb.set_position(self.counter);
+            }
+            // println!("{:?}", valid_setup);
+            if let Ok(chess) = to_chess_with_illegal_checks(valid_setup.clone()) {
+                let rboard =
+                    RetroBoard::from_setup(valid_setup, Standard) // DEBUG
+                        .expect("if chess is valid then rboard should be too");
+                // let expected_rboard = RetroBoard::new_no_pockets("8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1").unwrap();
+                let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
+                                                    // if the position is a stalemate, index is not unique, must be sorted later
+                let all_pos_idx = self.index_table.encode(&chess);
+                // if rboard.board().kings() == Bitboard::EMPTY | Square::C3 | Square::F3 {
+                //     println!("rboard kings found {rboard:?}, idx: {all_pos_idx:?}");
+                // }
+                //println!("all_pos_idx: {all_pos_idx:?}");
+                // Check that position is generated for the first time/index schema is injective
+                if all_pos_idx == 23506 {
+                    println!("Idx: {all_pos_idx:?}, rboard: {rboard:?}");
+                }
+                if Outcome::Undefined != self.all_pos[all_pos_idx].got(&chess).outcome() {
+                    panic!("Index {all_pos_idx} already generated, board: {rboard:?}");
+                }
+                match chess_outcome(&chess) {
+                    Some(ChessOutcome::Decisive { winner }) => {
+                        // we know the result is exact, since the game is over
+                        let outcome = Report::Processed(if winner == self.winner {
+                            Outcome::Win(0)
+                        } else {
+                            Outcome::Lose(0)
+                        });
+                        self.all_pos[all_pos_idx].set_to(&chess, outcome);
+                        if winner == self.winner {
+                            //println!("lost {:?}", rboard);
+                            queue.losing_pos_to_process.push_back(idx);
+                        } else {
+                            queue.winning_pos_to_process.push_back(idx);
                         }
                     }
+                    None => {
+                        // println!("{:?}, new idx: {idx}", self.all_pos.get(0).map(|x| x.key()));
+                        self.all_pos[all_pos_idx].set_to(
+                            &chess,
+                            Report::Unprocessed(
+                                self.tablebase
+                                    .as_ref()
+                                    .and_then(|tb| tb.outcome_from_captures_promotion(&chess))
+                                    .unwrap_or(Outcome::Draw),
+                            ),
+                        );
+                    }
+                    Some(ChessOutcome::Draw) => (), // Stalemate positions. Nothing to do result is known, and cannot be stored because they induce collision with Syzygy indexer
                 }
             }
         }
