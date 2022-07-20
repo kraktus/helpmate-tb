@@ -1,5 +1,5 @@
 use crate::{index, index_unchecked, restore_from_index, Material, Table, TableBase, A1_H8_DIAG};
-use crate::{Outcome, Outcomes, UNDEFINED_OUTCOME_BYCOLOR};
+use crate::{Outcome, Outcomes, Report, UNDEFINED_OUTCOME_BYCOLOR};
 use retroboard::RetroBoard;
 use shakmaty::{
     Bitboard, Board, ByColor, CastlingMode, CastlingMode::Standard, Chess, Color, Color::Black,
@@ -39,18 +39,18 @@ impl SideToMove for RetroBoard {
 pub trait SideToMoveGetter {
     type T;
     // chose `got` and not `get` not to shadow the original methods
-    fn got(&self, pos: &dyn SideToMove) -> &Self::T;
+    fn got(&self, pos: &dyn SideToMove) -> Self::T;
     fn set_to(&mut self, pos: &dyn SideToMove, t: Self::T);
 }
 
 impl SideToMoveGetter for ByColor<u8> {
-    type T = u8;
-    fn got(&self, pos: &dyn SideToMove) -> &Self::T {
-        self.get(pos.side_to_move())
+    type T = Report;
+    fn got(&self, pos: &dyn SideToMove) -> Self::T {
+        self.get(pos.side_to_move()).into()
     }
     fn set_to(&mut self, pos: &dyn SideToMove, t: Self::T) {
         let x_mut = self.get_mut(pos.side_to_move());
-        *x_mut = t;
+        *x_mut = t.into();
     }
 }
 
@@ -69,7 +69,7 @@ pub struct Generator {
     pub counter: u64,
     pub material: Material,
     index_table: Table,
-    tablebase: TableBase, // access to the DTM of descendants (different material config, following a capture/promotion)
+    tablebase: Option<TableBase>, // access to the DTM of descendants (different material config, following a capture/promotion)
 }
 
 impl Generator {
@@ -119,18 +119,19 @@ impl Generator {
                         // }
                         //println!("all_pos_idx: {all_pos_idx:?}");
                         // Check that position is generated for the first time/index schema is injective
-                        if all_pos_idx == 242414 {
+                        if all_pos_idx == 23506 {
                             println!("Idx: {all_pos_idx:?}, rboard: {rboard:?}");
                         }
-                        if Outcome::Undefined != self.all_pos[all_pos_idx].got(&chess).into() {
+                        if Outcome::Undefined != self.all_pos[all_pos_idx].got(&chess).outcome() {
                             panic!("Index {all_pos_idx} already generated, board: {rboard:?}");
                         }
                         if chess.is_checkmate() {
-                            let outcome = match chess.turn() {
+                            // we know the result is exact, since the game is over
+                            let outcome = Report::Processed(match chess.turn() {
                                 c if c == self.winner => Outcome::Lose(0),
                                 _ => Outcome::Win(0),
-                            };
-                            self.all_pos[all_pos_idx].set_to(&chess, outcome.into());
+                            });
+                            self.all_pos[all_pos_idx].set_to(&chess, outcome);
                             if chess.turn() == self.winner {
                                 //println!("lost {:?}", rboard);
                                 queue.losing_pos_to_process.push_back(idx);
@@ -142,10 +143,12 @@ impl Generator {
                             // If there are no legal moves, it's either checkmate or stalemate. Normally checkmate is checked earlier, so **should** be stalemate
                             self.all_pos[all_pos_idx].set_to(
                                 &chess,
-                                self.tablebase
-                                    .outcome_from_captures_promotion(&chess)
-                                    .unwrap_or(Outcome::Draw)
-                                    .into(),
+                                Report::Unprocessed(
+                                    self.tablebase
+                                        .as_ref()
+                                        .and_then(|tb| tb.outcome_from_captures_promotion(&chess))
+                                        .unwrap_or(Outcome::Draw),
+                                ),
                             );
                         }
                     }
@@ -219,7 +222,7 @@ impl Generator {
                             rboard
                         )
                     })
-                    .into();
+                    .outcome();
                 assert_ne!(out, Outcome::Undefined);
                 for m in rboard.legal_unmoves() {
                     let mut rboard_after_unmove = rboard.clone();
@@ -231,6 +234,8 @@ impl Generator {
                         .all_pos
                         .get(idx_all_pos_after_unmove) // TODO use direct index self.all_pos[idx_all_pos_after_unmove]
                         .map(|bc| bc.got(&rboard_after_unmove))
+                        .filter(|r| matches!(r, Report::Unprocessed(_)))
+                        .map(|r| r.outcome())
                     {
                         None => {
                             panic!("pos before: {rboard:?}, and after {m:?} pos not found, illegal? {rboard_after_unmove:?}, idx: {idx_all_pos_after_unmove:?}")
@@ -238,19 +243,20 @@ impl Generator {
                         Some(outcome_u8) if Outcome::Undefined == outcome_u8.into() => {
                             panic!("pos before: {rboard:?}, and after {m:?} pos not found, illegal? {rboard_after_unmove:?}, idx: {idx_all_pos_after_unmove:?}")
                         }
-                        Some(outcome_u8) => {
+                        Some(fetched_outcome) => {
+                            // we know the position is unprocessed
                             queue.push_back(idx_after_unmove);
-                            let fetched_outcomd: Outcome = outcome_u8.into();
                             // if the outcome fetched is Draw, it means no result is stored yet
-                            let written_outcome = if fetched_outcomd == Outcome::Draw {
-                                out + 1
-                            } else {
-                                // if some actual result is written (because found by a capture/promotion/other position)
-                                // we write the best outcome
-                                (out + 1).max(fetched_outcomd)
-                            };
+                            let processed_outcome =
+                                Report::Processed(if fetched_outcome == Outcome::Draw {
+                                    out + 1
+                                } else {
+                                    // if some actual result is written (because found by a capture/promotion/other position)
+                                    // we write the best outcome
+                                    (out + 1).max(fetched_outcome)
+                                });
                             self.all_pos[idx_all_pos_after_unmove]
-                                .set_to(&rboard_after_unmove, written_outcome.into());
+                                .set_to(&rboard_after_unmove, processed_outcome);
                         }
                     }
                     //println!("{:?}", (!out) + 1);

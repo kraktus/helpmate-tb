@@ -17,15 +17,15 @@ pub enum Report {
     Processed(Outcome),
 }
 
-// impl Report {
-//     #[inline]
-//     fn outcome(&self) -> &Outcome {
-//         match self {
-//             Self::Unprocessed(ref outcome) => outcome,
-//             Self::Processed(ref outcome) => outcome,
-//         }
-//     }
-// }
+impl Report {
+    #[inline]
+    pub fn outcome(&self) -> Outcome {
+        match self {
+            Self::Unprocessed(outcome) => *outcome,
+            Self::Processed(outcome) => *outcome,
+        }
+    }
+}
 
 impl From<Report> for u8 {
     fn from(r: Report) -> Self {
@@ -43,6 +43,12 @@ impl From<u8> for Report {
         } else {
             Self::Unprocessed(u.into())
         }
+    }
+}
+
+impl From<&u8> for Report {
+    fn from(u: &u8) -> Self {
+        (*u).into()
     }
 }
 
@@ -178,6 +184,13 @@ mod tests {
                 Report::Processed(outcome),
                 u8::from(Report::Processed(outcome)).into()
             );
+        }
+    }
+
+    #[test]
+    fn test_u8_to_report() {
+        for i in 0..u8::MAX {
+            assert_eq!(u8::from(Report::from(i)), i)
         }
     }
 }
