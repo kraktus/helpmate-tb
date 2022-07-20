@@ -3,7 +3,7 @@ use crate::{Outcome, Outcomes, Report, UNDEFINED_OUTCOME_BYCOLOR};
 use retroboard::RetroBoard;
 use shakmaty::{
     Bitboard, Board, ByColor, CastlingMode, CastlingMode::Standard, Chess, Color, Color::Black,
-    Color::White, FromSetup, Piece, Position, PositionError, Setup,
+    Color::White, FromSetup, Outcome as ChessOutcome, Piece, Position, PositionError, Setup,
 };
 use std::collections::VecDeque;
 
@@ -113,6 +113,7 @@ impl Generator {
                             .expect("if chess is valid then rboard should be too");
                         // let expected_rboard = RetroBoard::new_no_pockets("8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1").unwrap();
                         let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
+                                                            // if the position is a stalemate, index is not unique, must be sorted later
                         let all_pos_idx = self.index_table.encode(&chess);
                         // if rboard.board().kings() == Bitboard::EMPTY | Square::C3 | Square::F3 {
                         //     println!("rboard kings found {rboard:?}, idx: {all_pos_idx:?}");
@@ -125,31 +126,38 @@ impl Generator {
                         if Outcome::Undefined != self.all_pos[all_pos_idx].got(&chess).outcome() {
                             panic!("Index {all_pos_idx} already generated, board: {rboard:?}");
                         }
-                        if chess.is_checkmate() {
-                            // we know the result is exact, since the game is over
-                            let outcome = Report::Processed(match chess.turn() {
-                                c if c == self.winner => Outcome::Lose(0),
-                                _ => Outcome::Win(0),
-                            });
-                            self.all_pos[all_pos_idx].set_to(&chess, outcome);
-                            if chess.turn() == self.winner {
-                                //println!("lost {:?}", rboard);
-                                queue.losing_pos_to_process.push_back(idx);
-                            } else {
-                                queue.winning_pos_to_process.push_back(idx);
+                        match chess_outcome(&chess) {
+                            Some(ChessOutcome::Decisive { winner }) => {
+                                // we know the result is exact, since the game is over
+                                let outcome = Report::Processed(if winner == self.winner {
+                                    Outcome::Win(0)
+                                } else {
+                                    Outcome::Lose(0)
+                                });
+                                self.all_pos[all_pos_idx].set_to(&chess, outcome);
+                                if winner == self.winner {
+                                    //println!("lost {:?}", rboard);
+                                    queue.losing_pos_to_process.push_back(idx);
+                                } else {
+                                    queue.winning_pos_to_process.push_back(idx);
+                                }
                             }
-                        } else {
-                            // println!("{:?}, new idx: {idx}", self.all_pos.get(0).map(|x| x.key()));
-                            // If there are no legal moves, it's either checkmate or stalemate. Normally checkmate is checked earlier, so **should** be stalemate
-                            self.all_pos[all_pos_idx].set_to(
-                                &chess,
-                                Report::Unprocessed(
-                                    self.tablebase
-                                        .as_ref()
-                                        .and_then(|tb| tb.outcome_from_captures_promotion(&chess))
-                                        .unwrap_or(Outcome::Draw),
-                                ),
-                            );
+                            None => {
+                                // println!("{:?}, new idx: {idx}", self.all_pos.get(0).map(|x| x.key()));
+                                // If there are no legal moves, it's either checkmate or stalemate. Normally checkmate is checked earlier, so **should** be stalemate
+                                self.all_pos[all_pos_idx].set_to(
+                                    &chess,
+                                    Report::Unprocessed(
+                                        self.tablebase
+                                            .as_ref()
+                                            .and_then(|tb| {
+                                                tb.outcome_from_captures_promotion(&chess)
+                                            })
+                                            .unwrap_or(Outcome::Draw),
+                                    ),
+                                );
+                            },
+                            Some(ChessOutcome::Draw) => () // Stalemate positions. Nothing to do result is known, and cannot be stored because they induce collision with Syzygy indexer
                         }
                     }
                 }
@@ -277,6 +285,26 @@ impl Generator {
             tablebase: TableBase::new(&material),
             material,
         }
+    }
+}
+
+#[inline]
+// workaround of shakmaty calling twice legal_moves
+// waiting for https://github.com/niklasf/shakmaty/pull/59
+fn chess_outcome(chess: &Chess) -> Option<ChessOutcome> {
+    if chess.legal_moves().is_empty() {
+        if !chess.checkers().is_empty() {
+            Some(ChessOutcome::Decisive {
+                winner: !chess.turn(),
+            })
+        } else {
+            // stalemate
+            Some(ChessOutcome::Draw)
+        }
+    } else if chess.is_insufficient_material() {
+        Some(ChessOutcome::Draw)
+    } else {
+        None
     }
 }
 
