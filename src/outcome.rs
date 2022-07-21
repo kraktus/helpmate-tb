@@ -64,6 +64,7 @@ pub enum Outcome {
 }
 
 pub const UNDEFINED_OUTCOME_BYCOLOR: ByColor<u8> = ByColor {
+    // Report::Unprocessed(Outcome::Undefined).into()
     black: 127,
     white: 127,
 };
@@ -184,6 +185,13 @@ mod tests {
                 Report::Processed(outcome),
                 u8::from(Report::Processed(outcome)).into()
             );
+        }
+    }
+
+    #[test]
+    fn test_u8_to_report() {
+        for i in 0..u8::MAX {
+            assert_eq!(u8::from(Report::from(i)), i)
         }
     }
 

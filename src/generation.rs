@@ -124,7 +124,6 @@ impl Generator {
                         .expect("if chess is valid then rboard should be too");
                 // let expected_rboard = RetroBoard::new_no_pockets("8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1").unwrap();
                 let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
-                                                    // if the position is a stalemate, index is not unique, must be sorted later
                 let all_pos_idx = self.index_table.encode(&chess);
                 // if rboard.board().kings() == Bitboard::EMPTY | Square::C3 | Square::F3 {
                 //     println!("rboard kings found {rboard:?}, idx: {all_pos_idx:?}");
@@ -153,7 +152,7 @@ impl Generator {
                             queue.winning_pos_to_process.push_back(idx);
                         }
                     }
-                    None => {
+                    None | Some(ChessOutcome::Draw) => {
                         // println!("{:?}, new idx: {idx}", self.all_pos.get(0).map(|x| x.key()));
                         self.all_pos[all_pos_idx].set_to(
                             &chess,
@@ -165,7 +164,6 @@ impl Generator {
                             ),
                         );
                     }
-                    Some(ChessOutcome::Draw) => (), // Stalemate positions. Nothing to do result is known, and cannot be stored because they induce collision with Syzygy indexer
                 }
             }
         }
@@ -244,20 +242,11 @@ impl Generator {
                     // let chess_after_unmove: Chess = rboard_after_unmove.clone().into();
                     let idx_after_unmove = index(&rboard_after_unmove);
                     let idx_all_pos_after_unmove = self.index_table.encode(&rboard_after_unmove);
-                    match self
-                        .all_pos
-                        .get(idx_all_pos_after_unmove) // TODO use direct index self.all_pos[idx_all_pos_after_unmove]
-                        .map(|bc| bc.got(&rboard_after_unmove))
-                        .filter(|r| matches!(r, Report::Unprocessed(_)))
-                        .map(|r| r.outcome())
-                    {
-                        None => {
+                    match self.all_pos[idx_all_pos_after_unmove].got(&rboard_after_unmove) {
+                        Report::Unprocessed(Outcome::Undefined) => {
                             panic!("pos before: {rboard:?}, and after {m:?} pos not found, illegal? {rboard_after_unmove:?}, idx: {idx_all_pos_after_unmove:?}")
                         }
-                        Some(outcome_u8) if Outcome::Undefined == outcome_u8.into() => {
-                            panic!("pos before: {rboard:?}, and after {m:?} pos not found, illegal? {rboard_after_unmove:?}, idx: {idx_all_pos_after_unmove:?}")
-                        }
-                        Some(fetched_outcome) => {
+                        Report::Unprocessed(fetched_outcome) => {
                             // we know the position is unprocessed
                             queue.push_back(idx_after_unmove);
                             // if the outcome fetched is Draw, it means no result is stored yet
@@ -272,6 +261,7 @@ impl Generator {
                             self.all_pos[idx_all_pos_after_unmove]
                                 .set_to(&rboard_after_unmove, processed_outcome);
                         }
+                        Report::Processed(_) => (),
                     }
                     //println!("{:?}", (!out) + 1);
                 }
