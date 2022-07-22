@@ -38,7 +38,7 @@ impl SideToMove for RetroBoard {
 
 pub trait SideToMoveGetter {
     type T;
-    // chose `get_by_pos` and not `get` not to shadow the original methods
+    // chose `get_by_color` and not `get` not to shadow the original methods
     fn get_by_color(&self, color: Color) -> Self::T;
     fn get_by_pos(&self, pos: &dyn SideToMove) -> Self::T {
         self.get_by_color(pos.side_to_move())
