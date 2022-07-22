@@ -52,7 +52,7 @@ impl From<&u8> for Report {
     }
 }
 
-/// According to winnner set in `Generator`
+/// According to winnner set in `Generator`. This struct need to fit in a u7
 #[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
 pub enum Outcome {
     // TODO replace by an enum with 63 elements?
