@@ -74,7 +74,7 @@ impl From<u8> for Outcome {
         match u {
             0 => Self::Draw,
             127 => Self::Undefined,
-            w if w > 63 => Self::Win(w - 63),
+            w if w > 63 => Self::Win(w - 64),
             l => Self::Lose(l - 1),
         }
     }
@@ -111,8 +111,8 @@ fn try_into_util(o: Outcome) -> Result<u8, OutcomeOutOfBound> {
     match o {
         Outcome::Draw => Ok(0),
         Outcome::Undefined => Ok(127),
-        Outcome::Win(w) if w <= 63 => Ok(w + 63),
-        Outcome::Lose(l) if l <= 63 => Ok(l + 1),
+        Outcome::Win(w) if w < 63 => Ok(w + 64),
+        Outcome::Lose(l) if l < 63 => Ok(l + 1),
         _ => Err(OutcomeOutOfBound),
     }
 }
@@ -157,6 +157,7 @@ mod tests {
         assert_eq!(u8::try_from(Outcome::Draw).unwrap(), 0);
         assert_eq!(u8::try_from(Outcome::Undefined).unwrap(), 127);
         assert_eq!(u8::try_from(Outcome::Lose(0)).unwrap(), 1);
+        assert_eq!(u8::try_from(Outcome::Win(0)).unwrap(), 64);
         assert_eq!(u8::try_from(Outcome::Lose(62)).unwrap(), 63);
     }
 
@@ -196,9 +197,13 @@ mod tests {
     }
 
     #[test]
-    fn test_u8_to_report() {
-        for i in 0..u8::MAX {
-            assert_eq!(u8::from(Report::from(i)), i)
-        }
+    fn test_undefined_outcome_bycolor() {
+        assert_eq!(
+            UNDEFINED_OUTCOME_BYCOLOR,
+            ByColor {
+                black: Report::Unprocessed(Outcome::Undefined).into(),
+                white: Report::Unprocessed(Outcome::Undefined).into(),
+            }
+        );
     }
 }

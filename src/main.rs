@@ -110,8 +110,8 @@ fn stats(gen: &Generator) {
             undefined_outcome += 2;
             continue;
         };
-        for value in by_color_outcome.iter() {
-            let outcome: Outcome = (*value).into();
+        for color in shakmaty::Color::ALL {
+            let outcome = by_color_outcome.get_by_color(color).outcome();
             distrib.insert(outcome, *distrib.get(&outcome).unwrap_or(&0) + 1);
             match outcome {
                 Outcome::Draw => draw += 1,

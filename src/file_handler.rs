@@ -48,7 +48,7 @@ impl TableBase {
         let mat = Material::from_board(pos.board());
         let table_file = self.0.get(&mat).expect("Position to be among descendants");
         let idx = table_file.table.encode(pos);
-        table_file.outcomes[idx].got(pos).outcome()
+        table_file.outcomes[idx].get_by_pos(pos).outcome()
     }
 
     /// For the given position, compute all moves that are either captures and/or promotion,
