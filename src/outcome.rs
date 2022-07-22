@@ -55,10 +55,10 @@ impl From<&u8> for Report {
 /// According to winnner set in `Generator`
 #[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
 pub enum Outcome {
-    // TODO replace by u7
+    // TODO replace by an enum with 63 elements?
     Win(u8), // Need to be between 0 and 63 excluded due to conversion to u7
     Draw,
-    // TODO replace by u7
+    // TODO replace by an enum with 63 elements?
     Lose(u8),  // Need to be between 0 and 63 excluded due to conversion to u7
     Undefined, // Should we use Option<Outcome> without that variant instead?
 }
