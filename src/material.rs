@@ -29,7 +29,6 @@ use shakmaty::{Board, ByColor, ByRole, Color, Piece, Role};
 use crate::Pieces;
 use std::iter;
 
-use serde;
 use serde::de;
 
 #[derive(Clone, Eq, PartialEq, Hash)]
@@ -350,7 +349,7 @@ impl Material {
         for color in Color::ALL {
             for role in Role::ALL {
                 let piece = Piece { color, role };
-                if !(!with_white_king && piece == Color::White.king()) {
+                if with_white_king || !piece == Color::White.king() {
                     for _ in 0..self.by_piece(piece) {
                         pieces.push(piece)
                     }
