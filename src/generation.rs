@@ -157,7 +157,6 @@ impl Generator {
         }
     }
 
-    // TODO split the `Generator` in two `Generator` and `Processor`, not to move around these parameters so much
     fn generate_positions_check_position(&mut self, setup: Setup) {
         // setup is complete, check if valid
         for color in [Black, White] {
