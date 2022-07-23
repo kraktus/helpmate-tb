@@ -6,8 +6,11 @@ use std::ops::Not;
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct OutcomeOutOfBound;
 
-pub type Outcomes = Vec<ByColor<u8>>;
-pub type OutcomesSlice<'a> = &'a [ByColor<u8>];
+pub type Outcomes = Vec<ByColor<OutcomeU8>>;
+pub type OutcomesSlice<'a> = &'a [ByColor<OutcomeU8>];
+
+pub type Reports = Vec<ByColor<ReportU8>>;
+pub type ReportsSlice<'a> = &'a [ByColor<ReportU8>];
 
 /// Wrapper around `Outcome` to track if it has already been processed (ie retro moves generated) or not
 /// When a position is generated it's `Unprocessed` by default.
@@ -15,6 +18,34 @@ pub type OutcomesSlice<'a> = &'a [ByColor<u8>];
 pub enum Report {
     Unprocessed(Outcome),
     Processed(Outcome),
+}
+
+#[repr(transparent)]
+#[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
+pub struct ReportU8(u8);
+
+impl ReportU8 {
+    pub fn from_raw_u8(u: u8) -> Self {
+        Self(u)
+    }
+}
+
+#[repr(transparent)]
+#[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
+pub struct OutcomeU8(u8);
+
+impl OutcomeU8 {
+    pub fn from_raw_u8(u: u8) -> Option<Self> {
+        if u < 128 {
+            Some(Self(u))
+        } else {
+            None
+        }
+    }
+
+    pub fn as_raw_u8(&self) -> u8 {
+        self.0
+    }
 }
 
 impl Report {
@@ -27,27 +58,27 @@ impl Report {
     }
 }
 
-impl From<Report> for u8 {
+impl From<Report> for ReportU8 {
     fn from(r: Report) -> Self {
         match r {
-            Report::Unprocessed(outcome) => u8::from(outcome),
-            Report::Processed(outcome) => u8::from(outcome) + 128,
+            Report::Unprocessed(outcome) => ReportU8(OutcomeU8::from(outcome).as_raw_u8()),
+            Report::Processed(outcome) => ReportU8(OutcomeU8::from(outcome).as_raw_u8() + 128),
         }
     }
 }
 
-impl From<u8> for Report {
-    fn from(u: u8) -> Self {
-        if u > 127 {
-            Self::Processed((u - 128).into())
+impl From<ReportU8> for Report {
+    fn from(r: ReportU8) -> Self {
+        if r.0 > 127 {
+            Self::Processed(OutcomeU8(r.0 - 128).into())
         } else {
-            Self::Unprocessed(u.into())
+            Self::Unprocessed(OutcomeU8(r.0).into())
         }
     }
 }
 
-impl From<&u8> for Report {
-    fn from(u: &u8) -> Self {
+impl From<&ReportU8> for Report {
+    fn from(u: &ReportU8) -> Self {
         (*u).into()
     }
 }
@@ -63,15 +94,15 @@ pub enum Outcome {
     Undefined, // Should we use Option<Outcome> without that variant instead?
 }
 
-pub const UNDEFINED_OUTCOME_BYCOLOR: ByColor<u8> = ByColor {
+pub const UNDEFINED_OUTCOME_BYCOLOR: ByColor<ReportU8> = ByColor {
     // Report::Unprocessed(Outcome::Undefined).into()
-    black: 127,
-    white: 127,
+    black: ReportU8(127),
+    white: ReportU8(127),
 };
 
-impl From<u8> for Outcome {
-    fn from(u: u8) -> Self {
-        match u {
+impl From<OutcomeU8> for Outcome {
+    fn from(u: OutcomeU8) -> Self {
+        match u.0 {
             0 => Self::Draw,
             127 => Self::Undefined,
             w if w > 63 => Self::Win(w - 64),
@@ -80,8 +111,8 @@ impl From<u8> for Outcome {
     }
 }
 
-impl From<&u8> for Outcome {
-    fn from(u: &u8) -> Self {
+impl From<&OutcomeU8> for Outcome {
+    fn from(u: &OutcomeU8) -> Self {
         (*u).into()
     }
 }
@@ -107,7 +138,7 @@ impl PartialOrd for Outcome {
     }
 }
 
-fn try_into_util(o: Outcome) -> Result<u8, OutcomeOutOfBound> {
+fn try_into_util(o: Outcome) -> Result<OutcomeU8, OutcomeOutOfBound> {
     match o {
         Outcome::Draw => Ok(0),
         Outcome::Undefined => Ok(127),
@@ -115,9 +146,10 @@ fn try_into_util(o: Outcome) -> Result<u8, OutcomeOutOfBound> {
         Outcome::Lose(l) if l < 63 => Ok(l + 1),
         _ => Err(OutcomeOutOfBound),
     }
+    .map(|u| OutcomeU8::from_raw_u8(u).expect("Value is crafted such that it fits in u7"))
 }
 
-impl From<Outcome> for u8 {
+impl From<Outcome> for OutcomeU8 {
     fn from(o: Outcome) -> Self {
         try_into_util(o).unwrap()
     }
@@ -154,17 +186,18 @@ mod tests {
     use super::*;
     #[test]
     fn test_outcome_to_u7() {
-        assert_eq!(u8::try_from(Outcome::Draw).unwrap(), 0);
-        assert_eq!(u8::try_from(Outcome::Undefined).unwrap(), 127);
-        assert_eq!(u8::try_from(Outcome::Lose(0)).unwrap(), 1);
-        assert_eq!(u8::try_from(Outcome::Win(0)).unwrap(), 64);
-        assert_eq!(u8::try_from(Outcome::Lose(62)).unwrap(), 63);
+        assert_eq!(OutcomeU8::from(Outcome::Draw), OutcomeU8(0));
+        assert_eq!(OutcomeU8::from(Outcome::Undefined), OutcomeU8(127));
+        assert_eq!(OutcomeU8::from(Outcome::Lose(0)), OutcomeU8(1));
+        assert_eq!(OutcomeU8::from(Outcome::Win(0)), OutcomeU8(64));
+        assert_eq!(OutcomeU8::from(Outcome::Lose(62)), OutcomeU8(63));
     }
 
     #[test]
     fn test_u7_to_outcome() {
         for i in 0..127 {
-            assert_eq!(u8::try_from(Outcome::from(i)).unwrap(), i)
+            let outcome_u8 = OutcomeU8(i);
+            assert_eq!(OutcomeU8::from(Outcome::from(outcome_u8)), outcome_u8)
         }
     }
 
@@ -180,11 +213,11 @@ mod tests {
             println!("{:?}", outcome);
             assert_eq!(
                 Report::Unprocessed(outcome),
-                u8::from(Report::Unprocessed(outcome)).into()
+                ReportU8::from(Report::Unprocessed(outcome)).into()
             );
             assert_eq!(
                 Report::Processed(outcome),
-                u8::from(Report::Processed(outcome)).into()
+                ReportU8::from(Report::Processed(outcome)).into()
             );
         }
     }
@@ -192,7 +225,8 @@ mod tests {
     #[test]
     fn test_u8_to_report() {
         for i in 0..u8::MAX {
-            assert_eq!(u8::from(Report::from(i)), i)
+            let report_u8 = ReportU8(i);
+            assert_eq!(ReportU8::from(Report::from(report_u8)), report_u8)
         }
     }
 

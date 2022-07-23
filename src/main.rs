@@ -8,7 +8,10 @@ mod material;
 mod outcome;
 
 pub use crate::file_handler::TableBase;
-pub use crate::outcome::{Outcome, Outcomes, OutcomesSlice, Report, UNDEFINED_OUTCOME_BYCOLOR};
+pub use crate::outcome::{
+    Outcome, OutcomeU8, Outcomes, OutcomesSlice, Report, ReportU8, Reports, ReportsSlice,
+    UNDEFINED_OUTCOME_BYCOLOR,
+};
 pub use compression::EncoderDecoder;
 pub use encoding::get_info_table;
 pub use generation::{Generator, SideToMove, SideToMoveGetter};

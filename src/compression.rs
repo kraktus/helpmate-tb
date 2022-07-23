@@ -7,7 +7,7 @@ use positioned_io::ReadAt;
 use shakmaty::ByColor;
 use zstd::stream::{decode_all, encode_all};
 
-use crate::{Outcomes, OutcomesSlice};
+use crate::{OutcomeU8, Outcomes, Report, ReportU8, Reports, ReportsSlice};
 
 // in byte, the size of the uncompressed block we want
 const BLOCK_SIZE: usize = 500 * 1000000;
@@ -18,27 +18,36 @@ const BLOCK_SIZE: usize = 500 * 1000000;
 const BLOCK_ELEMENTS: usize = BLOCK_SIZE / 2;
 
 /// Deku compatible struct
-#[derive(Debug, Clone, PartialEq, DekuRead, DekuWrite, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, DekuRead, DekuWrite, Eq)]
 struct RawOutcome {
     black: u8,
     white: u8,
 }
 
-impl From<&ByColor<u8>> for RawOutcome {
-    fn from(c: &ByColor<u8>) -> Self {
+impl From<&ByColor<ReportU8>> for RawOutcome {
+    // TODO make this more efficient
+    fn from(c: &ByColor<ReportU8>) -> Self {
         Self {
-            black: c.black,
-            white: c.white,
+            black: OutcomeU8::from(Report::from(c.black).outcome()).as_raw_u8(),
+            white: OutcomeU8::from(Report::from(c.white).outcome()).as_raw_u8(),
         }
     }
 }
 
-impl From<RawOutcome> for ByColor<u8> {
+impl From<RawOutcome> for ByColor<OutcomeU8> {
     fn from(c: RawOutcome) -> Self {
         Self {
-            black: c.black,
-            white: c.white,
+            black: OutcomeU8::from_raw_u8(c.black)
+                .expect("Compression to be sound and keep outcome as u7"),
+            white: OutcomeU8::from_raw_u8(c.white)
+                .expect("Compression to be sound and keep outcome as u7"),
         }
+    }
+}
+
+impl From<&RawOutcome> for ByColor<OutcomeU8> {
+    fn from(c: &RawOutcome) -> Self {
+        (*c).into()
     }
 }
 
@@ -59,7 +68,7 @@ fn to_u64(x: usize) -> u64 {
 }
 
 impl<T: Write> EncoderDecoder<T> {
-    pub fn compress(&mut self, outcomes: &Outcomes) -> io::Result<()> {
+    pub fn compress(&mut self, outcomes: &Reports) -> io::Result<()> {
         Ok(
             for (i, elements) in outcomes.chunks(BLOCK_ELEMENTS).enumerate() {
                 let block = Block::new(elements, BLOCK_ELEMENTS * i)?;
@@ -136,7 +145,7 @@ struct Block {
 }
 
 impl Block {
-    pub fn new(outcomes: OutcomesSlice, index_from_usize: usize) -> io::Result<Self> {
+    pub fn new(outcomes: ReportsSlice, index_from_usize: usize) -> io::Result<Self> {
         let index_from = to_u64(index_from_usize);
         let index_to = to_u64(index_from_usize + outcomes.len());
         trace!("turning into raw outcomes");
@@ -167,7 +176,10 @@ impl Block {
             .map_err(|e| io::Error::new(InvalidData, e))
             .map(|(inner_rest, raw_outcomes)| {
                 assert!(inner_rest.is_empty());
-                raw_outcomes.into_iter().map(<ByColor<u8>>::from).collect()
+                raw_outcomes
+                    .into_iter()
+                    .map(<ByColor<OutcomeU8>>::from)
+                    .collect()
             })
         })
     }
@@ -188,8 +200,8 @@ mod tests {
 
     const DUMMY_NUMBER: usize = 10000;
 
-    fn gen_outcomes(nb: usize) -> Outcomes {
-        let mut outcomes = Outcomes::with_capacity(nb);
+    fn gen_reports(nb: usize) -> Reports {
+        let mut outcomes = Reports::with_capacity(nb);
         let mut j: u8 = 0;
         let mut x: u16 = 0;
         for _i in 0..nb {
@@ -198,13 +210,17 @@ mod tests {
             if x == 0 {
                 // println!("{i}");
             }
-            outcomes.push(ByColor { black: j, white: j })
+            let report_u8 = ReportU8::from_raw_u8(j);
+            outcomes.push(ByColor {
+                black: report_u8,
+                white: report_u8,
+            })
         }
         outcomes
     }
 
-    fn dummy_outcomes() -> Outcomes {
-        gen_outcomes(DUMMY_NUMBER)
+    fn dummy_reports() -> Reports {
+        gen_reports(DUMMY_NUMBER)
     }
 
     #[test]
@@ -223,7 +239,7 @@ mod tests {
 
     #[test]
     fn test_block_byte_serialisation() {
-        let block = Block::new(&dummy_outcomes(), 0).unwrap();
+        let block = Block::new(&dummy_reports(), 0).unwrap();
         assert_eq!(
             block.to_bytes().unwrap().len(),
             block.header.size_including_headers()
@@ -235,22 +251,34 @@ mod tests {
 
     #[test]
     fn test_outcome_decompression() {
-        let outcomes = dummy_outcomes();
-        let block = Block::new(&outcomes, 0).unwrap();
-        assert_eq!(block.decompress_outcomes().unwrap(), outcomes);
+        let reports = dummy_reports();
+        let block = Block::new(&reports, 0).unwrap();
+        assert_eq!(
+            block.decompress_outcomes().unwrap(),
+            reports
+                .into_iter()
+                .map(|bc| bc.map(|x| OutcomeU8::from(Report::from(x).outcome())))
+                .collect::<Outcomes>()
+        );
     }
 
     #[test]
     fn test_block_compression_soundness() {
-        let outcomes = dummy_outcomes();
+        let reports = dummy_reports();
         let mut encoder = EncoderDecoder::new(Vec::<u8>::new());
-        encoder.compress(&outcomes).expect("compression failed");
+        encoder.compress(&reports).expect("compression failed");
         let decompressed = encoder
             .decompress_block(0)
             .expect("block retrieval failed")
             .decompress_outcomes()
             .expect("decompression failed");
-        assert_eq!(outcomes, decompressed)
+        assert_eq!(
+            reports
+                .into_iter()
+                .map(|bc| bc.map(|x| OutcomeU8::from(Report::from(x).outcome())))
+                .collect::<Outcomes>(),
+            decompressed
+        )
     }
 
     // deku is too slow with debug information to run

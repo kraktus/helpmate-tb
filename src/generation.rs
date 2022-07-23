@@ -1,5 +1,5 @@
 use crate::{index, index_unchecked, restore_from_index, Material, Table, TableBase, A1_H8_DIAG};
-use crate::{Outcome, Outcomes, Report, UNDEFINED_OUTCOME_BYCOLOR};
+use crate::{Outcome, OutcomeU8, Report, ReportU8, Reports, UNDEFINED_OUTCOME_BYCOLOR};
 use retroboard::RetroBoard;
 use shakmaty::{
     Bitboard, Board, ByColor, CastlingMode, CastlingMode::Standard, Chess, Color, Color::Black,
@@ -46,8 +46,19 @@ pub trait SideToMoveGetter {
     fn set_to(&mut self, pos: &dyn SideToMove, t: Self::T);
 }
 
-impl SideToMoveGetter for ByColor<u8> {
+impl SideToMoveGetter for ByColor<ReportU8> {
     type T = Report;
+    fn get_by_color(&self, color: Color) -> Self::T {
+        self.get(color).into()
+    }
+    fn set_to(&mut self, pos: &dyn SideToMove, t: Self::T) {
+        let x_mut = self.get_mut(pos.side_to_move());
+        *x_mut = t.into();
+    }
+}
+
+impl SideToMoveGetter for ByColor<OutcomeU8> {
+    type T = Outcome;
     fn get_by_color(&self, color: Color) -> Self::T {
         self.get(color).into()
     }
@@ -67,7 +78,7 @@ const A1_H1_H8: Bitboard = Bitboard(0x80c0e0f0f8fcfeff);
 
 #[derive(Debug)]
 pub struct Generator {
-    pub all_pos: Outcomes,
+    pub all_pos: Reports,
     pub winner: Color,
     pub counter: u64,
     pub material: Material,
