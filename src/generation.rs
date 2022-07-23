@@ -147,13 +147,11 @@ impl Generator {
                     Bitboard::FULL // white king handled in `generate_positions`
                 };
                 for sq in squares {
-                    //println!("before {:?}", &setup);
                     if setup.board.piece_at(sq).is_none() {
                         let mut new_setup = setup.clone();
                         new_setup.board.set_piece_at(sq, *piece);
                         self.generate_positions_internal(tail, new_setup);
                     }
-                    //println!("after {:?}", &new_setup);
                 }
             }
             [] => self.generate_positions_check_position(setup),
