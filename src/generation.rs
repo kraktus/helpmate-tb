@@ -100,12 +100,11 @@ impl Common {
 
 impl Common {
     pub fn new(material: Material) -> Self {
-        let all_pos = vec![UNDEFINED_OUTCOME_BYCOLOR; get_nb_pos(&material) as usize / 10 * 9]; // heuristic, less than 90% of pos are legals. Takes x2 (because each stored element is in fact 1 position, but with black and white to turn) more than number of legal positions
         Self {
-            all_pos,
+            index_table: Table::new(&material),
+            all_pos: vec![UNDEFINED_OUTCOME_BYCOLOR; get_nb_pos(&material) as usize / 10 * 9], // heuristic, less than 90% of pos are legals. Takes x2 (because each stored element is in fact 1 position, but with black and white to turn) more than number of legal positions
             winner: Color::White, // TODO handle both colors
             counter: 0,
-            index_table: Table::new(&material),
             material,
         }
     }
