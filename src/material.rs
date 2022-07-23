@@ -349,7 +349,7 @@ impl Material {
         for color in Color::ALL {
             for role in Role::ALL {
                 let piece = Piece { color, role };
-                if with_white_king || !piece == Color::White.king() {
+                if with_white_king || !(piece == Color::White.king()) {
                     for _ in 0..self.by_piece(piece) {
                         pieces.push(piece)
                     }
