@@ -14,7 +14,7 @@ pub use crate::outcome::{
 };
 pub use compression::EncoderDecoder;
 pub use encoding::get_info_table;
-pub use generation::{Generator, SideToMove, SideToMoveGetter};
+pub use generation::{Common, SideToMove, SideToMoveGetter, TableBaseBuilder};
 pub use indexer::{index, index_unchecked, restore_from_index};
 pub use indexer_syzygy::{Pieces, Table, A1_H8_DIAG, A8_H1_DIAG};
 pub use material::Material;
@@ -77,30 +77,31 @@ fn main() {
 }
 
 fn gen_one_material(mat: Material) {
-    let mut gen = Generator::new(mat);
-    let mut q = gen.generate_positions();
-    debug!("nb pos {:?}", gen.all_pos.len());
-    debug!("counter {:?}", gen.counter);
-    debug!(
-        "nb {:?} mates {:?}",
-        gen.winner,
-        q.winning_pos_to_process.len()
-    );
-    debug!(
-        "nb {:?} mates {:?}",
-        !gen.winner,
-        q.losing_pos_to_process.len()
-    );
-    // need to process FIRST winning positions, then losing ones.
-    gen.process_positions(&mut q.winning_pos_to_process);
-    gen.process_positions(&mut q.losing_pos_to_process);
-    let mut encoder =
-        EncoderDecoder::new(File::create(format!("table/{:?}", &gen.material)).unwrap());
-    encoder.compress(&gen.all_pos).expect("Compression failed");
-    stats(&gen)
+    todo!()
+    // let mut gen = Generator::new(mat);
+    // let mut q = gen.generate_positions();
+    // debug!("nb pos {:?}", gen.all_pos.len());
+    // debug!("counter {:?}", gen.counter);
+    // debug!(
+    //     "nb {:?} mates {:?}",
+    //     gen.winner,
+    //     q.winning_pos_to_process.len()
+    // );
+    // debug!(
+    //     "nb {:?} mates {:?}",
+    //     !gen.winner,
+    //     q.losing_pos_to_process.len()
+    // );
+    // // need to process FIRST winning positions, then losing ones.
+    // gen.process_positions(&mut q.winning_pos_to_process);
+    // gen.process_positions(&mut q.losing_pos_to_process);
+    // let mut encoder =
+    //     EncoderDecoder::new(File::create(format!("table/{:?}", &gen.material)).unwrap());
+    // encoder.compress(&gen.all_pos).expect("Compression failed");
+    // stats(&gen)
 }
 
-fn stats(gen: &Generator) {
+fn stats(gen: &Common) {
     let mut draw = 0;
     let mut win = 0;
     let mut lose = 0;
