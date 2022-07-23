@@ -2,12 +2,12 @@ use crate::{
     index, index_unchecked, restore_from_index, Descendants, Material, Outcome, OutcomeU8, Report,
     ReportU8, Reports, Table, A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
 };
+use log::debug;
 use retroboard::RetroBoard;
 use shakmaty::{
     Bitboard, Board, ByColor, CastlingMode, CastlingMode::Standard, Chess, Color, Color::Black,
     Color::White, FromSetup, Outcome as ChessOutcome, Piece, Position, PositionError, Setup,
 };
-use log::debug;
 use std::collections::VecDeque;
 
 use indicatif::{ProgressBar, ProgressStyle};
@@ -121,7 +121,6 @@ struct Generator {
 }
 
 impl Generator {
-
     pub fn new(common: Common) -> Self {
         let pb = common.get_progress_bar();
         Self {
@@ -212,7 +211,12 @@ impl Generator {
                             Report::Unprocessed(
                                 self.tablebase
                                     .as_ref()
-                                    .and_then(|tb| tb.outcome_from_captures_promotion(&chess))
+                                    .and_then(|tb| {
+                                        tb.outcome_from_captures_promotion(
+                                            &chess,
+                                            self.common.winner,
+                                        )
+                                    })
                                     .unwrap_or(Outcome::Draw),
                             ),
                         );
@@ -256,13 +260,9 @@ struct Tagger {
 }
 
 impl Tagger {
-
     pub fn new(common: Common) -> Self {
         let pb = common.get_progress_bar();
-        Self {
-            pb,
-            common,
-        }
+        Self { pb, common }
     }
 
     pub fn process_positions(&mut self, queue: &mut VecDeque<u64>) {
@@ -331,10 +331,10 @@ impl Tagger {
 }
 
 impl From<Tagger> for Common {
-   fn from(t: Tagger) -> Self {
+    fn from(t: Tagger) -> Self {
         t.common
-   }
-   }
+    }
+}
 
 pub struct TableBaseBuilder;
 

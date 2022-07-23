@@ -7,7 +7,7 @@ mod indexer_syzygy;
 mod material;
 mod outcome;
 
-pub use crate::file_handler::Descendants;
+pub use crate::file_handler::{Descendants, MaterialWinner};
 pub use crate::outcome::{
     Outcome, OutcomeU8, Outcomes, OutcomesSlice, Report, ReportU8, Reports, ReportsSlice,
     UNDEFINED_OUTCOME_BYCOLOR,
@@ -78,9 +78,16 @@ fn main() {
 
 fn gen_one_material(mat: Material) {
     let common = TableBaseBuilder::build(mat);
-    let mut encoder =
-        EncoderDecoder::new(File::create(format!("table/{:?}", &common.material)).unwrap());
-    encoder.compress(&common.all_pos).expect("Compression failed");
+    let mut encoder = EncoderDecoder::new(
+        File::create(format!(
+            "table/{:?}",
+            MaterialWinner::new(common.material.clone(), common.winner)
+        ))
+        .unwrap(),
+    );
+    encoder
+        .compress(&common.all_pos)
+        .expect("Compression failed");
     stats(&common)
 }
 
