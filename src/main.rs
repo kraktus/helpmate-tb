@@ -77,39 +77,22 @@ fn main() {
 }
 
 fn gen_one_material(mat: Material) {
-    todo!()
-    // let mut gen = Generator::new(mat);
-    // let mut q = gen.generate_positions();
-    // debug!("nb pos {:?}", gen.all_pos.len());
-    // debug!("counter {:?}", gen.counter);
-    // debug!(
-    //     "nb {:?} mates {:?}",
-    //     gen.winner,
-    //     q.winning_pos_to_process.len()
-    // );
-    // debug!(
-    //     "nb {:?} mates {:?}",
-    //     !gen.winner,
-    //     q.losing_pos_to_process.len()
-    // );
-    // // need to process FIRST winning positions, then losing ones.
-    // gen.process_positions(&mut q.winning_pos_to_process);
-    // gen.process_positions(&mut q.losing_pos_to_process);
-    // let mut encoder =
-    //     EncoderDecoder::new(File::create(format!("table/{:?}", &gen.material)).unwrap());
-    // encoder.compress(&gen.all_pos).expect("Compression failed");
-    // stats(&gen)
+    let common = TableBaseBuilder::build(mat);
+    let mut encoder =
+        EncoderDecoder::new(File::create(format!("table/{:?}", &common.material)).unwrap());
+    encoder.compress(&common.all_pos).expect("Compression failed");
+    stats(&common)
 }
 
-fn stats(gen: &Common) {
+fn stats(common: &Common) {
     let mut draw = 0;
     let mut win = 0;
     let mut lose = 0;
     let mut distrib: HashMap<Outcome, u64> = HashMap::new();
     let mut undefined_outcome: usize = 0;
 
-    //println!("{:?}", gen.all_pos);
-    for by_color_outcome in gen.all_pos.iter() {
+    //println!("{:?}", common.all_pos);
+    for by_color_outcome in common.all_pos.iter() {
         if &UNDEFINED_OUTCOME_BYCOLOR == by_color_outcome {
             undefined_outcome += 2;
             continue;
@@ -127,11 +110,11 @@ fn stats(gen: &Common) {
     }
     debug!(
         "From {:?} perspective, win: {win:?}, draw: {draw:?}, lost: {lose:?}",
-        gen.winner
+        common.winner
     );
     debug!(
         "Index density = {:?}%",
-        (gen.all_pos.len() * 2 - undefined_outcome) * 100 / (gen.all_pos.len() * 2)
+        (common.all_pos.len() * 2 - undefined_outcome) * 100 / (common.all_pos.len() * 2)
     );
     for i in 0..u8::MAX {
         if let Some(nb_win) = distrib.get(&Outcome::Win(i)) {

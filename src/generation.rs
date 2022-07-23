@@ -7,6 +7,7 @@ use shakmaty::{
     Bitboard, Board, ByColor, CastlingMode, CastlingMode::Standard, Chess, Color, Color::Black,
     Color::White, FromSetup, Outcome as ChessOutcome, Piece, Position, PositionError, Setup,
 };
+use log::debug;
 use std::collections::VecDeque;
 
 use indicatif::{ProgressBar, ProgressStyle};
@@ -89,17 +90,24 @@ pub struct Common {
 
 impl Common {
     fn get_progress_bar(&self) -> ProgressBar {
-        let pb = ProgressBar::new(self.get_nb_pos());
+        let pb = ProgressBar::new(get_nb_pos(&self.material));
         pb.set_style(ProgressStyle::default_bar()
         .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})")
         .progress_chars("#>-"));
         pb
     }
+}
 
-    #[inline]
-    fn get_nb_pos(&self) -> u64 {
-        // white king is already included in `material.count()`, so substract it, and multiply by 10 instead, real number of cases the white king can go on
-        pow_minus_1(63, self.material.count() - 1) * 10 * 2
+impl Common {
+    pub fn new(material: Material) -> Self {
+        let all_pos = vec![UNDEFINED_OUTCOME_BYCOLOR; get_nb_pos(&material) as usize / 10 * 9]; // heuristic, less than 90% of pos are legals. Takes x2 (because each stored element is in fact 1 position, but with black and white to turn) more than number of legal positions
+        Self {
+            all_pos,
+            winner: Color::White, // TODO handle both colors
+            counter: 0,
+            index_table: Table::new(&material),
+            material,
+        }
     }
 }
 
@@ -109,16 +117,27 @@ impl Common {
 struct Generator {
     common: Common,
     tablebase: Option<Descendants>, // access to the DTM of descendants (different material config, following a capture/promotion)
+    pb: ProgressBar,
+    queue: Queue,
 }
 
 impl Generator {
-    fn generate_positions_internal(
-        &mut self,
-        piece_vec: &[Piece],
-        setup: Setup,
-        queue: &mut Queue,
-        pb: &ProgressBar,
-    ) {
+
+    pub fn new(common: Common) -> Self {
+        let pb = common.get_progress_bar();
+        Self {
+            pb,
+            tablebase: Descendants::new(&common.material),
+            common,
+            queue: Queue::default(),
+        }
+    }
+
+    pub fn get_result(self) -> (Queue, Common) {
+        (self.queue, self.common)
+    }
+
+    fn generate_positions_internal(&mut self, piece_vec: &[Piece], setup: Setup) {
         match piece_vec {
             [piece, tail @ ..] => {
                 //println!("{:?}, setup: {:?}", piece, &setup);
@@ -132,29 +151,24 @@ impl Generator {
                     if setup.board.piece_at(sq).is_none() {
                         let mut new_setup = setup.clone();
                         new_setup.board.set_piece_at(sq, *piece);
-                        self.generate_positions_internal(tail, new_setup, queue, pb);
+                        self.generate_positions_internal(tail, new_setup);
                     }
                     //println!("after {:?}", &new_setup);
                 }
             }
-            [] => Self::generate_positions_check_position(self, setup, queue, pb),
+            [] => self.generate_positions_check_position(setup),
         }
     }
 
     // TODO split the `Generator` in two `Generator` and `Processor`, not to move around these parameters so much
-    fn generate_positions_check_position(
-        &mut self,
-        setup: Setup,
-        queue: &mut Queue,
-        pb: &ProgressBar,
-    ) {
+    fn generate_positions_check_position(&mut self, setup: Setup) {
         // setup is complete, check if valid
         for color in [Black, White] {
             let mut valid_setup = setup.clone();
             valid_setup.turn = color;
             self.common.counter += 1;
             if self.common.counter % 100000 == 0 {
-                pb.set_position(self.common.counter);
+                self.pb.set_position(self.common.counter);
             }
             // println!("{:?}", valid_setup);
             if let Ok(chess) = to_chess_with_illegal_checks(valid_setup.clone()) {
@@ -190,9 +204,9 @@ impl Generator {
                         self.common.all_pos[all_pos_idx].set_to(&chess, outcome);
                         if winner == self.common.winner {
                             //println!("lost {:?}", rboard);
-                            queue.losing_pos_to_process.push_back(idx);
+                            self.queue.losing_pos_to_process.push_back(idx);
                         } else {
-                            queue.winning_pos_to_process.push_back(idx);
+                            self.queue.winning_pos_to_process.push_back(idx);
                         }
                     }
                     None | Some(ChessOutcome::Draw) => {
@@ -212,22 +226,18 @@ impl Generator {
         }
     }
 
-    pub fn generate_positions(&mut self) -> Queue {
+    pub fn generate_positions(&mut self) {
         let piece_vec = self.common.material.pieces_without_white_king();
         println!("{piece_vec:?}");
-        let pb = self.common.get_progress_bar();
         self.common.counter = 0;
-        let mut queue = Queue::default();
-        self.common.all_pos =
-            vec![UNDEFINED_OUTCOME_BYCOLOR; self.common.get_nb_pos() as usize / 10 * 9]; // heuristic, less than 90% of pos are legals. Takes x2 (because each stored element is in fact 1 position, but with black and white to turn) more than number of legal positions
         let white_king_bb = Bitboard(135007759); // a1-d1-d4 triangle
         println!("{:?}", white_king_bb.0);
         for white_king_sq in white_king_bb {
             let mut new_setup = Setup::empty();
             new_setup.board.set_piece_at(white_king_sq, White.king());
-            self.generate_positions_internal(&piece_vec, new_setup, &mut queue, &pb)
+            self.generate_positions_internal(&piece_vec, new_setup)
         }
-        pb.finish_with_message("positions generated");
+        self.pb.finish_with_message("positions generated");
         println!("all_pos_vec capacity: {}", self.common.all_pos.capacity());
         while Some(&UNDEFINED_OUTCOME_BYCOLOR) == self.common.all_pos.last() {
             self.common.all_pos.pop();
@@ -238,26 +248,34 @@ impl Generator {
             "all_pos_vec capacity: {} after shrinking",
             self.common.all_pos.capacity()
         );
-        queue
     }
 }
 
+/// When all legal positions have already been generated, start backward algo from all mates positions
+/// and tag them (ie associates an Outcome)
 #[derive(Debug)]
 struct Tagger {
     common: Common,
-    index_table: Table,
+    pb: ProgressBar,
 }
 
 impl Tagger {
+
+    pub fn new(common: Common) -> Self {
+        let pb = common.get_progress_bar();
+        Self {
+            pb,
+            common,
+        }
+    }
+
     pub fn process_positions(&mut self, queue: &mut VecDeque<u64>) {
-        // let config = self.material.pieces_without_white_king();
-        let pb = self.common.get_progress_bar();
         self.common.counter = 0;
         loop {
             if let Some(idx) = queue.pop_front() {
                 self.common.counter += 1;
                 if self.common.counter % 100000 == 0 {
-                    pb.set_position(self.common.counter);
+                    self.pb.set_position(self.common.counter);
                 }
                 let rboard = restore_from_index(&self.common.material, idx);
                 let out: Outcome = self
@@ -311,24 +329,50 @@ impl Tagger {
                 break;
             }
         }
-        pb.finish_with_message("positions processed");
+        // TODO once finished check that no legal positions are unprocessed
+        self.pb.finish_with_message("positions processed");
     }
 }
 
+impl From<Tagger> for Common {
+   fn from(t: Tagger) -> Self {
+        t.common
+   }
+   }
+
 pub struct TableBaseBuilder;
 
-// impl TableBaseBuilder {
-//         pub fn new(material: Material) -> Self {
-//         Self {
-//             all_pos: Vec::default(),
-//             winner: White,
-//             counter: 0,
-//             index_table: Table::new(&material),
-//             tablebase: Descendants::new(&material),
-//             material,
-//         }
-//     }
-// }
+impl TableBaseBuilder {
+    pub fn build(material: Material) -> Common {
+        let common = Common::new(material);
+        let mut generator = Generator::new(common);
+        generator.generate_positions();
+        let (mut queue, common) = generator.get_result();
+        debug!("nb pos {:?}", common.all_pos.len());
+        debug!("counter {:?}", common.counter);
+        debug!(
+            "nb {:?} mates {:?}",
+            common.winner,
+            queue.winning_pos_to_process.len()
+        );
+        debug!(
+            "nb {:?} mates {:?}",
+            !common.winner,
+            queue.losing_pos_to_process.len()
+        );
+        let mut tagger = Tagger::new(common);
+        // need to process FIRST winning positions, then losing ones.
+        tagger.process_positions(&mut queue.winning_pos_to_process);
+        tagger.process_positions(&mut queue.losing_pos_to_process);
+        tagger.into()
+    }
+}
+
+#[inline]
+fn get_nb_pos(mat: &Material) -> u64 {
+    // white king is already included in `material.count()`, so substract it, and multiply by 10 instead, real number of cases the white king can go on
+    pow_minus_1(63, mat.count() - 1) * 10 * 2
+}
 
 #[inline]
 // workaround of shakmaty calling twice legal_moves
