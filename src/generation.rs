@@ -1,5 +1,7 @@
-use crate::{index, index_unchecked, restore_from_index, Material, Table, TableBase, A1_H8_DIAG};
-use crate::{Outcome, OutcomeU8, Report, ReportU8, Reports, UNDEFINED_OUTCOME_BYCOLOR};
+use crate::{
+    index, index_unchecked, restore_from_index, Descendants, Material, Outcome, OutcomeU8, Report,
+    ReportU8, Reports, Table, A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
+};
 use retroboard::RetroBoard;
 use shakmaty::{
     Bitboard, Board, ByColor, CastlingMode, CastlingMode::Standard, Chess, Color, Color::Black,
@@ -83,7 +85,7 @@ pub struct Generator {
     pub counter: u64,
     pub material: Material,
     index_table: Table,
-    tablebase: Option<TableBase>, // access to the DTM of descendants (different material config, following a capture/promotion)
+    tablebase: Option<Descendants>, // access to the DTM of descendants (different material config, following a capture/promotion)
 }
 
 impl Generator {
@@ -292,7 +294,7 @@ impl Generator {
             winner: White,
             counter: 0,
             index_table: Table::new(&material),
-            tablebase: TableBase::new(&material),
+            tablebase: Descendants::new(&material),
             material,
         }
     }

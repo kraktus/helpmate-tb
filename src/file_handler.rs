@@ -25,9 +25,9 @@ impl FileHandler {
 }
 
 #[derive(Debug)]
-pub struct TableBase(HashMap<Material, FileHandler>);
+pub struct Descendants(HashMap<Material, FileHandler>);
 
-impl TableBase {
+impl Descendants {
     pub fn new(mat: &Material) -> Option<Self> {
         let hashmap: HashMap<Material, FileHandler> = mat
             .descendants_not_draw()

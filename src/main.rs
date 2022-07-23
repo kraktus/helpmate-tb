@@ -7,7 +7,7 @@ mod indexer_syzygy;
 mod material;
 mod outcome;
 
-pub use crate::file_handler::TableBase;
+pub use crate::file_handler::Descendants;
 pub use crate::outcome::{
     Outcome, OutcomeU8, Outcomes, OutcomesSlice, Report, ReportU8, Reports, ReportsSlice,
     UNDEFINED_OUTCOME_BYCOLOR,
