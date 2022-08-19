@@ -322,7 +322,8 @@ impl Material {
         self.descendants().filter(Self::is_mate_possible)
     }
 
-    /// Sorted vec containing all unique material configurations
+    /// Vec containing all unique material configurations, not containing the root material
+    /// Sorted by positions with fewer pieces first
     pub fn descendants_not_draw_recursive(&self) -> Vec<Self> {
         let mut descendants_recursive: Vec<Self> = self.descendants_not_draw_recursive_internal();
         println!("{:?}", descendants_recursive);
