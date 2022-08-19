@@ -1,4 +1,4 @@
-use shakmaty::ByColor;
+use retroboard::shakmaty::ByColor;
 use std::cmp::Ordering;
 use std::ops::Add;
 use std::ops::Not;

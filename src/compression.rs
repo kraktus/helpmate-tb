@@ -4,7 +4,7 @@ use deku::bitvec::BitView;
 use deku::{ctx::Limit, prelude::*};
 use log::trace;
 use positioned_io::ReadAt;
-use shakmaty::ByColor;
+use retroboard::shakmaty::ByColor;
 use zstd::stream::{decode_all, encode_all};
 
 use crate::{OutcomeU8, Outcomes, Report, ReportU8, Reports, ReportsSlice};

@@ -22,6 +22,7 @@ pub use material::Material;
 use env_logger::{Builder, Target};
 use log::LevelFilter;
 
+use retroboard::shakmaty::Color;
 use std::collections::HashMap;
 use std::fs::File;
 
@@ -104,7 +105,7 @@ fn stats(common: &Common) {
             undefined_outcome += 2;
             continue;
         };
-        for color in shakmaty::Color::ALL {
+        for color in Color::ALL {
             let outcome = by_color_outcome.get_by_color(color).outcome();
             distrib.insert(outcome, *distrib.get(&outcome).unwrap_or(&0) + 1);
             match outcome {

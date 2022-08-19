@@ -7,8 +7,7 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "3.2", features = ["derive"] }
-retroboard = "0.2.2" # need same shakmaty version
-shakmaty = "0.21.1"
+retroboard = "0.2.4"
 arrayvec = { version = "0.7", features = ["serde"] }
 indicatif = "0.16.2"
 itertools = "0.10.3"

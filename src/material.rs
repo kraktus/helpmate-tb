@@ -22,9 +22,9 @@ use std::{
 use std::ops::Deref;
 
 use itertools::Itertools as _;
+use retroboard::shakmaty::{Board, ByColor, ByRole, Color, Piece, Role};
 use serde::Deserialize;
 use serde::Deserializer;
-use shakmaty::{Board, ByColor, ByRole, Color, Piece, Role};
 
 use crate::Pieces;
 use std::iter;
@@ -400,7 +400,7 @@ impl<'de> Deserialize<'de> for Material {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use shakmaty::Color::{Black, White};
+    use retroboard::shakmaty::Color::{Black, White};
     use std::collections::HashSet;
 
     #[test]

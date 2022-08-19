@@ -3,11 +3,11 @@ use crate::{
     ReportU8, Reports, Table, A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
 };
 use log::debug;
-use retroboard::RetroBoard;
-use shakmaty::{
+use retroboard::shakmaty::{
     Bitboard, Board, ByColor, CastlingMode, CastlingMode::Standard, Chess, Color, Color::Black,
     Color::White, FromSetup, Outcome as ChessOutcome, Piece, Position, PositionError, Setup,
 };
+use retroboard::RetroBoard;
 use std::collections::VecDeque;
 
 use indicatif::{ProgressBar, ProgressStyle};
@@ -416,7 +416,7 @@ impl Default for Queue {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use shakmaty::fen::Fen;
+    use retroboard::shakmaty::fen::Fen;
 
     #[test]
     fn test_a1_h8_bb() {

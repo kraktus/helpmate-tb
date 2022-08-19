@@ -2,11 +2,9 @@ use std::collections::HashMap;
 use std::fmt;
 
 use positioned_io::RandomAccessFile;
-use shakmaty::Chess;
-use shakmaty::Position;
+use retroboard::shakmaty::{Chess, Color, Position};
 
 use crate::{EncoderDecoder, Material, Outcome, Outcomes, SideToMoveGetter, Table};
-use shakmaty::Color;
 
 #[derive(Debug)]
 struct FileHandler {
@@ -39,7 +37,8 @@ impl MaterialWinner {
 }
 impl fmt::Debug for MaterialWinner {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f,
+        write!(
+            f,
             "{:?}{}",
             self.material,
             match self.winner {
@@ -107,7 +106,7 @@ impl Descendants {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use shakmaty::Color::{Black, White};
+    use retroboard::shakmaty::Color::{Black, White};
 
     #[test]
     fn test_material_winner() {

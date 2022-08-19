@@ -1,7 +1,6 @@
 use arrayvec::ArrayVec;
 use itertools::Itertools as _;
-use shakmaty::Bitboard;
-use shakmaty::{File, Piece, Rank, Role, Square};
+use retroboard::shakmaty::{Bitboard, File, Piece, Rank, Role, Square};
 
 use crate::{get_info_table, Material, SideToMove};
 
@@ -799,7 +798,7 @@ impl Table {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use shakmaty::{fen::Fen, CastlingMode, Chess};
+    use retroboard::shakmaty::{fen::Fen, CastlingMode, Chess};
 
     #[test]
     fn test_bb() {

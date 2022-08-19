@@ -1,4 +1,4 @@
-use shakmaty::{
+use retroboard::shakmaty::{
     CastlingMode, Color, Color::Black, Color::White, FromSetup, Piece, Role, Setup, Square,
 };
 
@@ -124,7 +124,7 @@ pub fn restore_from_index(material: &Material, index: u64) -> RetroBoard {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use shakmaty::{Bitboard, Board};
+    use retroboard::shakmaty::{Bitboard, Board};
     use std::num::NonZeroU32;
 
     #[test]
