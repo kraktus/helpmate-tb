@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::fmt;
+use std::{fmt, io};
 
 use positioned_io::RandomAccessFile;
 use retroboard::shakmaty::{Chess, Color, Position};
@@ -13,14 +13,11 @@ struct FileHandler {
 }
 
 impl FileHandler {
-    pub fn new(mat: &MaterialWinner) -> Self {
-        let raf = RandomAccessFile::open(format!("table/{mat:?}"))
-            .expect("table file to be generated and accessible");
-        let outcomes = EncoderDecoder::new(raf)
-            .decompress_file()
-            .expect("File well formated and readable");
+    pub fn new(mat: &MaterialWinner) -> io::Result<Self> {
+        let raf = RandomAccessFile::open(format!("table/{mat:?}"))?;
+        let outcomes = EncoderDecoder::new(raf).decompress_file()?;
         let table = Table::new(&mat.material);
-        Self { table, outcomes }
+        Ok(Self { table, outcomes })
     }
 }
 
@@ -57,10 +54,9 @@ impl Descendants {
         let hashmap: HashMap<MaterialWinner, FileHandler> = mat
             .descendants_not_draw()
             .flat_map(|m| {
-                Color::ALL.into_iter().map(move |winner| {
+                Color::ALL.into_iter().flat_map(move |winner| {
                     let mat_winner = MaterialWinner::new(m.clone(), winner);
-                    let file_handler = FileHandler::new(&mat_winner);
-                    (mat_winner, file_handler)
+                    FileHandler::new(&mat_winner).map(|file_handler| (mat_winner, file_handler))
                 })
             })
             .collect();
@@ -87,7 +83,6 @@ impl Descendants {
     /// Example:
     /// "KPvRK" where the pawn can take and promote then mate in 4, or just promote and mate in 2, will return `Outcome::Win(2)`
     pub fn outcome_from_captures_promotion(&self, pos: &Chess, winner: Color) -> Option<Outcome> {
-        // TODO test function
         let mut moves = pos.legal_moves();
         moves.retain(|m| m.is_capture() || m.is_promotion());
         println!("{:?}", moves);
@@ -106,7 +101,11 @@ impl Descendants {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use retroboard::shakmaty::Color::{Black, White};
+    use retroboard::shakmaty::{
+        fen::Fen,
+        CastlingMode::Standard,
+        Color::{Black, White},
+    };
 
     #[test]
     fn test_material_winner() {
@@ -117,5 +116,20 @@ mod tests {
             let mat_winner = MaterialWinner::new(m, c);
             assert_eq!(format!("{mat_winner:?}"), expected_file_name)
         }
+    }
+
+    #[test]
+    fn test_outcome_from_captures_promotion_without_switching_color() {
+        let chess: Chess = Fen::from_ascii("1k6/1r6/1K6/8/4Q3/8/8/8 w - - 0 1".as_bytes())
+            .unwrap()
+            .into_position(Standard)
+            .unwrap();
+        let material = Material::from_board(chess.board());
+        let winner = White;
+        let descendants = Descendants::new(&material).expect("KQvK descendant of KQvKR");
+        assert_eq!(
+            descendants.outcome_from_captures_promotion(&chess, winner),
+            Some(Outcome::Win(1))
+        );
     }
 }
