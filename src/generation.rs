@@ -299,7 +299,7 @@ impl Tagger {
                     match self.common.all_pos[idx_all_pos_after_unmove]
                         .get_by_pos(&rboard_after_unmove)
                     {
-                        Report::Unprocessed(Outcome::Undefined) => {
+                        Report::Processed(Outcome::Undefined) => {
                             panic!("pos before: {rboard:?}, and after {m:?} pos not found, illegal? {rboard_after_unmove:?}, idx: {idx_all_pos_after_unmove:?}")
                         }
                         Report::Unprocessed(fetched_outcome) => {
@@ -319,7 +319,6 @@ impl Tagger {
                         }
                         Report::Processed(_) => (),
                     }
-                    //println!("{:?}", (!out) + 1);
                 }
             } else {
                 break;

@@ -95,9 +95,9 @@ pub enum Outcome {
 }
 
 pub const UNDEFINED_OUTCOME_BYCOLOR: ByColor<ReportU8> = ByColor {
-    // Report::Unprocessed(Outcome::Undefined).into()
-    black: ReportU8(127),
-    white: ReportU8(127),
+    // Report::Processed(Outcome::Undefined).into()
+    black: ReportU8(255),
+    white: ReportU8(255),
 };
 
 impl From<OutcomeU8> for Outcome {
@@ -235,8 +235,8 @@ mod tests {
         assert_eq!(
             UNDEFINED_OUTCOME_BYCOLOR,
             ByColor {
-                black: Report::Unprocessed(Outcome::Undefined).into(),
-                white: Report::Unprocessed(Outcome::Undefined).into(),
+                black: Report::Processed(Outcome::Undefined).into(),
+                white: Report::Processed(Outcome::Undefined).into(),
             }
         );
     }
