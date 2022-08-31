@@ -4,8 +4,8 @@ use crate::{
 };
 use log::debug;
 use retroboard::shakmaty::{
-    Bitboard, Board, ByColor, CastlingMode, CastlingMode::Standard, Chess, Color, Color::Black,
-    Color::White, FromSetup, Outcome as ChessOutcome, Piece, Position, PositionError, Setup,
+    Bitboard, Board, ByColor, CastlingMode, CastlingMode::Standard, Chess, Color, Color::White,
+    FromSetup, Outcome as ChessOutcome, Piece, Position, PositionError, Setup,
 };
 use retroboard::RetroBoard;
 use std::collections::VecDeque;
@@ -73,7 +73,8 @@ impl SideToMoveGetter for ByColor<OutcomeU8> {
 
 #[derive(Debug, Clone)]
 pub struct Queue {
-    pub winning_pos_to_process: VecDeque<u64>,
+    // depending on the material configuration can be either won or drawn position
+    pub desired_outcome_pos_to_process: VecDeque<u64>,
     pub losing_pos_to_process: VecDeque<u64>,
 }
 
@@ -207,7 +208,7 @@ impl Generator {
                     //println!("lost {:?}", rboard);
                     self.queue.losing_pos_to_process.push_back(idx);
                 } else {
-                    self.queue.winning_pos_to_process.push_back(idx);
+                    self.queue.desired_outcome_pos_to_process.push_back(idx);
                 }
             }
             None | Some(ChessOutcome::Draw) => {
@@ -349,7 +350,7 @@ impl TableBaseBuilder {
         debug!(
             "nb {:?} mates {:?}",
             common.winner,
-            queue.winning_pos_to_process.len()
+            queue.desired_outcome_pos_to_process.len()
         );
         debug!(
             "nb {:?} mates {:?}",
@@ -358,7 +359,7 @@ impl TableBaseBuilder {
         );
         let mut tagger = Tagger::new(common);
         // need to process FIRST winning positions, then losing ones.
-        tagger.process_positions(&mut queue.winning_pos_to_process);
+        tagger.process_positions(&mut queue.desired_outcome_pos_to_process);
         tagger.process_positions(&mut queue.losing_pos_to_process);
         tagger.into()
     }
@@ -387,7 +388,7 @@ fn to_chess_with_illegal_checks(setup: Setup) -> Result<Chess, PositionError<Che
 impl Default for Queue {
     fn default() -> Self {
         Self {
-            winning_pos_to_process: VecDeque::new(),
+            desired_outcome_pos_to_process: VecDeque::new(),
             losing_pos_to_process: VecDeque::new(),
         }
     }
