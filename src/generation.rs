@@ -188,7 +188,7 @@ impl Generator {
                 {
                     panic!("Index {all_pos_idx} already generated, board: {rboard:?}");
                 }
-                match chess_outcome(&chess) {
+                match chess.outcome() {
                     Some(ChessOutcome::Decisive { winner }) => {
                         // we know the result is exact, since the game is over
                         let outcome = Report::Processed(if winner == self.common.winner {
@@ -367,26 +367,6 @@ impl TableBaseBuilder {
 fn get_nb_pos(mat: &Material) -> u64 {
     // white king is already included in `material.count()`, so substract it, and multiply by 10 instead, real number of cases the white king can go on
     pow_minus_1(63, mat.count() - 1) * 10 * 2
-}
-
-#[inline]
-// workaround of shakmaty calling twice legal_moves
-// waiting for https://github.com/niklasf/shakmaty/pull/59
-fn chess_outcome(chess: &Chess) -> Option<ChessOutcome> {
-    if chess.legal_moves().is_empty() {
-        if !chess.checkers().is_empty() {
-            Some(ChessOutcome::Decisive {
-                winner: !chess.turn(),
-            })
-        } else {
-            // stalemate
-            Some(ChessOutcome::Draw)
-        }
-    } else if chess.is_insufficient_material() {
-        Some(ChessOutcome::Draw)
-    } else {
-        None
-    }
 }
 
 // instead of 64**4 get 64*63*62*61
