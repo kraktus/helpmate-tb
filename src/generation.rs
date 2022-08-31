@@ -152,13 +152,13 @@ impl Generator {
                     }
                 }
             }
-            [] => self.generate_positions_check_position(setup),
+            [] => self.check_position(setup),
         }
     }
 
-    fn generate_positions_check_position(&mut self, setup: Setup) {
+    fn check_position(&mut self, setup: Setup) {
         // setup is complete, check if valid
-        for color in [Black, White] {
+        for color in Color::ALL {
             let mut valid_setup = setup.clone();
             valid_setup.turn = color;
             self.common.counter += 1;
@@ -188,40 +188,41 @@ impl Generator {
                 {
                     panic!("Index {all_pos_idx} already generated, board: {rboard:?}");
                 }
-                match chess.outcome() {
-                    Some(ChessOutcome::Decisive { winner }) => {
-                        // we know the result is exact, since the game is over
-                        let outcome = Report::Processed(if winner == self.common.winner {
-                            Outcome::Win(0)
-                        } else {
-                            Outcome::Lose(0)
-                        });
-                        self.common.all_pos[all_pos_idx].set_to(&chess, outcome);
-                        if winner == self.common.winner {
-                            //println!("lost {:?}", rboard);
-                            self.queue.losing_pos_to_process.push_back(idx);
-                        } else {
-                            self.queue.winning_pos_to_process.push_back(idx);
-                        }
-                    }
-                    None | Some(ChessOutcome::Draw) => {
-                        // println!("{:?}, new idx: {idx}", self.all_pos.get(0).map(|x| x.key()));
-                        self.common.all_pos[all_pos_idx].set_to(
-                            &chess,
-                            Report::Unprocessed(
-                                self.tablebase
-                                    .as_ref()
-                                    .and_then(|tb| {
-                                        tb.outcome_from_captures_promotion(
-                                            &chess,
-                                            self.common.winner,
-                                        )
-                                    })
-                                    .unwrap_or(Outcome::Draw),
-                            ),
-                        );
-                    }
+                self.handle_outcome_of_legal_position(&chess, idx, all_pos_idx);
+            }
+        }
+    }
+
+    fn handle_outcome_of_legal_position(&mut self, chess: &Chess, idx: u64, all_pos_idx: usize) {
+        match chess.outcome() {
+            Some(ChessOutcome::Decisive { winner }) => {
+                // we know the result is exact, since the game is over
+                let outcome = Report::Processed(if winner == self.common.winner {
+                    Outcome::Win(0)
+                } else {
+                    Outcome::Lose(0)
+                });
+                self.common.all_pos[all_pos_idx].set_to(chess, outcome);
+                if winner == self.common.winner {
+                    //println!("lost {:?}", rboard);
+                    self.queue.losing_pos_to_process.push_back(idx);
+                } else {
+                    self.queue.winning_pos_to_process.push_back(idx);
                 }
+            }
+            None | Some(ChessOutcome::Draw) => {
+                // println!("{:?}, new idx: {idx}", self.all_pos.get(0).map(|x| x.key()));
+                self.common.all_pos[all_pos_idx].set_to(
+                    chess,
+                    Report::Unprocessed(
+                        self.tablebase
+                            .as_ref()
+                            .and_then(|tb| {
+                                tb.outcome_from_captures_promotion(&chess, self.common.winner)
+                            })
+                            .unwrap_or(Outcome::Draw),
+                    ),
+                );
             }
         }
     }
