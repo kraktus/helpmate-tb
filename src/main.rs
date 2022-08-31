@@ -96,6 +96,7 @@ fn stats(common: &Common) {
     let mut draw = 0;
     let mut win = 0;
     let mut lose = 0;
+    let mut unkown = 0;
     let mut distrib: HashMap<Outcome, u64> = HashMap::new();
     let mut undefined_outcome: usize = 0;
 
@@ -113,11 +114,12 @@ fn stats(common: &Common) {
                 Outcome::Win(_) => win += 1,
                 Outcome::Lose(_) => lose += 1,
                 Outcome::Undefined => undefined_outcome += 1,
+                Outcome::Unknown => unkown += 1,
             }
         }
     }
     debug!(
-        "From {:?} perspective, win: {win:?}, draw: {draw:?}, lost: {lose:?}",
+        "From {:?} perspective, win: {win:?}, draw: {draw:?}, lost: {lose:?}, unkown: {unkown:?}",
         common.winner
     );
     debug!(

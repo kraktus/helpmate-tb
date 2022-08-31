@@ -88,10 +88,11 @@ impl From<&ReportU8> for Report {
 pub enum Outcome {
     // TODO replace by an enum with 63 elements?
     Win(u8), // Need to be between 0 and 63 excluded due to conversion to u7
+    Unknown, // Used for positions we don't know the outcome yet. Cannot use `Draw` by default for positions where Drawing is the desired state (eg: KQvKb)
     Draw,
     // TODO replace by an enum with 63 elements?
-    Lose(u8),  // Need to be between 0 and 63 excluded due to conversion to u7
-    Undefined, // Should we use Option<Outcome> without that variant instead?
+    Lose(u8),  // Need to be between 0 and **62** excluded due to conversion to u7
+    Undefined, // Used for illegal positions. Should we use Option<Outcome> without that variant instead?
 }
 
 pub const UNDEFINED_OUTCOME_BYCOLOR: ByColor<ReportU8> = ByColor {
@@ -104,9 +105,10 @@ impl From<OutcomeU8> for Outcome {
     fn from(u: OutcomeU8) -> Self {
         match u.0 {
             0 => Self::Draw,
+            1 => Self::Unknown,
             127 => Self::Undefined,
             w if w > 63 => Self::Win(w - 64),
-            l => Self::Lose(l - 1),
+            l => Self::Lose(l - 2),
         }
     }
 }
@@ -127,7 +129,10 @@ impl Ord for Outcome {
             (Self::Draw, Self::Lose(_)) => Ordering::Greater,
             (Self::Lose(x), Self::Lose(y)) => x.cmp(y), // losing in many moves is better,
             (Self::Lose(_), Self::Win(_) | Self::Draw) => Ordering::Less,
-            (Self::Undefined, _) | (_, Self::Undefined) => panic!("No Undefined in comparison"),
+            (Self::Unknown, _)
+            | (_, Self::Unknown)
+            | (Self::Undefined, _)
+            | (_, Self::Undefined) => panic!("No Undefined/Unknown in comparison"),
         }
     }
 }
@@ -141,9 +146,10 @@ impl PartialOrd for Outcome {
 fn try_into_util(o: Outcome) -> Result<OutcomeU8, OutcomeOutOfBound> {
     match o {
         Outcome::Draw => Ok(0),
+        Outcome::Unknown => Ok(1),
         Outcome::Undefined => Ok(127),
         Outcome::Win(w) if w < 63 => Ok(w + 64),
-        Outcome::Lose(l) if l < 63 => Ok(l + 1),
+        Outcome::Lose(l) if l < 62 => Ok(l + 2),
         _ => Err(OutcomeOutOfBound),
     }
     .map(|u| OutcomeU8::from_raw_u8(u).expect("Value is crafted such that it fits in u7"))
@@ -163,7 +169,7 @@ impl Not for Outcome {
             Self::Win(x) => Self::Lose(x),
             Self::Lose(x) => Self::Win(x),
             Self::Draw => Self::Draw,
-            Self::Undefined => Self::Undefined,
+            Self::Undefined | Self::Unknown => panic!("Cannot invert undefined/unkown outcome"),
         }
     }
 }
@@ -176,7 +182,7 @@ impl Add<u8> for Outcome {
             Self::Win(x) => Self::Win(x + rhs),
             Self::Lose(x) => Self::Lose(x + rhs),
             Self::Draw => Self::Draw,
-            Self::Undefined => Self::Undefined,
+            Self::Undefined | Self::Unknown => panic!("Cannot add undefined/unkown outcome"),
         }
     }
 }
@@ -188,9 +194,9 @@ mod tests {
     fn test_outcome_to_u7() {
         assert_eq!(OutcomeU8::from(Outcome::Draw), OutcomeU8(0));
         assert_eq!(OutcomeU8::from(Outcome::Undefined), OutcomeU8(127));
-        assert_eq!(OutcomeU8::from(Outcome::Lose(0)), OutcomeU8(1));
+        assert_eq!(OutcomeU8::from(Outcome::Lose(0)), OutcomeU8(2));
         assert_eq!(OutcomeU8::from(Outcome::Win(0)), OutcomeU8(64));
-        assert_eq!(OutcomeU8::from(Outcome::Lose(62)), OutcomeU8(63));
+        assert_eq!(OutcomeU8::from(Outcome::Lose(61)), OutcomeU8(63));
     }
 
     #[test]
@@ -206,9 +212,10 @@ mod tests {
         for outcome in [
             Outcome::Win(10),
             Outcome::Draw,
-            Outcome::Lose(62),
+            Outcome::Lose(61),
             Outcome::Win(62),
             Outcome::Undefined,
+            Outcome::Unknown,
         ] {
             println!("{:?}", outcome);
             assert_eq!(
