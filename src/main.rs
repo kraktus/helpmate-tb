@@ -82,7 +82,7 @@ fn gen_one_material(mat: Material) {
     let mut encoder = EncoderDecoder::new(
         File::create(format!(
             "table/{:?}",
-            MaterialWinner::new(common.material.clone(), common.winner)
+            MaterialWinner::new(&common.material, common.winner)
         ))
         .unwrap(),
     );
