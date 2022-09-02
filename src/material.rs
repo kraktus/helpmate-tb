@@ -90,8 +90,8 @@ impl MaterialSide {
     /// All `MaterialSide` configuration than can be possible from this setup using legal moves
     pub fn descendants(&self) -> Vec<Self> {
         let mut descendants: Vec<Self> = Vec::with_capacity(6); // arbitrary
-                                                                // a pawn can be promoted
         if self.has_pawns() {
+            // a pawn can be promoted
             for role in [Role::Bishop, Role::Knight, Role::Rook, Role::Queen] {
                 let mut descendant = self.clone();
                 descendant.by_role.pawn -= 1;
@@ -288,6 +288,7 @@ impl Material {
     }
 
     /// For any color
+    // TODO is this actually needed or the only material configurations where no color can mate are "KvK", "KBvK" and "KNvK"?
     pub fn is_mate_possible(&self) -> bool {
         // order is arbitrary
         let (white, black) = (
@@ -295,6 +296,32 @@ impl Material {
             self.by_color.black.can_mate(),
         );
         white.is_mate_possible(black)
+    }
+
+    pub fn can_mate(&self, color: Color) -> bool {
+        let my_side = self.by_color.get(color);
+        let opposite_side = self.by_color.get(!color);
+        // Can mate on my own
+        if my_side.count() > 2
+            || my_side.by_role.rook > 0
+            || my_side.by_role.queen > 0
+            || my_side.has_pawns()
+        {
+            true
+        } else if my_side.count() == 2 {
+            // If we only have a bishop, we need the other side to have another piece which is not a queen or a rook
+            // If we only have a knight we need the other side to have another piece which is not a queen
+            opposite_side.count() > 1
+                && ((my_side.by_role.bishop > 0
+                    && opposite_side.by_role.queen == 0
+                    && opposite_side.by_role.rook == 0)
+                    || (my_side.by_role.knight > 0 && opposite_side.by_role.queen == 0))
+        } else {
+            // only king
+            assert!(my_side.count() == 1);
+            assert!(my_side.by_role.king == 1);
+            false
+        }
     }
 
     /// For any color
@@ -322,21 +349,25 @@ impl Material {
         self.descendants().filter(Self::is_mate_possible)
     }
 
-    /// Vec containing all unique material configurations, not containing the root material
+    /// Vec containing all unique material configurations not containing the root material.
     /// Sorted by positions with fewer pieces first
-    pub fn descendants_not_draw_recursive(&self) -> Vec<Self> {
-        let mut descendants_recursive: Vec<Self> = self.descendants_not_draw_recursive_internal();
-        println!("{:?}", descendants_recursive);
+    pub fn descendants_recursive(&self, include_drawn_materials: bool) -> Vec<Self> {
+        let mut descendants_recursive: Vec<Self> =
+            self.descendants_recursive_internal(include_drawn_materials);
         descendants_recursive.sort();
         descendants_recursive.dedup();
         descendants_recursive
     }
 
     #[inline]
-    fn descendants_not_draw_recursive_internal(&self) -> Vec<Self> {
-        self.descendants_not_draw()
+    fn descendants_recursive_internal(&self, include_drawn_materials: bool) -> Vec<Self> {
+        self.descendants()
+            .filter(|mat| include_drawn_materials || mat.is_mate_possible())
             .flat_map(|x| {
-                iter::once(x.clone()).chain(x.descendants_not_draw_recursive_internal().into_iter())
+                iter::once(x.clone()).chain(
+                    x.descendants_recursive_internal(include_drawn_materials)
+                        .into_iter(),
+                )
             })
             .collect()
     }
@@ -478,6 +509,31 @@ mod tests {
     }
 
     #[test]
+    fn test_can_mate() {
+        for test_config in [
+            ("KBNvKRQ", (true, true)),
+            ("KBvKN", (true, true)),
+            ("KBvK", (false, false)),
+            ("KvKB", (false, false)),
+            ("KNvK", (false, false)),
+            ("KvK", (false, false)),
+            ("KPvK", (true, false)),
+            ("KPvKP", (true, true)),
+            ("KRvKP", (true, true)),
+            ("KQvKP", (true, true)),
+            ("KQvKN", (true, false)),
+            ("KQvKB", (true, false)),
+            ("KRvKB", (true, false)),
+            ("KRvKN", (true, true)),
+        ] {
+            let mat = Material::from_str(test_config.0).unwrap();
+            println!("{mat:?}");
+            assert_eq!(mat.can_mate(White), test_config.1 .0, "white");
+            assert_eq!(mat.can_mate(Black), test_config.1 .1, "black");
+        }
+    }
+
+    #[test]
     fn test_material_descendants() {
         for test_config in [
             ("KvK", vec![]),
@@ -541,7 +597,7 @@ mod tests {
             let mat = Material::from_str(test_config.0).unwrap();
             println!("{mat:?}",);
             assert_eq!(
-                mat.descendants_not_draw_recursive(),
+                mat.descendants_recursive(false),
                 Vec::from_iter(test_config.1.iter().map(|s| Material::from_str(s).unwrap()))
             );
         }

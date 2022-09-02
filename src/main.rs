@@ -67,7 +67,7 @@ fn main() {
         .init();
     let root_material = Material::from_str(&args.material).expect("Valid material config");
     let mut materials = if args.recursive {
-        root_material.descendants_not_draw_recursive()
+        root_material.descendants_recursive(false)
     } else {
         vec![]
     };

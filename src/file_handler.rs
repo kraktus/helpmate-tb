@@ -109,8 +109,8 @@ impl Descendants {
 mod tests {
     use super::*;
     use retroboard::shakmaty::{
-        fen::Fen,
-        CastlingMode::Standard,
+        // fen::Fen,
+        // CastlingMode::Standard,
         Color::{Black, White},
     };
 
