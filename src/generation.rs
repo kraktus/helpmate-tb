@@ -118,7 +118,7 @@ impl Common {
 #[derive(Debug)]
 struct Generator {
     common: Common,
-    tablebase: Option<Descendants>, // access to the DTM of descendants (different material config, following a capture/promotion)
+    tablebase: Descendants, // access to the DTM of descendants (different material config, following a capture/promotion)
     pb: ProgressBar,
     queue: Queue,
 }
@@ -227,10 +227,7 @@ impl Generator {
                     chess,
                     Report::Unprocessed(
                         self.tablebase
-                            .as_ref()
-                            .and_then(|tb| {
-                                tb.outcome_from_captures_promotion(&chess, self.common.winner)
-                            })
+                            .outcome_from_captures_promotion(&chess, self.common.winner)
                             .unwrap_or(Outcome::Unknown),
                     ),
                 );

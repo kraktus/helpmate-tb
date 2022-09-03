@@ -53,29 +53,29 @@ impl fmt::Debug for MaterialWinner<'_> {
 pub struct Descendants(HashMap<Material, ByColor<FileHandler>>);
 
 impl Descendants {
-    pub fn new(mat: &Material) -> Option<Self> {
-        let hashmap: HashMap<Material, ByColor<FileHandler>> = mat
-            .descendants_not_draw()
-            .map(|m| {
-                (
-                    m.clone(),
-                    ByColor::new_with(|winner| {
-                        let mat_winner = MaterialWinner::new(&m, winner);
-                        FileHandler::new(&mat_winner)
-                    }),
-                )
-            })
-            .collect();
-        if hashmap.is_empty() {
-            None
-        } else {
-            Some(Self(hashmap))
-        }
+    pub fn new(mat: &Material) -> Self {
+        Self(
+            mat.descendants_not_draw()
+                .map(|m| {
+                    (
+                        m.clone(),
+                        ByColor::new_with(|winner| {
+                            let mat_winner = MaterialWinner::new(&m, winner);
+                            FileHandler::new(&mat_winner)
+                        }),
+                    )
+                })
+                .collect(),
+        )
     }
 
     /// Returns the distance to helpmate in the descendant table, or panics
     fn retrieve_outcome(&self, pos: &Chess, winner: Color) -> Outcome {
         let mat = Material::from_board(pos.board());
+        if mat.count() == 2 {
+            // special case when only kings left
+            return Outcome::Draw;
+        }
         let table_file = self
             .0
             .get(&mat)
@@ -108,7 +108,11 @@ impl Descendants {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use retroboard::shakmaty::Color::{Black, White};
+    use retroboard::shakmaty::{
+        fen::Fen,
+        CastlingMode::Standard,
+        Color::{Black, White},
+    };
 
     #[test]
     fn test_material_winner() {
@@ -136,4 +140,20 @@ mod tests {
     //         Some(Outcome::Win(1))
     //     );
     // }
+
+    #[test]
+    fn test_outcome_from_captures_special_case_only_2_kings_left() {
+        for winner in Color::ALL {
+            let chess: Chess = Fen::from_ascii("4k3/3Q4/8/8/8/8/8/3K4 b - - 0 1".as_bytes())
+                .unwrap()
+                .into_position(Standard)
+                .unwrap();
+            let material = Material::from_board(chess.board());
+            let descendants = Descendants::new(&material);
+            assert_eq!(
+                descendants.outcome_from_captures_promotion(&chess, winner),
+                Some(Outcome::Draw)
+            );
+        }
+    }
 }
