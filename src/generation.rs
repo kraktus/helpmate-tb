@@ -86,6 +86,7 @@ pub struct Common {
     pub winner: Color,
     pub counter: u64,
     pub material: Material,
+    can_mate: bool, // if `true`, the desired outcome is winning, otherwise it's to draw
     index_table: Table,
 }
 
@@ -100,12 +101,13 @@ impl Common {
 }
 
 impl Common {
-    pub fn new(material: Material) -> Self {
+    pub fn new(material: Material, winner: Color) -> Self {
         Self {
             index_table: Table::new(&material),
             all_pos: vec![UNDEFINED_OUTCOME_BYCOLOR; get_nb_pos(&material) as usize / 10 * 9], // heuristic, less than 90% of pos are legals. Takes x2 (because each stored element is in fact 1 position, but with black and white to turn) more than number of legal positions
-            winner: Color::White, // TODO handle both colors
+            winner,
             counter: 0,
+            can_mate: material.can_mate(winner),
             material,
         }
     }
@@ -199,6 +201,7 @@ impl Generator {
             Some(ChessOutcome::Decisive { winner }) => {
                 // we know the result is exact, since the game is over
                 let outcome = Report::Processed(if winner == self.common.winner {
+                    assert!(self.common.can_mate);
                     Outcome::Win(0)
                 } else {
                     Outcome::Lose(0)
@@ -211,7 +214,14 @@ impl Generator {
                     self.queue.desired_outcome_pos_to_process.push_back(idx);
                 }
             }
-            None | Some(ChessOutcome::Draw) => {
+
+            Some(ChessOutcome::Draw) => {
+                self.common.all_pos[all_pos_idx].set_to(chess, Report::Processed(Outcome::Draw));
+                if !self.common.can_mate {
+                    self.queue.desired_outcome_pos_to_process.push_back(idx);
+                }
+            }
+            None => {
                 // println!("{:?}, new idx: {idx}", self.all_pos.get(0).map(|x| x.key()));
                 self.common.all_pos[all_pos_idx].set_to(
                     chess,
@@ -221,7 +231,7 @@ impl Generator {
                             .and_then(|tb| {
                                 tb.outcome_from_captures_promotion(&chess, self.common.winner)
                             })
-                            .unwrap_or(Outcome::Draw),
+                            .unwrap_or(Outcome::Unknown),
                     ),
                 );
             }
@@ -340,8 +350,8 @@ impl From<Tagger> for Common {
 pub struct TableBaseBuilder;
 
 impl TableBaseBuilder {
-    pub fn build(material: Material) -> Common {
-        let common = Common::new(material);
+    pub fn build(material: Material, winner: Color) -> Common {
+        let common = Common::new(material, winner);
         let mut generator = Generator::new(common);
         generator.generate_positions();
         let (mut queue, common) = generator.get_result();

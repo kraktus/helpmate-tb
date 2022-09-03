@@ -78,18 +78,21 @@ fn main() {
 }
 
 fn gen_one_material(mat: Material) {
-    let common = TableBaseBuilder::build(mat);
-    let mut encoder = EncoderDecoder::new(
-        File::create(format!(
-            "table/{:?}",
-            MaterialWinner::new(&common.material, common.winner)
-        ))
-        .unwrap(),
-    );
-    encoder
-        .compress(&common.all_pos)
-        .expect("Compression failed");
-    stats(&common)
+    for winner in Color::ALL {
+        // white first, most interesting
+        let common = TableBaseBuilder::build(mat.clone(), winner);
+        let mut encoder = EncoderDecoder::new(
+            File::create(format!(
+                "table/{:?}",
+                MaterialWinner::new(&common.material, common.winner)
+            ))
+            .unwrap(),
+        );
+        encoder
+            .compress(&common.all_pos)
+            .expect("Compression failed");
+        stats(&common)
+    }
 }
 
 fn stats(common: &Common) {

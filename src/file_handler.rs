@@ -108,11 +108,7 @@ impl Descendants {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use retroboard::shakmaty::{
-        // fen::Fen,
-        // CastlingMode::Standard,
-        Color::{Black, White},
-    };
+    use retroboard::shakmaty::Color::{Black, White};
 
     #[test]
     fn test_material_winner() {
