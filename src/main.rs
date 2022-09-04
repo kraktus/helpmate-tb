@@ -103,7 +103,6 @@ fn stats(common: &Common) {
     let mut distrib: HashMap<Outcome, u64> = HashMap::new();
     let mut undefined_outcome: usize = 0;
 
-    //println!("{:?}", common.all_pos);
     for by_color_outcome in common.all_pos.iter() {
         if &UNDEFINED_OUTCOME_BYCOLOR == by_color_outcome {
             undefined_outcome += 2;
