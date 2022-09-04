@@ -14,7 +14,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 // Allow to use both `Chess` and `RetroBoard`
 // TODO replace all `dyn SideToMove` by enum using `enum_trait` crate for example
-pub trait SideToMove: std::fmt::Debug {
+pub trait SideToMove {
     // side to **move**, so opposite of side to unmove
     fn side_to_move(&self) -> Color;
     fn board(&self) -> &Board;

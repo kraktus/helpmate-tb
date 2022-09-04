@@ -479,12 +479,12 @@ impl Table {
 
     pub fn encode(&self, pos: &dyn SideToMove) -> usize {
         self.encode_checked(pos)
-            .expect("Valid index, if not sure use `encode_checked`")
+            .unwrap_or_else(|| panic!("Wrong position for the table, board {}, turn {:?}", pos.board(), pos.side_to_move()))
     }
 
     /// Given a position, determine the unique (modulo symmetries) index into
     /// the corresponding subtable.
-    pub fn encode_checked(&self, pos: &dyn SideToMove) -> Result<usize, ()> {
+    pub fn encode_checked(&self, pos: &dyn SideToMove) -> Option<usize> {
         let key = Material::from_board(pos.board());
         let material = Material::from_iter(self.files[0][0].pieces.clone());
         // let key_check = key == material || key == material.clone().into_flipped();
@@ -554,13 +554,10 @@ impl Table {
 
         for piece in side.pieces.iter().skip(lead_pawns_count) {
             let color = piece.color ^ flip;
-            let square = ((pos.board().by_piece(piece.role.of(color)) & !used).first())
-                .unwrap_or_else(|| panic!("Corrupted table, position {pos:?}"));
+            let square = (pos.board().by_piece(piece.role.of(color)) & !used).first()?;
             squares.push(if flip { square.flip_vertical() } else { square });
             used.add(square);
         }
-
-        // println!("initial squares {squares:?}");
 
         assert!(squares.len() >= 2);
 
@@ -570,8 +567,6 @@ impl Table {
                 *square = square.flip_horizontal();
             }
         }
-
-        // println!("squares after flip_horizontal {squares:?}");
 
         let mut idx = if material.has_pawns() {
             let mut idx = CONSTS.lead_pawn_idx[lead_pawns_count][usize::from(squares[0])];
@@ -591,8 +586,6 @@ impl Table {
                 }
             }
 
-            // println!("squares after flip_anti_diagonal {squares:?}");
-
             for i in 0..material.count() {
                 if A1_H8_DIAG.contains(squares[i]) {
                     continue;
@@ -606,30 +599,6 @@ impl Table {
 
                 break;
             }
-            // println!("squares after flip_diagonal {squares:?}");
-            // let squares_bb = squares.iter().fold(Bitboard::EMPTY, |bb, sq| bb | *sq);
-            // dbg!(squares_bb);
-
-            // if DIAGS.is_superset(squares_bb) {
-            //     println!("{:?}", "GO");
-            //     for i in 0..dbg!(side.lens[0]) {
-            //         if A1_H8_DIAG.contains(squares[i]) {
-            //             println!("{:?}", "CONTINUE");
-            //             continue;
-            //         }
-
-            //         if squares[i].rank().flip_diagonal() > squares[i].file() {
-            //             println!("{:?}", "FLIP");
-            //             for square in &mut squares[i..] {
-            //                 *square = square.flip_diagonal();
-            //             }
-            //         }
-            //         println!("{:?}", "BREAK");
-            //         break;
-            //     }
-            // }
-
-            // println!("squares after flip_diagonal 2 {squares:?}");
 
             if self.num_unique_pieces > 2 {
                 let adjust1 = if squares[1] > squares[0] { 1 } else { 0 };
@@ -757,8 +726,6 @@ impl Table {
                 idx
             }
         };
-
-        // println!("idx before remaining pawns {idx}");
         idx *= side.factors[0];
 
         // Encode remaining pawns.
@@ -770,7 +737,6 @@ impl Table {
             let (prev_squares, group_squares) = squares.split_at_mut(group_sq);
             let group_squares = &mut group_squares[..lens];
             group_squares.sort_unstable();
-            // println!("prev {prev_squares:?}, group: {group_squares:?}");
 
             let mut n = 0;
 
@@ -790,7 +756,7 @@ impl Table {
             group_sq += side.lens[next];
             next += 1;
         }
-        Ok(idx as usize) // u64
+        Some(idx as usize) // u64
     }
 }
 
