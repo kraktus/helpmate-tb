@@ -69,11 +69,12 @@ fn to_u64(x: usize) -> u64 {
 
 impl<T: Write> EncoderDecoder<T> {
     pub fn compress(&mut self, outcomes: &Reports) -> io::Result<()> {
+        for (i, elements) in outcomes.chunks(BLOCK_ELEMENTS).enumerate() {
+            let block = Block::new(elements, BLOCK_ELEMENTS * i)?;
+            self.inner.write_all(&block.to_bytes().unwrap())?;
+        };
         Ok(
-            for (i, elements) in outcomes.chunks(BLOCK_ELEMENTS).enumerate() {
-                let block = Block::new(elements, BLOCK_ELEMENTS * i)?;
-                self.inner.write_all(&block.to_bytes().unwrap())?;
-            },
+            (),
         )
     }
 }

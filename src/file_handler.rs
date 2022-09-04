@@ -21,7 +21,7 @@ impl FileHandler {
         let outcomes = EncoderDecoder::new(raf)
             .decompress_file()
             .expect("decompression failed");
-        let table = Table::new(&mat.material);
+        let table = Table::new(mat.material);
         Self { table, outcomes }
     }
 }

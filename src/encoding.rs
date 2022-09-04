@@ -1,10 +1,10 @@
-use serde_json;
+
 
 use crate::Material;
 use crate::Pieces;
 use arrayvec::ArrayVec;
 use retroboard::shakmaty::Piece;
-use serde;
+
 use serde::{de, Deserialize};
 use std::collections::HashMap;
 use std::error::Error;
@@ -50,7 +50,7 @@ pub fn get_info_table(m: &Material) -> Result<InfoTable, Box<dyn Error>> {
     let data = fs::read_to_string("encoding.json")?;
     let map: HashMap<Material, InfoTable> = serde_json::from_str(&data)?;
     Ok(map
-        .get(&m)
+        .get(m)
         .expect("Material configuration not found, double check it is legal (1 king of each color)")
         .clone())
 }

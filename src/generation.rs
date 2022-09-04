@@ -216,7 +216,7 @@ impl Generator {
                     chess,
                     Report::Unprocessed(
                         self.tablebase
-                            .outcome_from_captures_promotion(&chess, self.common.winner)
+                            .outcome_from_captures_promotion(chess, self.common.winner)
                             .unwrap_or(Outcome::Unknown),
                     ),
                 );
