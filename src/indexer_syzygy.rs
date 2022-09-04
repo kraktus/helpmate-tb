@@ -1,12 +1,8 @@
 use arrayvec::ArrayVec;
 use itertools::Itertools as _;
-use retroboard::shakmaty::{
-    Bitboard,
-    Color::{Black, White},
-    File, Piece, Rank, Role, Square,
-};
+use retroboard::shakmaty::{Bitboard, File, Piece, Rank, Role, Square};
 
-use crate::{get_info_table, Material, MaterialSide, SideToMove};
+use crate::{get_info_table, is_black_stronger, Material, SideToMove};
 
 const fn binomial(mut n: u64, k: u64) -> u64 {
     if k > n {
@@ -497,8 +493,7 @@ impl Table {
         let material = Material::from_board(pos.board());
 
         let symmetric_btm = material.is_symmetric() && pos.side_to_move().is_black();
-        let black_stronger = MaterialSide::from(pos.board().material_side(Black))
-            > MaterialSide::from(pos.board().material_side(White));
+        let black_stronger = is_black_stronger(pos.board());
         let flip = symmetric_btm || black_stronger;
         let bside = pos.side_to_move().is_black() ^ flip;
 

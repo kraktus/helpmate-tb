@@ -4,7 +4,9 @@ use std::fmt;
 use positioned_io::RandomAccessFile;
 use retroboard::shakmaty::{ByColor, Chess, Color, Position};
 
-use crate::{EncoderDecoder, Material, Outcome, Outcomes, SideToMoveGetter, Table};
+use crate::{
+    is_black_stronger, EncoderDecoder, Material, Outcome, Outcomes, SideToMoveGetter, Table,
+};
 
 #[derive(Debug)]
 struct FileHandler {
@@ -80,7 +82,11 @@ impl Descendants {
             .0
             .get(&mat)
             .expect("Position to be among descendants")
-            .get(winner);
+            .get(if is_black_stronger(pos.board()) {
+                !winner
+            } else {
+                winner
+            });
         let idx = table_file.table.encode(pos);
         table_file.outcomes[idx].get_by_pos(pos)
     }
@@ -97,7 +103,8 @@ impl Descendants {
             .map(|chess_move| {
                 let mut pos_after_move = pos.clone();
                 pos_after_move.play_unchecked(chess_move);
-                self.retrieve_outcome(&pos_after_move, winner)
+                println!("{chess_move:?}");
+                dbg!(self.retrieve_outcome(&pos_after_move, winner))
             })
             .max()
             .map(|o| o + 1) // we are one move further from the max
@@ -124,17 +131,60 @@ mod tests {
         }
     }
 
-    // TODO check with switching color
-    // TODO restore when positions where the desired outcome is drawing is well handled
+    #[test]
+    fn test_outcome_from_captures_promotion_without_switching_color_white() {
+        let chess: Chess = Fen::from_ascii("1k6/1r6/1K6/8/4Q3/8/8/8 w - - 0 1".as_bytes())
+            .unwrap()
+            .into_position(Standard)
+            .unwrap();
+        let material = Material::from_board(chess.board());
+        let winner = White;
+        let descendants = Descendants::new(&material);
+        assert_eq!(
+            descendants.outcome_from_captures_promotion(&chess, winner),
+            Some(Outcome::Win(1))
+        );
+    }
+
+    #[test]
+    fn test_outcome_from_captures_promotion_with_switching_color_white() {
+        let chess: Chess = Fen::from_ascii("3K4/1r2Q3/8/8/8/8/8/3k4 b - - 0 1".as_bytes())
+            .unwrap()
+            .into_position(Standard)
+            .unwrap();
+        let material = Material::from_board(chess.board());
+        let winner = White;
+        let descendants = Descendants::new(&material);
+        assert_eq!(
+            descendants.outcome_from_captures_promotion(&chess, winner),
+            Some(Outcome::Draw)
+        );
+    }
+
+    #[test]
+    fn test_outcome_from_captures_promotion_without_switching_color_black() {
+        let chess: Chess = Fen::from_ascii("1Qk5/6Q1/8/8/8/8/8/3K4 b - - 0 1".as_bytes())
+            .unwrap()
+            .into_position(Standard)
+            .unwrap();
+        let material = Material::from_board(chess.board());
+        let winner = Black;
+        let descendants = Descendants::new(&material);
+        assert_eq!(
+            descendants.outcome_from_captures_promotion(&chess, winner),
+            Some(Outcome::Draw)
+        );
+    }
+
     // #[test]
-    // fn test_outcome_from_captures_promotion_without_switching_color() {
-    //     let chess: Chess = Fen::from_ascii("1k6/1r6/1K6/8/4Q3/8/8/8 w - - 0 1".as_bytes())
+    // fn test_outcome_from_captures_promotion_with_switching_color_black() {
+    //     let chess: Chess = Fen::from_ascii("8/8/8/8/8/1k6/3r4/1K1Q4 b - - 0 1".as_bytes())
     //         .unwrap()
     //         .into_position(Standard)
     //         .unwrap();
     //     let material = Material::from_board(chess.board());
-    //     let winner = White;
-    //     let descendants = Descendants::new(&material).expect("KQvK descendant of KQvKR");
+    //     let winner = Black;
+    //     let descendants = Descendants::new(&material);
     //     assert_eq!(
     //         descendants.outcome_from_captures_promotion(&chess, winner),
     //         Some(Outcome::Win(1))

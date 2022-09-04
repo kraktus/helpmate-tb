@@ -134,6 +134,11 @@ impl MaterialSide {
     }
 }
 
+pub fn is_black_stronger(board: &Board) -> bool {
+    MaterialSide::from(board.material_side(Color::Black))
+        > MaterialSide::from(board.material_side(Color::White))
+}
+
 impl Deref for MaterialSide {
     type Target = ByRole<u8>;
 
