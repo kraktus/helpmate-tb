@@ -470,7 +470,6 @@ impl Table {
                     .collect()
             })
             .collect();
-        println!("files at the end {:?}", files[0][0]);
         Self {
             num_unique_pieces: material.unique_pieces(),
             min_like_man: material.min_like_man(),

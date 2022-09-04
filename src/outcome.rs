@@ -129,10 +129,11 @@ impl Ord for Outcome {
             (Self::Draw, Self::Lose(_)) => Ordering::Greater,
             (Self::Lose(x), Self::Lose(y)) => x.cmp(y), // losing in many moves is better,
             (Self::Lose(_), Self::Win(_) | Self::Draw) => Ordering::Less,
-            (Self::Unknown, _)
-            | (_, Self::Unknown)
-            | (Self::Undefined, _)
-            | (_, Self::Undefined) => panic!("No Undefined/Unknown in comparison"),
+            (Self::Unknown, _) => Ordering::Less,
+            (_, Self::Unknown) => Ordering::Greater,
+            (Self::Undefined, _) | (_, Self::Undefined) => {
+                panic!("No Undefined/Unknown in comparison")
+            }
         }
     }
 }

@@ -92,7 +92,6 @@ impl Descendants {
     pub fn outcome_from_captures_promotion(&self, pos: &Chess, winner: Color) -> Option<Outcome> {
         let mut moves = pos.legal_moves();
         moves.retain(|m| m.is_capture() || m.is_promotion());
-        println!("{:?}", moves);
         moves
             .iter()
             .map(|chess_move| {

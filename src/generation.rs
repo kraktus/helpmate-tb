@@ -141,7 +141,6 @@ impl Generator {
     fn generate_positions_internal(&mut self, piece_vec: &[Piece], setup: Setup) {
         match piece_vec {
             [piece, tail @ ..] => {
-                //println!("{:?}, setup: {:?}", piece, &setup);
                 let squares = if A1_H8_DIAG.is_superset(setup.board.occupied()) {
                     A1_H1_H8
                 } else {
@@ -168,7 +167,6 @@ impl Generator {
             if self.common.counter % 100000 == 0 {
                 self.pb.set_position(self.common.counter);
             }
-            // println!("{:?}", valid_setup);
             if let Ok(chess) = to_chess_with_illegal_checks(valid_setup.clone()) {
                 let rboard =
                     RetroBoard::from_setup(valid_setup, Standard) // DEBUG
@@ -176,14 +174,7 @@ impl Generator {
                 // let expected_rboard = RetroBoard::new_no_pockets("8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1").unwrap();
                 let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
                 let all_pos_idx = self.common.index_table.encode(&chess);
-                // if rboard.board().kings() == Bitboard::EMPTY | Square::C3 | Square::F3 {
-                //     println!("rboard kings found {rboard:?}, idx: {all_pos_idx:?}");
-                // }
-                //println!("all_pos_idx: {all_pos_idx:?}");
                 // Check that position is generated for the first time/index schema is injective
-                if all_pos_idx == 23506 {
-                    println!("Idx: {all_pos_idx:?}, rboard: {rboard:?}");
-                }
                 if Outcome::Undefined
                     != self.common.all_pos[all_pos_idx]
                         .get_by_pos(&chess)
@@ -208,7 +199,6 @@ impl Generator {
                 });
                 self.common.all_pos[all_pos_idx].set_to(chess, outcome);
                 if winner == self.common.winner {
-                    //println!("lost {:?}", rboard);
                     self.queue.losing_pos_to_process.push_back(idx);
                 } else {
                     self.queue.desired_outcome_pos_to_process.push_back(idx);
@@ -222,7 +212,6 @@ impl Generator {
                 }
             }
             None => {
-                // println!("{:?}, new idx: {idx}", self.all_pos.get(0).map(|x| x.key()));
                 self.common.all_pos[all_pos_idx].set_to(
                     chess,
                     Report::Unprocessed(
@@ -237,7 +226,6 @@ impl Generator {
 
     pub fn generate_positions(&mut self) {
         let piece_vec = self.common.material.pieces_without_white_king();
-        println!("{piece_vec:?}");
         self.common.counter = 0;
         let white_king_bb = Bitboard(135007759); // a1-d1-d4 triangle
         println!("{:?}", white_king_bb.0);
