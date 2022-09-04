@@ -72,10 +72,8 @@ impl<T: Write> EncoderDecoder<T> {
         for (i, elements) in outcomes.chunks(BLOCK_ELEMENTS).enumerate() {
             let block = Block::new(elements, BLOCK_ELEMENTS * i)?;
             self.inner.write_all(&block.to_bytes().unwrap())?;
-        };
-        Ok(
-            (),
-        )
+        }
+        Ok(())
     }
 }
 

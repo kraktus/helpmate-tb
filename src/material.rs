@@ -170,10 +170,8 @@ impl fmt::Display for MaterialSide {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (role, count) in self.by_role.as_ref().zip_role().into_iter().rev() {
             f.write_str(&role.upper_char().to_string().repeat(usize::from(*count)))?;
-        };
-        Ok(
-            (),
-        )
+        }
+        Ok(())
     }
 }
 

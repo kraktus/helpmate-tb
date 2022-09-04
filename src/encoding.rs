@@ -1,5 +1,3 @@
-
-
 use crate::Material;
 use crate::Pieces;
 use arrayvec::ArrayVec;

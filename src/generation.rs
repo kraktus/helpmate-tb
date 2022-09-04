@@ -304,10 +304,6 @@ impl Tagger {
                             queue.push_back(idx_after_unmove);
                             let processed_outcome =
                                 Report::Processed((out + 1).max(fetched_outcome));
-                            // if processed_outcome.outcome() < Outcome::Draw {
-                            //     // DEBUG
-                            //     println!("Lost position, outcome: {processed_outcome:?}, r");
-                            // }
                             self.common.all_pos[idx_all_pos_after_unmove]
                                 .set_to(&rboard_after_unmove, processed_outcome);
                         }
@@ -318,7 +314,14 @@ impl Tagger {
                 break;
             }
         }
-        // TODO once finished check that no legal positions are unprocessed
+        // all positions that are unknown at the end are drawn
+        for report_bc in self.common.all_pos.iter_mut() {
+            for report in report_bc.iter_mut() {
+                if Report::Unprocessed(Outcome::Unknown) == Report::from(report.clone()) {
+                    *report = ReportU8::from(Report::Processed(Outcome::Draw))
+                }
+            }
+        }
         self.pb.finish_with_message("positions processed");
     }
 }

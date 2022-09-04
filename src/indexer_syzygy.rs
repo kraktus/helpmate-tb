@@ -21,7 +21,7 @@ const fn binomial(mut n: u64, k: u64) -> u64 {
     r
 }
 
-const MAX_PIECES: usize = 07;
+const MAX_PIECES: usize = 7;
 
 /// Maps squares into the a1-d1-d4 triangle.
 #[rustfmt::skip]
