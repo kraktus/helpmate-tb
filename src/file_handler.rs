@@ -15,7 +15,7 @@ struct FileHandler {
 }
 
 impl FileHandler {
-    pub fn new(mat: &'_ MaterialWinner) -> Self {
+    pub fn new(mat: &MaterialWinner) -> Self {
         let raf = RandomAccessFile::open(format!("table/{mat:?}"))
             .unwrap_or_else(|_| panic!("table not found {mat:?}"));
         let outcomes = EncoderDecoder::new(raf)
