@@ -100,8 +100,7 @@ impl Descendants {
             .map(|chess_move| {
                 let mut pos_after_move = pos.clone();
                 pos_after_move.play_unchecked(chess_move);
-                println!("{chess_move:?}");
-                dbg!(self.retrieve_outcome(&pos_after_move, winner))
+                self.retrieve_outcome(&pos_after_move, winner)
             })
             .max()
             .map(|o| o + 1) // we are one move further from the max
