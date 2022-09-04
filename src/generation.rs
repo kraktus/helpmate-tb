@@ -342,7 +342,11 @@ impl TableBaseBuilder {
         debug!(
             "nb {:?} {} {:?}",
             common.winner,
-            if common.can_mate {"mate"} else {"stalemate/capture resulting in draw"},
+            if common.can_mate {
+                "mate"
+            } else {
+                "stalemate/capture resulting in draw"
+            },
             queue.desired_outcome_pos_to_process.len()
         );
         debug!(

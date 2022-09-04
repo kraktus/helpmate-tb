@@ -1,8 +1,12 @@
 use arrayvec::ArrayVec;
 use itertools::Itertools as _;
-use retroboard::shakmaty::{Bitboard, File, Piece, Rank, Role, Square};
+use retroboard::shakmaty::{
+    Bitboard,
+    Color::{Black, White},
+    File, Piece, Rank, Role, Square,
+};
 
-use crate::{get_info_table, Material, SideToMove};
+use crate::{get_info_table, Material, MaterialSide, SideToMove};
 
 const fn binomial(mut n: u64, k: u64) -> u64 {
     if k > n {
@@ -478,24 +482,23 @@ impl Table {
     }
 
     pub fn encode(&self, pos: &dyn SideToMove) -> usize {
-        self.encode_checked(pos)
-            .unwrap_or_else(|| panic!("Wrong position for the table, board {}, turn {:?}", pos.board(), pos.side_to_move()))
+        self.encode_checked(pos).unwrap_or_else(|| {
+            panic!(
+                "Wrong position for the table, board {}, turn {:?}",
+                pos.board(),
+                pos.side_to_move()
+            )
+        })
     }
 
     /// Given a position, determine the unique (modulo symmetries) index into
     /// the corresponding subtable.
     pub fn encode_checked(&self, pos: &dyn SideToMove) -> Option<usize> {
-        let key = Material::from_board(pos.board());
-        let material = Material::from_iter(self.files[0][0].pieces.clone());
-        // let key_check = key == material || key == material.clone().into_flipped();
-
-        // if !key_check {
-        //     println!("{:?}", &pos.board());
-        // }
-        // assert!(key_check);
+        let material = Material::from_board(pos.board());
 
         let symmetric_btm = material.is_symmetric() && pos.side_to_move().is_black();
-        let black_stronger = key != material;
+        let black_stronger = MaterialSide::from(pos.board().material_side(Black))
+            > MaterialSide::from(pos.board().material_side(White));
         let flip = symmetric_btm || black_stronger;
         let bside = pos.side_to_move().is_black() ^ flip;
 
@@ -848,5 +851,23 @@ mod tests {
         let idx_2 = table.encode(&chess_2);
         assert_eq!(idx, 1907429);
         assert_eq!(idx_2, 1907795);
+    }
+
+    #[test]
+    fn test_getting_index_when_board_color_are_inverted() {
+        let material = Material::from_str("KQvK").unwrap();
+        let table = Table::new(&material);
+        let chess_1: Chess = Fen::from_ascii(b"8/8/8/8/8/8/2Q5/k1K5 w - -")
+            .unwrap()
+            .into_position(CastlingMode::Chess960)
+            .unwrap();
+        let chess_2: Chess = Fen::from_ascii(b"8/8/8/8/8/8/2q5/K1k5 b - - 0 1")
+            .unwrap()
+            .into_position(CastlingMode::Chess960)
+            .unwrap();
+        let idx_1 = table.encode(&chess_1);
+        let idx_2 = table.encode(&chess_2);
+        assert_eq!(idx_1, 23506);
+        assert_eq!(idx_2, 23506);
     }
 }
