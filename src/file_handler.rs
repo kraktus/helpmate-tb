@@ -73,6 +73,7 @@ impl Descendants {
 
     /// Returns the distance to helpmate in the descendant table, or panics
     fn retrieve_outcome(&self, pos: &Chess, winner: Color) -> Outcome {
+        let flip = is_black_stronger(pos.board());
         let mat = Material::from_board(pos.board());
         if mat.count() == 2 {
             // special case when only kings left
@@ -82,13 +83,9 @@ impl Descendants {
             .0
             .get(&mat)
             .expect("Position to be among descendants")
-            .get(if is_black_stronger(pos.board()) {
-                !winner
-            } else {
-                winner
-            });
+            .get(winner ^ flip);
         let idx = table_file.table.encode(pos);
-        table_file.outcomes[idx].get_by_pos(pos)
+        table_file.outcomes[dbg!(idx)].get_by_color(pos.turn() ^ flip)
     }
 
     /// For the given position, compute all moves that are either captures and/or promotion,
@@ -176,20 +173,20 @@ mod tests {
         );
     }
 
-    // #[test]
-    // fn test_outcome_from_captures_promotion_with_switching_color_black() {
-    //     let chess: Chess = Fen::from_ascii("8/8/8/8/8/1k6/3r4/1K1Q4 b - - 0 1".as_bytes())
-    //         .unwrap()
-    //         .into_position(Standard)
-    //         .unwrap();
-    //     let material = Material::from_board(chess.board());
-    //     let winner = Black;
-    //     let descendants = Descendants::new(&material);
-    //     assert_eq!(
-    //         descendants.outcome_from_captures_promotion(&chess, winner),
-    //         Some(Outcome::Win(1))
-    //     );
-    // }
+    #[test]
+    fn test_outcome_from_captures_promotion_with_switching_color_black() {
+        let chess: Chess = Fen::from_ascii("8/8/8/8/8/1k6/3r4/1K1Q4 b - - 0 1".as_bytes())
+            .unwrap()
+            .into_position(Standard)
+            .unwrap();
+        let material = Material::from_board(chess.board());
+        let winner = Black;
+        let descendants = Descendants::new(&material);
+        assert_eq!(
+            descendants.outcome_from_captures_promotion(&chess, winner),
+            Some(Outcome::Win(1))
+        );
+    }
 
     #[test]
     fn test_outcome_from_captures_special_case_only_2_kings_left() {
