@@ -85,7 +85,7 @@ impl Descendants {
             .expect("Position to be among descendants")
             .get(winner ^ flip);
         let idx = table_file.table.encode(pos);
-        table_file.outcomes[dbg!(idx)].get_by_color(pos.turn() ^ flip)
+        table_file.outcomes[idx].get_by_color(pos.turn() ^ flip)
     }
 
     /// For the given position, compute all moves that are either captures and/or promotion,
