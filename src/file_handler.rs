@@ -124,6 +124,7 @@ mod tests {
         }
     }
 
+    // TODO check with switching color
     // TODO restore when positions where the desired outcome is drawing is well handled
     // #[test]
     // fn test_outcome_from_captures_promotion_without_switching_color() {

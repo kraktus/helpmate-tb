@@ -199,9 +199,9 @@ impl Generator {
                 });
                 self.common.all_pos[all_pos_idx].set_to(chess, outcome);
                 if winner == self.common.winner {
-                    self.queue.losing_pos_to_process.push_back(idx);
-                } else {
                     self.queue.desired_outcome_pos_to_process.push_back(idx);
+                } else {
+                    self.queue.losing_pos_to_process.push_back(idx);
                 }
             }
 
@@ -302,15 +302,12 @@ impl Tagger {
                         Report::Unprocessed(fetched_outcome) => {
                             // we know the position is unprocessed
                             queue.push_back(idx_after_unmove);
-                            // if the outcome fetched is Draw, it means no result is stored yet
                             let processed_outcome =
-                                Report::Processed(if fetched_outcome == Outcome::Draw {
-                                    out + 1
-                                } else {
-                                    // if some actual result is written (because found by a capture/promotion/other position)
-                                    // we write the best outcome
-                                    (out + 1).max(fetched_outcome)
-                                });
+                                Report::Processed((out + 1).max(fetched_outcome));
+                            // if processed_outcome.outcome() < Outcome::Draw {
+                            //     // DEBUG
+                            //     println!("Lost position, outcome: {processed_outcome:?}, r");
+                            // }
                             self.common.all_pos[idx_all_pos_after_unmove]
                                 .set_to(&rboard_after_unmove, processed_outcome);
                         }
