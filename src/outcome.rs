@@ -122,6 +122,9 @@ impl From<&OutcomeU8> for Outcome {
 impl Ord for Outcome {
     fn cmp(&self, other: &Self) -> Ordering {
         match (self, other) {
+            (Self::Undefined, _) | (_, Self::Undefined) => {
+                panic!("No Undefined/Unknown in comparison")
+            }
             (Self::Win(x), Self::Win(y)) => x.cmp(y).reverse(), // short win is better,
             (Self::Win(_), Self::Draw | Self::Lose(_)) => Ordering::Greater, // if other is not a Win, we're greater
             (Self::Draw, Self::Win(_)) => Ordering::Less,
@@ -131,9 +134,6 @@ impl Ord for Outcome {
             (Self::Lose(_), Self::Win(_) | Self::Draw) => Ordering::Less,
             (Self::Unknown, _) => Ordering::Less,
             (_, Self::Unknown) => Ordering::Greater,
-            (Self::Undefined, _) | (_, Self::Undefined) => {
-                panic!("No Undefined/Unknown in comparison")
-            }
         }
     }
 }
