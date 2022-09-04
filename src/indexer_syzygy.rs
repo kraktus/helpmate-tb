@@ -555,7 +555,7 @@ impl Table {
         for piece in side.pieces.iter().skip(lead_pawns_count) {
             let color = piece.color ^ flip;
             let square = ((pos.board().by_piece(piece.role.of(color)) & !used).first())
-                .expect("Uncorrupted table (what does it mean?)");
+                .unwrap_or_else(|| panic!("Corrupted table, position {pos:?}"));
             squares.push(if flip { square.flip_vertical() } else { square });
             used.add(square);
         }

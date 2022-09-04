@@ -14,7 +14,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 // Allow to use both `Chess` and `RetroBoard`
 // TODO replace all `dyn SideToMove` by enum using `enum_trait` crate for example
-pub trait SideToMove {
+pub trait SideToMove: std::fmt::Debug {
     // side to **move**, so opposite of side to unmove
     fn side_to_move(&self) -> Color;
     fn board(&self) -> &Board;
@@ -340,8 +340,9 @@ impl TableBaseBuilder {
         debug!("nb pos {:?}", common.all_pos.len());
         debug!("counter {:?}", common.counter);
         debug!(
-            "nb {:?} mates {:?}",
+            "nb {:?} {} {:?}",
             common.winner,
+            if common.can_mate {"mate"} else {"stalemate/capture resulting in draw"},
             queue.desired_outcome_pos_to_process.len()
         );
         debug!(
