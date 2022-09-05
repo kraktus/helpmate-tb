@@ -1,6 +1,6 @@
 use crate::{
     index, index_unchecked, restore_from_index, Descendants, Material, Outcome, OutcomeU8, Report,
-    ReportU8, Reports, Table, UNDEFINED_OUTCOME_BYCOLOR,
+    ReportU8, Reports, Table, A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
 };
 use log::debug;
 use retroboard::shakmaty::{
@@ -177,6 +177,7 @@ impl Generator {
     ) -> Bitboard {
         (last_piece == piece)
             .then(|| {
+                // If the first piece is on D4 for example, you only need to check from A1 to C4
                 Bitboard::from_iter(
                     (0..last_square.into()).map(unsafe { |sq| Square::new_unchecked(sq) }),
                 )
@@ -184,13 +185,14 @@ impl Generator {
             .or(Some(Bitboard::FULL))
             .map(|bb| {
                 // flipped on the A1_H8 diagonal
-                let mut flipped_board = board.clone();
-                flipped_board.flip_diagonal();
-                // check if it's the first piece of many dudplicate (for example R in KRRvK)
-                // relies on the fact same pieces are put on the board sequentially
+                let flipped_occupied_bb = board.occupied().flip_diagonal();
+                // // check if it's the first piece of many dudplicate (for example R in KRRvK)
+                // // relies on the fact same pieces are put on the board sequentially
                 let first_piece_of_many =
                     self.common.material.by_piece(piece) > 1 && last_piece != piece;
-                if piece == Color::Black.king() || board == &flipped_board && !first_piece_of_many {
+                if flipped_occupied_bb == board.occupied()
+                    && !(first_piece_of_many && last_piece == White.king())
+                {
                     bb & A1_H1_H8
                 } else {
                     bb
@@ -228,15 +230,6 @@ impl Generator {
             }
         }
     }
-
-    // . . . . . . . .
-    // . . . . . . . .
-    // . . . . . . . .
-    // . . . . . . . .
-    // . . . . . . . .
-    // . ♖ . . . . . .
-    // . . ♖ . . . . .
-    // ♔ . . . ♚ . . .
 
     fn handle_outcome_of_legal_position(&mut self, chess: &Chess, idx: u64, all_pos_idx: usize) {
         match chess.outcome() {
@@ -493,19 +486,4 @@ mod tests {
     //     bc.set_to(&chess, 200);
     //     assert_eq!(bc.get_by_pos(&rboard), 200);
     // }
-
-    #[test]
-    fn test_ord_outcome() {
-        assert!(Outcome::Win(1) > Outcome::Win(2));
-        assert!(Outcome::Win(100) > Outcome::Draw);
-        assert!(Outcome::Win(100) > Outcome::Lose(1));
-        assert!(Outcome::Draw > Outcome::Lose(1));
-        assert!(Outcome::Lose(2) > Outcome::Lose(1));
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_ord_outcome_panic() {
-        let _ = Outcome::Undefined > Outcome::Win(1);
-    }
 }

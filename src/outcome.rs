@@ -248,4 +248,19 @@ mod tests {
             }
         );
     }
+
+    #[test]
+    fn test_ord_outcome() {
+        assert!(Outcome::Win(1) > Outcome::Win(2));
+        assert!(Outcome::Win(100) > Outcome::Draw);
+        assert!(Outcome::Win(100) > Outcome::Lose(1));
+        assert!(Outcome::Draw > Outcome::Lose(1));
+        assert!(Outcome::Lose(2) > Outcome::Lose(1));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_ord_outcome_panic() {
+        let _ = Outcome::Undefined > Outcome::Win(1);
+    }
 }
