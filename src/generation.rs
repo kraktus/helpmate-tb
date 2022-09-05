@@ -465,25 +465,4 @@ mod tests {
         assert_eq!(rboard.side_to_move(), White);
         assert_eq!(chess.side_to_move(), White);
     }
-
-    // #[test]
-    // fn test_side_to_move_getter() {
-    //     let fen = "4k3/8/8/8/8/8/PPPPPPPP/RNBQKBNR w KQ - 0 1";
-    //     let rboard = RetroBoard::new_no_pockets(fen).unwrap();
-    //     let mut chess: Chess = Fen::from_ascii(fen.as_bytes())
-    //         .unwrap()
-    //         .into_position(Standard)
-    //         .unwrap();
-    //     let mut bc = ByColor {
-    //         white: 10,
-    //         black: 0,
-    //     };
-    //     assert_eq!(bc.get_by_pos(&rboard), 10);
-    //     assert_eq!(bc.get_by_pos(&chess), 10);
-    //     chess = chess.swap_turn().unwrap();
-    //     assert_eq!(bc.get_by_pos(&chess), 0);
-    //     chess = chess.swap_turn().unwrap();
-    //     bc.set_to(&chess, 200);
-    //     assert_eq!(bc.get_by_pos(&rboard), 200);
-    // }
 }
