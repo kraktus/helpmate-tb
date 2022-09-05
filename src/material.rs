@@ -226,6 +226,55 @@ impl PartialOrd for Material {
     }
 }
 
+pub const KB_K: Material = Material {
+    by_color: ByColorNormalisedMaterialSide(ByColor {
+        white: MaterialSide {
+            by_role: ByRole {
+                king: 1,
+                queen: 0,
+                rook: 0,
+                bishop: 1,
+                knight: 0,
+                pawn: 0,
+            },
+        },
+        black: MaterialSide {
+            by_role: ByRole {
+                king: 1,
+                queen: 0,
+                rook: 0,
+                bishop: 0,
+                knight: 0,
+                pawn: 0,
+            },
+        },
+    }),
+};
+pub const KN_K: Material = Material {
+    by_color: ByColorNormalisedMaterialSide(ByColor {
+        white: MaterialSide {
+            by_role: ByRole {
+                king: 1,
+                queen: 0,
+                rook: 0,
+                bishop: 0,
+                knight: 1,
+                pawn: 0,
+            },
+        },
+        black: MaterialSide {
+            by_role: ByRole {
+                king: 1,
+                queen: 0,
+                rook: 0,
+                bishop: 0,
+                knight: 0,
+                pawn: 0,
+            },
+        },
+    }),
+};
+
 impl Material {
     /// Get the material configuration for a [`Board`].
     pub fn from_board(board: &Board) -> Self {
@@ -623,5 +672,11 @@ mod tests {
                 Material::from_str(test_config.1).unwrap()
             );
         }
+    }
+
+    #[test]
+    fn test_const_mat_KBvK_KNvK() {
+        assert_eq!(KB_K, Material::from_str("KBvK").unwrap());
+        assert_eq!(KN_K, Material::from_str("KNvK").unwrap());
     }
 }

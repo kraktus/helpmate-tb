@@ -128,10 +128,14 @@ struct Generator {
 
 impl Generator {
     pub fn new(common: Common) -> Self {
+        Self::new_with_tablebase(Descendants::new(&common.material), common)
+    }
+
+    pub fn new_with_tablebase(tablebase: Descendants, common: Common) -> Self {
         let pb = common.get_progress_bar();
         Self {
             pb,
-            tablebase: Descendants::new(&common.material),
+            tablebase,
             common,
             queue: Queue::default(),
         }
@@ -188,10 +192,14 @@ impl Generator {
                 let flipped_occupied_bb = board.occupied().flip_diagonal();
                 // // check if it's the first piece of many dudplicate (for example R in KRRvK)
                 // // relies on the fact same pieces are put on the board sequentially
-                let first_piece_of_many =
-                    self.common.material.by_piece(piece) > 1 && last_piece != piece;
-                if flipped_occupied_bb == board.occupied()
-                    && !(first_piece_of_many && last_piece == White.king())
+                // let first_piece_of_many =
+                //     self.common.material.by_piece(piece) > 1 && last_piece != piece;
+                // if A1_H8_DIAG.is_superset(board.occupied()) != (flipped_occupied_bb == board.occupied()) {
+                //     println!("boar in some way symetric {board:?}");
+                // }
+                if A1_H8_DIAG.is_superset(board.occupied())
+                //flipped_occupied_bb == board.occupied()
+                //&& !(first_piece_of_many && last_piece == White.king())
                 {
                     bb & A1_H1_H8
                 } else {
@@ -453,6 +461,16 @@ mod tests {
         assert_eq!(pow_minus_1(64, 1), 64);
         assert_eq!(pow_minus_1(64, 2), 64 * 63);
     }
+
+    // #[test]
+    // fn test_only_king_generation() {
+    //     // ensure only 462 positions are generated when two kings on the board
+    //     let common = Common::new(Material::from_str("KvK").unwrap(), Color::White);
+    //     let mut generator = Generator::new_with_tablebase(Descendants::empty(), common);
+    //     generator.generate_positions();
+    //     let (_, common) = generator.get_result();
+    //     assert_eq!(common.counter, 462);
+    // }
 
     #[test]
     fn test_side_to_move() {

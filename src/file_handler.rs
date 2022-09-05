@@ -5,7 +5,8 @@ use positioned_io::RandomAccessFile;
 use retroboard::shakmaty::{ByColor, Chess, Color, Position};
 
 use crate::{
-    is_black_stronger, EncoderDecoder, Material, Outcome, Outcomes, SideToMoveGetter, Table,
+    is_black_stronger, EncoderDecoder, Material, Outcome, Outcomes, SideToMoveGetter, Table, KB_K,
+    KN_K,
 };
 
 #[derive(Debug)]
@@ -71,11 +72,17 @@ impl Descendants {
         )
     }
 
+    // For test purpose
+    pub fn empty() -> Self {
+        Self(HashMap::new())
+    }
+
     /// Returns the distance to helpmate in the descendant table, or panics
     fn retrieve_outcome(&self, pos: &Chess, winner: Color) -> Outcome {
         let flip = is_black_stronger(pos.board());
         let mat = Material::from_board(pos.board());
-        if mat.count() == 2 {
+        // special case for material config known to be draw in every position
+        if mat.count() == 2 || mat == KB_K || mat == KN_K {
             // special case when only kings left
             return Outcome::Draw;
         }
