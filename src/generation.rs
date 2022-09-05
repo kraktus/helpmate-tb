@@ -1,11 +1,14 @@
 use crate::{
     index, index_unchecked, restore_from_index, Descendants, Material, Outcome, OutcomeU8, Report,
-    ReportU8, Reports, Table, A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
+    ReportU8, Reports, Table, UNDEFINED_OUTCOME_BYCOLOR,
 };
 use log::debug;
 use retroboard::shakmaty::{
-    Bitboard, Board, ByColor, CastlingMode, CastlingMode::Standard, Chess, Color, Color::White,
-    FromSetup, Outcome as ChessOutcome, Piece, Position, PositionError, Setup,
+    Bitboard, Board, ByColor, CastlingMode,
+    CastlingMode::Standard,
+    Chess,
+    Color::{self, White},
+    FromSetup, Outcome as ChessOutcome, Piece, Position, PositionError, Setup, Square,
 };
 use retroboard::RetroBoard;
 use std::collections::VecDeque;
@@ -138,24 +141,62 @@ impl Generator {
         (self.queue, self.common)
     }
 
-    fn generate_positions_internal(&mut self, piece_vec: &[Piece], setup: Setup) {
+    fn generate_positions_internal(
+        &mut self,
+        piece_vec: &[Piece],
+        setup: Setup,
+        last_piece_and_square: (Piece, Square),
+    ) {
         match piece_vec {
             [piece, tail @ ..] => {
-                let squares = if A1_H8_DIAG.is_superset(setup.board.occupied()) {
-                    A1_H1_H8
-                } else {
-                    Bitboard::FULL // white king handled in `generate_positions`
-                };
+                let squares = self.valid_squares(
+                    &setup.board,
+                    *piece,
+                    last_piece_and_square.0,
+                    last_piece_and_square.1,
+                );
                 for sq in squares {
                     if setup.board.piece_at(sq).is_none() {
                         let mut new_setup = setup.clone();
                         new_setup.board.set_piece_at(sq, *piece);
-                        self.generate_positions_internal(tail, new_setup);
+                        self.generate_positions_internal(tail, new_setup, (*piece, sq));
                     }
                 }
             }
             [] => self.check_position(setup),
         }
+    }
+
+    #[inline]
+    fn valid_squares(
+        &self,
+        board: &Board,
+        piece: Piece,
+        last_piece: Piece,
+        last_square: Square,
+    ) -> Bitboard {
+        (last_piece == piece)
+            .then(|| {
+                Bitboard::from_iter(
+                    (0..last_square.into()).map(unsafe { |sq| Square::new_unchecked(sq) }),
+                )
+            })
+            .or(Some(Bitboard::FULL))
+            .map(|bb| {
+                // flipped on the A1_H8 diagonal
+                let mut flipped_board = board.clone();
+                flipped_board.flip_diagonal();
+                // check if it's the first piece of many dudplicate (for example R in KRRvK)
+                // relies on the fact same pieces are put on the board sequentially
+                let first_piece_of_many =
+                    self.common.material.by_piece(piece) > 1 && last_piece != piece;
+                if piece == Color::Black.king() || board == &flipped_board && !first_piece_of_many {
+                    bb & A1_H1_H8
+                } else {
+                    bb
+                }
+            })
+            .unwrap_or_else(|| panic!("No valid squares for {piece:?} on board {board:?}"))
     }
 
     fn check_position(&mut self, setup: Setup) {
@@ -168,12 +209,13 @@ impl Generator {
                 self.pb.set_position(self.common.counter);
             }
             if let Ok(chess) = to_chess_with_illegal_checks(valid_setup.clone()) {
-                let rboard =
-                    RetroBoard::from_setup(valid_setup, Standard) // DEBUG
-                        .expect("if chess is valid then rboard should be too");
-                // let expected_rboard = RetroBoard::new_no_pockets("8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1").unwrap();
+                let rboard = RetroBoard::from_setup(valid_setup, Standard)
+                    .expect("if chess is valid then rboard should be too");
                 let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
                 let all_pos_idx = self.common.index_table.encode(&chess);
+                if all_pos_idx == 109769 {
+                    println!("TEST {rboard:?}")
+                };
                 // Check that position is generated for the first time/index schema is injective
                 if Outcome::Undefined
                     != self.common.all_pos[all_pos_idx]
@@ -186,6 +228,15 @@ impl Generator {
             }
         }
     }
+
+    // . . . . . . . .
+    // . . . . . . . .
+    // . . . . . . . .
+    // . . . . . . . .
+    // . . . . . . . .
+    // . ♖ . . . . . .
+    // . . ♖ . . . . .
+    // ♔ . . . ♚ . . .
 
     fn handle_outcome_of_legal_position(&mut self, chess: &Chess, idx: u64, all_pos_idx: usize) {
         match chess.outcome() {
@@ -232,7 +283,7 @@ impl Generator {
         for white_king_sq in white_king_bb {
             let mut new_setup = Setup::empty();
             new_setup.board.set_piece_at(white_king_sq, White.king());
-            self.generate_positions_internal(&piece_vec, new_setup)
+            self.generate_positions_internal(&piece_vec, new_setup, (White.king(), white_king_sq))
         }
         self.pb.finish_with_message("positions generated");
         println!("all_pos_vec capacity: {}", self.common.all_pos.capacity());
