@@ -73,7 +73,6 @@ impl SideToMoveGetter for ByColor<OutcomeU8> {
         *x_mut = t.into();
     }
 }
-
 #[derive(Debug, Clone)]
 pub struct Queue {
     // depending on the material configuration can be either won or drawn position
@@ -82,6 +81,7 @@ pub struct Queue {
 }
 
 const A1_H1_H8: Bitboard = Bitboard(0x80c0e0f0f8fcfeff);
+const A8_A2_H7: Bitboard = A1_H1_H8.flip_diagonal().without_const(A1_H8_DIAG);
 
 #[derive(Debug)]
 pub struct Common {
@@ -179,29 +179,21 @@ impl Generator {
         last_piece: Piece,
         last_square: Square,
     ) -> Bitboard {
-        (last_piece == piece)
-            .then(|| {
-                // If the first piece is on D4 for example, you only need to check from A1 to C4
-                Bitboard::from_iter(
-                    (0..last_square.into()).map(unsafe { |sq| Square::new_unchecked(sq) }),
-                )
-            })
+        A1_H8_DIAG
+            .is_superset(board.occupied()) // TODO SHOULD ONLY TAKE INTO ACCOUNTS PIECES WITH (1 or all ODD NUMBERs?) in material
+            .then(|| A1_H1_H8)
             .or(Some(Bitboard::FULL))
             .map(|bb| {
-                // flipped on the A1_H8 diagonal
-                let flipped_occupied_bb = board.occupied().flip_diagonal();
-                // // check if it's the first piece of many dudplicate (for example R in KRRvK)
-                // // relies on the fact same pieces are put on the board sequentially
-                // let first_piece_of_many =
-                //     self.common.material.by_piece(piece) > 1 && last_piece != piece;
-                // if A1_H8_DIAG.is_superset(board.occupied()) != (flipped_occupied_bb == board.occupied()) {
-                //     println!("boar in some way symetric {board:?}");
-                // }
-                if A1_H8_DIAG.is_superset(board.occupied())
-                //flipped_occupied_bb == board.occupied()
-                //&& !(first_piece_of_many && last_piece == White.king())
-                {
-                    bb & A1_H1_H8
+                if last_piece == piece {
+                    // If the first piece is on D4 for example, you only need to check from A1 to D4
+                    let bb_squares_inf = Bitboard::from_iter(
+                        (0..=last_square.into()).map(unsafe { |sq| Square::new_unchecked(sq) }),
+                    );
+                    if !A1_H8_DIAG.contains(last_square) {
+                        bb_squares_inf | A8_A2_H7.without_const(bb_squares_inf.flip_diagonal())
+                    } else {
+                        bb & bb_squares_inf
+                    }
                 } else {
                     bb
                 }
@@ -223,7 +215,7 @@ impl Generator {
                     .expect("if chess is valid then rboard should be too");
                 let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
                 let all_pos_idx = self.common.index_table.encode(&chess);
-                if all_pos_idx == 109769 {
+                if all_pos_idx == 109712 {
                     println!("TEST {rboard:?}")
                 };
                 // Check that position is generated for the first time/index schema is injective

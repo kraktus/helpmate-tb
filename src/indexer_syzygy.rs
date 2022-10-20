@@ -883,4 +883,22 @@ mod tests {
         assert_eq!(idx_1, 4967);
         assert_eq!(idx_2, 4967);
     }
+
+    #[test]
+    fn test_encode_diagonalised_syzgy_2() {
+        let material = Material::from_str("KBNvK").unwrap();
+        let table = Table::new(&material);
+        let chess_1: Chess = Fen::from_ascii(b"8/8/8/8/N7/k7/8/2KB4 w - - 0 1")
+            .unwrap()
+            .into_position(CastlingMode::Chess960)
+            .unwrap();
+        let chess_2: Chess = Fen::from_ascii(b"8/8/8/8/B7/K7/8/2kN4 w - - 0 1")
+            .unwrap()
+            .into_position(CastlingMode::Chess960)
+            .unwrap();
+        let idx_1 = table.encode(&chess_1);
+        let idx_2 = table.encode(&chess_2);
+        assert_eq!(idx_1, 325388);
+        assert_eq!(idx_2, 325388);
+    }
 }
