@@ -674,6 +674,7 @@ mod tests {
         }
     }
 
+    #[allow(non_snake_case)]
     #[test]
     fn test_const_mat_KBvK_KNvK() {
         assert_eq!(KB_K, Material::from_str("KBvK").unwrap());

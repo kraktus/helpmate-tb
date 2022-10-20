@@ -830,6 +830,31 @@ mod tests {
     }
 
     #[test]
+    fn test_encode_recognised_symetry_syzygy_index_3() {
+        let material = Material::from_str("KRRvK").unwrap();
+        let table = Table::new(&material);
+        let chess: Chess = Fen::from_ascii(b"1R6/8/8/3K4/8/8/2R5/7k w - - 0 1")
+            .unwrap()
+            .into_position(CastlingMode::Chess960)
+            .unwrap();
+        let idx = table.encode(&chess);
+        assert_eq!(idx, 544235);
+    }
+
+    // same position as in _3, but flipped on the vertical axis
+    #[test]
+    fn test_encode_recognised_symetry_syzygy_index_3bis() {
+        let material = Material::from_str("KRRvK").unwrap();
+        let table = Table::new(&material);
+        let chess: Chess = Fen::from_ascii(b"7k/2R5/8/8/3K4/8/8/1R6 w - - 0 1")
+            .unwrap()
+            .into_position(CastlingMode::Chess960)
+            .unwrap();
+        let idx = table.encode(&chess);
+        assert_eq!(idx, 544235);
+    }
+
+    #[test]
     fn test_encode_switch_bishop_and_knight() {
         let material = Material::from_str("KBNvK").unwrap();
         let table = Table::new(&material);

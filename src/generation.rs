@@ -81,7 +81,7 @@ pub struct Queue {
 }
 
 const A1_H1_H8: Bitboard = Bitboard(0x80c0e0f0f8fcfeff);
-const A8_A2_H7: Bitboard = A1_H1_H8.flip_diagonal().without_const(A1_H8_DIAG);
+// const A8_A2_H7: Bitboard = A1_H1_H8.flip_diagonal().without_const(A1_H8_DIAG);
 
 #[derive(Debug)]
 pub struct Common {
@@ -179,27 +179,38 @@ impl Generator {
         last_piece: Piece,
         last_square: Square,
     ) -> Bitboard {
-        A1_H8_DIAG
-            .is_superset(board.occupied()) // TODO SHOULD ONLY TAKE INTO ACCOUNTS PIECES WITH (1 or all ODD NUMBERs?) in material
-            .then(|| A1_H1_H8)
-            .or(Some(Bitboard::FULL))
-            .map(|bb| {
-                if last_piece == piece {
-                    // If the first piece is on D4 for example, you only need to check from A1 to D4
-                    let bb_squares_inf = Bitboard::from_iter(
-                        (0..=last_square.into()).map(unsafe { |sq| Square::new_unchecked(sq) }),
-                    );
-                    if !A1_H8_DIAG.contains(last_square) {
-                        bb_squares_inf | A8_A2_H7.without_const(bb_squares_inf.flip_diagonal())
-                    } else {
-                        bb & bb_squares_inf
-                    }
-                } else {
-                    bb
-                }
-            })
-            .unwrap_or_else(|| panic!("No valid squares for {piece:?} on board {board:?}"))
+        if last_piece == piece {
+            // by convention the former piece put on the board
+            // should have a "higher" square than the later to avoid
+            // generating the same position but with identical pieces swapped
+            let bb_squares_inf = Bitboard::from_iter(
+                (0..last_square.into()).map(unsafe { |sq| Square::new_unchecked(sq) }),
+            );
+            if A1_H8_DIAG.is_superset(board.occupied()) {
+                bb_squares_inf & A1_H1_H8
+            } else {
+                bb_squares_inf
+            }
+        }
+        // Do not restrict duplicate pieces as they already have other constraints
+        // and combining with this one resulting in the generating function not to be surjective anymore
+        else if (self.common.material.by_piece(piece) == 1)
+            && A1_H8_DIAG.is_superset(board.occupied())
+        {
+            A1_H1_H8
+        } else {
+            Bitboard::FULL
+        }
     }
+
+    // return a bitboard of all unique pieces on the board given the generation material configuration
+    // fn bb_unique_pieces(&self, board: Board) -> Bitboard {
+    //     Bitboard::from_iter(
+    //         board
+    //             .into_iter()
+    //             .filter_map(|(sq, piece)| (self.common.material.by_piece(piece) == 1).then(|| sq)),
+    //     )
+    // }
 
     fn check_position(&mut self, setup: Setup) {
         // setup is complete, check if valid
@@ -215,14 +226,19 @@ impl Generator {
                     .expect("if chess is valid then rboard should be too");
                 let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
                 let all_pos_idx = self.common.index_table.encode(&chess);
-                if all_pos_idx == 109712 {
+                if format!("{}", rboard.board().board_fen(Bitboard::EMPTY))
+                    == "7k/2R5/8/8/3K4/8/8/1R6"
+                {
                     println!("TEST {rboard:?}")
                 };
                 // Check that position is generated for the first time/index schema is injective
+                // We consider the syzygy indexer trusty enough for pawnless positions to allow for
+                // duplicates
                 if Outcome::Undefined
                     != self.common.all_pos[all_pos_idx]
                         .get_by_pos(&chess)
                         .outcome()
+                    && self.common.material.has_pawns()
                 {
                     panic!("Index {all_pos_idx} already generated, board: {rboard:?}");
                 }
