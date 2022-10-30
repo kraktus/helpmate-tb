@@ -176,8 +176,8 @@ impl<T: PosHandler> Generator<T> {
         }
     }
 
-    pub fn get_result(self) -> (Queue, Common) {
-        (self.queue, self.common)
+    pub fn get_result(self) -> (Queue, Common, T) {
+        (self.queue, self.common, self.pos_handler)
     }
 
     fn generate_positions_internal(
@@ -394,7 +394,7 @@ impl TableBaseBuilder {
         let common = Common::new(material, winner);
         let mut generator = Generator::new(common);
         generator.generate_positions();
-        let (mut queue, common) = generator.get_result();
+        let (mut queue, common, _) = generator.get_result();
         debug!("nb pos {:?}", common.all_pos.len());
         debug!("counter {:?}", common.counter);
         debug!(

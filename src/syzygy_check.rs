@@ -6,12 +6,17 @@
 
 use std::collections::{HashMap, HashSet};
 
+use clap::Parser;
+use itertools::Itertools;
 use retroboard::{
-    shakmaty::{Bitboard, Board, Chess, Position, Setup, Square},
+    shakmaty::{Bitboard, Board, Chess, Color, Color::*, Position, Setup, Square},
     RetroBoard,
 };
 
-use crate::{to_chess_with_illegal_checks, Common, Descendants, PosHandler, Queue};
+use crate::{
+    to_chess_with_illegal_checks, Common, Descendants, Generator, Material, Pieces, PosHandler,
+    Queue,
+};
 
 type Transfo = (
     fn(&mut Board),
@@ -88,6 +93,53 @@ impl PosHandler for SyzygyCheck {
     }
 }
 
+fn check_mat(mat: Material) {
+    let common = Common::new(mat, Color::White);
+    let mut gen = Generator::new_with_pos_handler(SyzygyCheck::default(), common);
+    gen.generate_positions();
+    let (_, _, _) = gen.get_result();
+}
+
+#[derive(Parser, Debug)]
+#[clap(author, version, about)]
+struct Opt {
+    #[clap(
+        short,
+        long,
+        value_parser,
+        help = "maximum number of pieces on the board, will check all pawnless material config up to this number included"
+    )]
+    nb_pieces: usize,
+}
+
+fn gen_all_pawnless_mat_up_to(nb_pieces: usize) -> HashSet<Material> {
+    let iter_pieces = vec![
+        Black.bishop(),
+        Black.knight(),
+        Black.rook(),
+        Black.queen(),
+        White.bishop(),
+        White.knight(),
+        White.rook(),
+        White.queen(),
+    ]
+    .repeat(nb_pieces - 2)
+    .into_iter();
+
+    (1..nb_pieces - 1)
+        .flat_map(|i| iter_pieces.clone().combinations(i))
+        .map(|pieces_vec| {
+            Material::from_iter(pieces_vec.into_iter().chain([Black.king(), White.king()]))
+        })
+        .collect()
+}
+
+fn main() {
+    let args = Opt::parse();
+    let all_mats_config = gen_all_pawnless_mat_up_to(args.nb_pieces);
+    for mat in all_mats_config {}
+}
+
 fn transformed_chess(chess: &Chess, transfo: Transfo) -> Chess {
     let mut board = chess.board().clone();
     (transfo.0)(&mut board);
@@ -135,5 +187,11 @@ mod tests {
             syzygy_check.duplicate_indexes,
             [(1907795, [1907815].into())].into()
         );
+    }
+
+    #[test]
+    fn test_gen_all_pawnless_mat_up_to() {
+        assert_eq!(gen_all_pawnless_mat_up_to(3).len(), 4);
+        assert_eq!(dbg!(gen_all_pawnless_mat_up_to(4)).len(), 24); // 20 4 pieces + 4 3pieces
     }
 }
