@@ -1,3 +1,4 @@
+mod common;
 mod compression;
 mod encoding;
 mod file_handler;
@@ -7,6 +8,7 @@ mod indexer_syzygy;
 mod material;
 mod outcome;
 
+pub use crate::common::Common;
 pub use crate::file_handler::{Descendants, MaterialWinner};
 pub use crate::outcome::{
     Outcome, OutcomeU8, Outcomes, OutcomesSlice, Report, ReportU8, Reports, ReportsSlice,
@@ -14,7 +16,7 @@ pub use crate::outcome::{
 };
 pub use compression::EncoderDecoder;
 pub use encoding::get_info_table;
-pub use generation::{Common, SideToMove, SideToMoveGetter, TableBaseBuilder};
+pub use generation::{SideToMove, SideToMoveGetter, TableBaseBuilder};
 pub use indexer::{index, index_unchecked, restore_from_index};
 pub use indexer_syzygy::{Pieces, Table, A1_H8_DIAG, A8_H1_DIAG};
 pub use material::{is_black_stronger, Material, KB_K, KN_K};

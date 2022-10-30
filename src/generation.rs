@@ -1,6 +1,6 @@
 use crate::{
-    index, index_unchecked, restore_from_index, Descendants, Material, Outcome, OutcomeU8, Report,
-    ReportU8, Reports, Table, A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
+    index, index_unchecked, restore_from_index, Common, Descendants, Material, Outcome, OutcomeU8,
+    Report, ReportU8, Reports, Table, A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
 };
 use log::debug;
 use retroboard::shakmaty::{
@@ -82,39 +82,6 @@ pub struct Queue {
 
 const A1_H1_H8: Bitboard = Bitboard(0x80c0e0f0f8fcfeff);
 // const A8_A2_H7: Bitboard = A1_H1_H8.flip_diagonal().without_const(A1_H8_DIAG);
-
-#[derive(Debug)]
-pub struct Common {
-    pub all_pos: Reports,
-    pub winner: Color,
-    pub counter: u64,
-    pub material: Material,
-    can_mate: bool, // if `true`, the desired outcome is winning, otherwise it's to draw
-    index_table: Table,
-}
-
-impl Common {
-    fn get_progress_bar(&self) -> ProgressBar {
-        let pb = ProgressBar::new(get_nb_pos(&self.material));
-        pb.set_style(ProgressStyle::default_bar()
-        .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})")
-        .progress_chars("#>-"));
-        pb
-    }
-}
-
-impl Common {
-    pub fn new(material: Material, winner: Color) -> Self {
-        Self {
-            index_table: Table::new(&material),
-            all_pos: vec![UNDEFINED_OUTCOME_BYCOLOR; get_nb_pos(&material) as usize / 10 * 9], // heuristic, less than 90% of pos are legals. Takes x2 (because each stored element is in fact 1 position, but with black and white to turn) more than number of legal positions
-            winner,
-            counter: 0,
-            can_mate: material.can_mate(winner),
-            material,
-        }
-    }
-}
 
 /// Struct that only handle the generation phase of the tablebase building process
 /// See `Tagger` for the backward algorithm part.
@@ -221,7 +188,7 @@ impl Generator {
                 let rboard = RetroBoard::from_setup(valid_setup, Standard)
                     .expect("if chess is valid then rboard should be too");
                 let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
-                let all_pos_idx = self.common.index_table.encode(&chess);
+                let all_pos_idx = self.common.index_table().encode(&chess);
                 if format!("{}", rboard.board().board_fen(Bitboard::EMPTY))
                     == "7k/2R5/8/8/3K4/8/8/1R6"
                 {
@@ -251,7 +218,7 @@ impl Generator {
             Some(ChessOutcome::Decisive { winner }) => {
                 // we know the result is exact, since the game is over
                 let outcome = Report::Processed(if winner == self.common.winner {
-                    assert!(self.common.can_mate);
+                    assert!(self.common.can_mate());
                     Outcome::Win(0)
                 } else {
                     Outcome::Lose(0)
@@ -266,7 +233,7 @@ impl Generator {
 
             Some(ChessOutcome::Draw) => {
                 self.common.all_pos[all_pos_idx].set_to(chess, Report::Processed(Outcome::Draw));
-                if !self.common.can_mate {
+                if !self.common.can_mate() {
                     self.queue.desired_outcome_pos_to_process.push_back(idx);
                 }
             }
@@ -333,7 +300,7 @@ impl Tagger {
                 let out: Outcome = self
                     .common
                     .all_pos
-                    .get(self.common.index_table.encode(&rboard))
+                    .get(self.common.index_table().encode(&rboard))
                     .map(|bc| bc.get_by_pos(&rboard))
                     .unwrap_or_else(|| {
                         panic!(
@@ -351,7 +318,7 @@ impl Tagger {
                     // let chess_after_unmove: Chess = rboard_after_unmove.clone().into();
                     let idx_after_unmove = index(&rboard_after_unmove);
                     let idx_all_pos_after_unmove =
-                        self.common.index_table.encode(&rboard_after_unmove);
+                        self.common.index_table().encode(&rboard_after_unmove);
                     match self.common.all_pos[idx_all_pos_after_unmove]
                         .get_by_pos(&rboard_after_unmove)
                     {
@@ -404,7 +371,7 @@ impl TableBaseBuilder {
         debug!(
             "nb {:?} {} {:?}",
             common.winner,
-            if common.can_mate {
+            if common.can_mate() {
                 "mate"
             } else {
                 "stalemate/capture resulting in draw"
@@ -421,22 +388,6 @@ impl TableBaseBuilder {
         tagger.process_positions(&mut queue.desired_outcome_pos_to_process);
         tagger.process_positions(&mut queue.losing_pos_to_process);
         tagger.into()
-    }
-}
-
-#[inline]
-fn get_nb_pos(mat: &Material) -> u64 {
-    // white king is already included in `material.count()`, so substract it, and multiply by 10 instead, real number of cases the white king can go on
-    pow_minus_1(63, mat.count() - 1) * 10 * 2
-}
-
-// instead of 64**4 get 64*63*62*61
-#[inline]
-const fn pow_minus_1(exp: u64, left: usize) -> u64 {
-    if left > 0 {
-        exp * pow_minus_1(exp - 1, left - 1)
-    } else {
-        1
     }
 }
 
