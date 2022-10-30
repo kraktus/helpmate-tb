@@ -26,10 +26,9 @@ inherits = "release"
 debug = 1
 
 [[bin]]
-name = "syzygy-check"           # The name of the target.
-path = "src/syzygy_check.rs"    # The source file of the target.
-test = true            # Is tested by default.
-doctest = true         # Documentation examples are tested by default.
-bench = true           # Is benchmarked by default.
-doc = true             # Is documented by default.
-harness = true         # Use libtest harness.
+name = "syzygy-check"
+path = "src/bin/syzygy_check.rs"
+
+[[bin]]
+name = "tb"
+path = "src/bin/tb.rs"

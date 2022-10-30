@@ -13,9 +13,8 @@ use retroboard::{
     RetroBoard,
 };
 
-use crate::{
-    to_chess_with_illegal_checks, Common, Descendants, Generator, Material, Pieces, PosHandler,
-    Queue,
+use helpmate_tb::{
+    to_chess_with_illegal_checks, Common, Descendants, Generator, Material, PosHandler, Queue,
 };
 
 type Transfo = (
