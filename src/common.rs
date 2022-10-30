@@ -1,4 +1,4 @@
-use crate::{Material, Report, ReportU8, Reports, Table, A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR};
+use crate::{Material, Reports, Table, UNDEFINED_OUTCOME_BYCOLOR};
 
 use indicatif::{ProgressBar, ProgressStyle};
 use retroboard::shakmaty::Color;

@@ -1,6 +1,6 @@
 use crate::{
     index, index_unchecked, restore_from_index, Common, Descendants, Material, Outcome, OutcomeU8,
-    Report, ReportU8, Reports, Table, A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
+    Report, ReportU8, A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
 };
 use log::debug;
 use retroboard::shakmaty::{
@@ -13,7 +13,7 @@ use retroboard::shakmaty::{
 use retroboard::RetroBoard;
 use std::collections::VecDeque;
 
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{ProgressBar};
 
 // Allow to use both `Chess` and `RetroBoard`
 // TODO replace all `dyn SideToMove` by enum using `enum_trait` crate for example
