@@ -7,21 +7,43 @@
 use std::collections::{HashMap, HashSet};
 
 use retroboard::{
-    shakmaty::{Board, Chess, Position, Setup},
+    shakmaty::{Bitboard, Board, Chess, Position, Setup, Square},
     RetroBoard,
 };
 
 use crate::{to_chess_with_illegal_checks, Common, Descendants, PosHandler, Queue};
 
+type Transfo = (
+    fn(&mut Board),
+    fn(Bitboard) -> Bitboard,
+    fn(Square) -> Square,
+);
+
 // same order as in shakmaty doc
-const ALL_TRANSFO: [fn(&mut Board); 7] = [
-    Board::flip_vertical,
-    Board::flip_horizontal,
-    Board::flip_diagonal,
-    Board::flip_anti_diagonal,
-    Board::rotate_90,
-    Board::rotate_270,
-    Board::rotate_180,
+const ALL_TRANSFO: [Transfo; 7] = [
+    (
+        Board::flip_vertical,
+        Bitboard::flip_vertical,
+        Square::flip_vertical,
+    ),
+    (
+        Board::flip_horizontal,
+        Bitboard::flip_horizontal,
+        Square::flip_horizontal,
+    ),
+    (
+        Board::flip_diagonal,
+        Bitboard::flip_diagonal,
+        Square::flip_diagonal,
+    ),
+    (
+        Board::flip_anti_diagonal,
+        Bitboard::flip_anti_diagonal,
+        Square::flip_anti_diagonal,
+    ),
+    (Board::rotate_90, Bitboard::rotate_90, Square::rotate_90),
+    (Board::rotate_270, Bitboard::rotate_270, Square::rotate_270),
+    (Board::rotate_180, Bitboard::rotate_180, Square::rotate_180),
 ];
 
 #[derive(Debug, Clone, Default)]
@@ -66,16 +88,16 @@ impl PosHandler for SyzygyCheck {
     }
 }
 
-fn transformed_chess(chess: &Chess, transfo: fn(&mut Board)) -> Chess {
+fn transformed_chess(chess: &Chess, transfo: Transfo) -> Chess {
     let mut board = chess.board().clone();
-    transfo(&mut board);
+    (transfo.0)(&mut board);
     to_chess_with_illegal_checks(Setup {
         board,
-        promoted: chess.promoted(),
+        promoted: (transfo.1)(chess.promoted()),
         pockets: chess.pockets().copied(),
         turn: chess.turn(),
-        castling_rights: chess.castles().castling_rights(),
-        ep_square: chess.maybe_ep_square(),
+        castling_rights: (transfo.1)(chess.castles().castling_rights()),
+        ep_square: chess.maybe_ep_square().map(transfo.2),
         remaining_checks: chess.remaining_checks().copied(),
         halfmoves: chess.halfmoves(),
         fullmoves: chess.fullmoves(),
@@ -85,7 +107,9 @@ fn transformed_chess(chess: &Chess, transfo: fn(&mut Board)) -> Chess {
 
 #[cfg(test)]
 mod tests {
-    use retroboard::shakmaty::fen::Fen;
+    use retroboard::shakmaty::{fen::Fen, CastlingMode, Color};
+
+    use crate::Material;
 
     use super::*;
 
