@@ -57,3 +57,13 @@ const fn pow_minus_1(exp: u64, left: usize) -> u64 {
         1
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_pow_minus_1() {
+        assert_eq!(pow_minus_1(64, 1), 64);
+        assert_eq!(pow_minus_1(64, 2), 64 * 63);
+    }
+}

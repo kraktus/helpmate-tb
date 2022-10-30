@@ -13,7 +13,7 @@ use retroboard::shakmaty::{
 use retroboard::RetroBoard;
 use std::collections::VecDeque;
 
-use indicatif::{ProgressBar};
+use indicatif::ProgressBar;
 
 // Allow to use both `Chess` and `RetroBoard`
 // TODO replace all `dyn SideToMove` by enum using `enum_trait` crate for example
@@ -83,28 +83,31 @@ pub struct Queue {
 const A1_H1_H8: Bitboard = Bitboard(0x80c0e0f0f8fcfeff);
 // const A8_A2_H7: Bitboard = A1_H1_H8.flip_diagonal().without_const(A1_H8_DIAG);
 
+type PosHandler = fn(&mut Common, &mut Queue, &Descendants, &Chess, u64, usize);
+
 /// Struct that only handle the generation phase of the tablebase building process
 /// See `Tagger` for the backward algorithm part.
-#[derive(Debug)]
 struct Generator {
     common: Common,
     tablebase: Descendants, // access to the DTM of descendants (different material config, following a capture/promotion)
     pb: ProgressBar,
     queue: Queue,
+    pos_handler: PosHandler,
 }
 
 impl Generator {
     pub fn new(common: Common) -> Self {
-        Self::new_with_tablebase(Descendants::new(&common.material), common)
+        Self::new_with_pos_handler(handle_outcome_of_legal_position, common)
     }
 
-    pub fn new_with_tablebase(tablebase: Descendants, common: Common) -> Self {
+    pub fn new_with_pos_handler(pos_handler: PosHandler, common: Common) -> Self {
         let pb = common.get_progress_bar();
         Self {
             pb,
-            tablebase,
+            tablebase: Descendants::new(&common.material),
             common,
             queue: Queue::default(),
+            pos_handler,
         }
     }
 
@@ -166,15 +169,6 @@ impl Generator {
         }
     }
 
-    // return a bitboard of all unique pieces on the board given the generation material configuration
-    // fn bb_unique_pieces(&self, board: Board) -> Bitboard {
-    //     Bitboard::from_iter(
-    //         board
-    //             .into_iter()
-    //             .filter_map(|(sq, piece)| (self.common.material.by_piece(piece) == 1).then(|| sq)),
-    //     )
-    // }
-
     fn check_position(&mut self, setup: Setup) {
         // setup is complete, check if valid
         for color in Color::ALL {
@@ -207,45 +201,15 @@ impl Generator {
                     }
                 } else {
                     // only handle the position if it's not a duplicate
-                    self.handle_outcome_of_legal_position(&chess, idx, all_pos_idx);
+                    (self.pos_handler)(
+                        &mut self.common,
+                        &mut self.queue,
+                        &self.tablebase,
+                        &chess,
+                        idx,
+                        all_pos_idx,
+                    );
                 }
-            }
-        }
-    }
-
-    fn handle_outcome_of_legal_position(&mut self, chess: &Chess, idx: u64, all_pos_idx: usize) {
-        match chess.outcome() {
-            Some(ChessOutcome::Decisive { winner }) => {
-                // we know the result is exact, since the game is over
-                let outcome = Report::Processed(if winner == self.common.winner {
-                    assert!(self.common.can_mate());
-                    Outcome::Win(0)
-                } else {
-                    Outcome::Lose(0)
-                });
-                self.common.all_pos[all_pos_idx].set_to(chess, outcome);
-                if winner == self.common.winner {
-                    self.queue.desired_outcome_pos_to_process.push_back(idx);
-                } else {
-                    self.queue.losing_pos_to_process.push_back(idx);
-                }
-            }
-
-            Some(ChessOutcome::Draw) => {
-                self.common.all_pos[all_pos_idx].set_to(chess, Report::Processed(Outcome::Draw));
-                if !self.common.can_mate() {
-                    self.queue.desired_outcome_pos_to_process.push_back(idx);
-                }
-            }
-            None => {
-                self.common.all_pos[all_pos_idx].set_to(
-                    chess,
-                    Report::Unprocessed(
-                        self.tablebase
-                            .outcome_from_captures_promotion(chess, self.common.winner)
-                            .unwrap_or(Outcome::Unknown),
-                    ),
-                );
             }
         }
     }
@@ -271,6 +235,50 @@ impl Generator {
             "all_pos_vec capacity: {} after shrinking",
             self.common.all_pos.capacity()
         );
+    }
+}
+
+fn handle_outcome_of_legal_position(
+    common: &mut Common,
+    queue: &mut Queue,
+    tablebase: &Descendants,
+    chess: &Chess,
+    idx: u64,
+    all_pos_idx: usize,
+) {
+    match chess.outcome() {
+        Some(ChessOutcome::Decisive { winner }) => {
+            // we know the result is exact, since the game is over
+            let outcome = Report::Processed(if winner == common.winner {
+                assert!(common.can_mate());
+                Outcome::Win(0)
+            } else {
+                Outcome::Lose(0)
+            });
+            common.all_pos[all_pos_idx].set_to(chess, outcome);
+            if winner == common.winner {
+                queue.desired_outcome_pos_to_process.push_back(idx);
+            } else {
+                queue.losing_pos_to_process.push_back(idx);
+            }
+        }
+
+        Some(ChessOutcome::Draw) => {
+            common.all_pos[all_pos_idx].set_to(chess, Report::Processed(Outcome::Draw));
+            if !common.can_mate() {
+                queue.desired_outcome_pos_to_process.push_back(idx);
+            }
+        }
+        None => {
+            common.all_pos[all_pos_idx].set_to(
+                chess,
+                Report::Unprocessed(
+                    tablebase
+                        .outcome_from_captures_promotion(chess, common.winner)
+                        .unwrap_or(Outcome::Unknown),
+                ),
+            );
+        }
     }
 }
 
@@ -403,22 +411,6 @@ mod tests {
     fn test_a1_h8_bb() {
         assert_eq!(A1_H1_H8, Bitboard(9277662557957324543))
     }
-
-    #[test]
-    fn test_pow_minus_1() {
-        assert_eq!(pow_minus_1(64, 1), 64);
-        assert_eq!(pow_minus_1(64, 2), 64 * 63);
-    }
-
-    // #[test]
-    // fn test_only_king_generation() {
-    //     // ensure only 462 positions are generated when two kings on the board
-    //     let common = Common::new(Material::from_str("KvK").unwrap(), Color::White);
-    //     let mut generator = Generator::new_with_tablebase(Descendants::empty(), common);
-    //     generator.generate_positions();
-    //     let (_, common) = generator.get_result();
-    //     assert_eq!(common.counter, 462);
-    // }
 
     #[test]
     fn test_side_to_move() {
