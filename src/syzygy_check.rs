@@ -11,9 +11,7 @@ use retroboard::{
     RetroBoard,
 };
 
-use crate::{
-    to_chess_with_illegal_checks, Common, Descendants, PosHandler, Queue,
-};
+use crate::{to_chess_with_illegal_checks, Common, Descendants, PosHandler, Queue};
 
 // same order as in shakmaty doc
 const ALL_TRANSFO: [fn(&mut Board); 7] = [
