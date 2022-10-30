@@ -584,7 +584,7 @@ impl Table {
                 }
             }
 
-            for i in 0..material.count() {
+            for i in 0..side.lens[0] {
                 if A1_H8_DIAG.contains(squares[i]) {
                     continue;
                 }
