@@ -183,11 +183,11 @@ impl Generator {
                     .expect("if chess is valid then rboard should be too");
                 let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
                 let all_pos_idx = self.common.index_table().encode(&chess);
-                if format!("{}", rboard.board().board_fen(Bitboard::EMPTY))
-                    == "7k/2R5/8/8/3K4/8/8/1R6"
-                {
-                    println!("TEST {rboard:?}")
-                };
+                // if format!("{}", rboard.board().board_fen(Bitboard::EMPTY))
+                //     == "7k/2R5/8/8/3K4/8/8/1R6"
+                // {
+                //     println!("TEST {rboard:?}")
+                // };
                 // Check that position is generated for the first time/index schema is injective
                 // We consider the syzygy indexer trusty enough for pawnless positions to allow for
                 // duplicates
