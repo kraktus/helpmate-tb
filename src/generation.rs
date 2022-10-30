@@ -73,7 +73,7 @@ impl SideToMoveGetter for ByColor<OutcomeU8> {
         *x_mut = t.into();
     }
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Queue {
     // depending on the material configuration can be either won or drawn position
     pub desired_outcome_pos_to_process: VecDeque<u64>,
@@ -394,16 +394,6 @@ impl TableBaseBuilder {
 fn to_chess_with_illegal_checks(setup: Setup) -> Result<Chess, PositionError<Chess>> {
     Chess::from_setup(setup, CastlingMode::Standard).or_else(|x| x.ignore_impossible_check())
 }
-
-impl Default for Queue {
-    fn default() -> Self {
-        Self {
-            desired_outcome_pos_to_process: VecDeque::new(),
-            losing_pos_to_process: VecDeque::new(),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
