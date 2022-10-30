@@ -13,7 +13,7 @@ indicatif = "0.16.2"
 itertools = "0.10.3"
 env_logger = "0.9"
 log = "0.4"
-dhat = "0.2.4"
+dhat = {version = "0.2.4",  optional = true }
 serde_json = "1"
 serde = { version = "1.0", features = ["derive"] }
 zstd = "0.11.2"
@@ -21,5 +21,15 @@ deku = "0.13.1"
 positioned-io = "0.3"
 
 
-[profile.release] # for profiling only # dhat
+[profile.dhat] # for profiling only # dhat
+inherits = "release"
 debug = 1
+
+[[bin]]
+name = "syzygy-check"           # The name of the target.
+path = "src/syzygy_check.rs"    # The source file of the target.
+test = true            # Is tested by default.
+doctest = true         # Documentation examples are tested by default.
+bench = true           # Is benchmarked by default.
+doc = true             # Is documented by default.
+harness = true         # Use libtest harness.

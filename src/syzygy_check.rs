@@ -137,7 +137,7 @@ fn gen_all_pawnless_mat_up_to(nb_pieces: usize) -> HashSet<Material> {
 fn main() {
     let args = Opt::parse();
     let all_mats_config = gen_all_pawnless_mat_up_to(args.nb_pieces);
-    for mat in all_mats_config {}
+    all_mats_config.into_iter().for_each(check_mat);
 }
 
 fn transformed_chess(chess: &Chess, transfo: Transfo) -> Chess {
