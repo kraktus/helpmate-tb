@@ -186,11 +186,7 @@ impl Generator {
             let bb_squares_inf = Bitboard::from_iter(
                 (0..last_square.into()).map(unsafe { |sq| Square::new_unchecked(sq) }),
             );
-            if A1_H8_DIAG.is_superset(board.occupied()) {
-                bb_squares_inf & A1_H1_H8
-            } else {
-                bb_squares_inf
-            }
+            bb_squares_inf
         }
         // Do not restrict duplicate pieces as they already have other constraints
         // and combining with this one resulting in the generating function not to be surjective anymore
@@ -238,11 +234,14 @@ impl Generator {
                     != self.common.all_pos[all_pos_idx]
                         .get_by_pos(&chess)
                         .outcome()
-                    && self.common.material.has_pawns()
                 {
-                    panic!("Index {all_pos_idx} already generated, board: {rboard:?}");
+                    if self.common.material.has_pawns() {
+                        panic!("Index {all_pos_idx} already generated, board: {rboard:?}");
+                    }
+                } else {
+                    // only handle the position if it's not a duplicate
+                    self.handle_outcome_of_legal_position(&chess, idx, all_pos_idx);
                 }
-                self.handle_outcome_of_legal_position(&chess, idx, all_pos_idx);
             }
         }
     }
