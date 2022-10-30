@@ -7,12 +7,12 @@
 use std::collections::{HashMap, HashSet};
 
 use retroboard::{
-    shakmaty::{Bitboard, Board, CastlingMode, Chess, Color, FromSetup, Position, Setup},
+    shakmaty::{Board, Chess, Position, Setup},
     RetroBoard,
 };
 
 use crate::{
-    to_chess_with_illegal_checks, Common, Descendants, Generator, Material, PosHandler, Queue,
+    to_chess_with_illegal_checks, Common, Descendants, PosHandler, Queue,
 };
 
 // same order as in shakmaty doc
