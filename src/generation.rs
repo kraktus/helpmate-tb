@@ -83,24 +83,89 @@ pub struct Queue {
 const A1_H1_H8: Bitboard = Bitboard(0x80c0e0f0f8fcfeff);
 // const A8_A2_H7: Bitboard = A1_H1_H8.flip_diagonal().without_const(A1_H8_DIAG);
 
-type PosHandler = fn(&mut Common, &mut Queue, &Descendants, &Chess, u64, usize);
+// type PosHandler = fn(&mut Common, &mut Queue, &Descendants, &Chess, u64, usize);
+
+pub trait PosHandler {
+    fn handle_position(
+        &mut self,
+        common: &mut Common,
+        queue: &mut Queue,
+        tablebase: &Descendants,
+        chess: &Chess,
+        idx: u64,
+        all_pos_idx: usize,
+    );
+}
+
+/// handler used when generating the helpmate tablebase
+/// another handler can be found in `syzygy_check.rs`
+struct DefaultGeneratorHandler;
+
+impl PosHandler for DefaultGeneratorHandler {
+    fn handle_position(
+        &mut self,
+        common: &mut Common,
+        queue: &mut Queue,
+        tablebase: &Descendants,
+        chess: &Chess,
+        idx: u64,
+        all_pos_idx: usize,
+    ) {
+        match chess.outcome() {
+            Some(ChessOutcome::Decisive { winner }) => {
+                // we know the result is exact, since the game is over
+                let outcome = Report::Processed(if winner == common.winner {
+                    assert!(common.can_mate());
+                    Outcome::Win(0)
+                } else {
+                    Outcome::Lose(0)
+                });
+                common.all_pos[all_pos_idx].set_to(chess, outcome);
+                if winner == common.winner {
+                    queue.desired_outcome_pos_to_process.push_back(idx);
+                } else {
+                    queue.losing_pos_to_process.push_back(idx);
+                }
+            }
+
+            Some(ChessOutcome::Draw) => {
+                common.all_pos[all_pos_idx].set_to(chess, Report::Processed(Outcome::Draw));
+                if !common.can_mate() {
+                    queue.desired_outcome_pos_to_process.push_back(idx);
+                }
+            }
+            None => {
+                common.all_pos[all_pos_idx].set_to(
+                    chess,
+                    Report::Unprocessed(
+                        tablebase
+                            .outcome_from_captures_promotion(chess, common.winner)
+                            .unwrap_or(Outcome::Unknown),
+                    ),
+                );
+            }
+        }
+    }
+}
 
 /// Struct that only handle the generation phase of the tablebase building process
 /// See `Tagger` for the backward algorithm part.
-struct Generator {
+pub struct Generator<T> {
     common: Common,
     tablebase: Descendants, // access to the DTM of descendants (different material config, following a capture/promotion)
     pb: ProgressBar,
     queue: Queue,
-    pos_handler: PosHandler,
+    pos_handler: T,
 }
 
-impl Generator {
+impl Generator<DefaultGeneratorHandler> {
     pub fn new(common: Common) -> Self {
-        Self::new_with_pos_handler(handle_outcome_of_legal_position, common)
+        Self::new_with_pos_handler(DefaultGeneratorHandler, common)
     }
+}
 
-    pub fn new_with_pos_handler(pos_handler: PosHandler, common: Common) -> Self {
+impl<T: PosHandler> Generator<T> {
+    pub fn new_with_pos_handler(pos_handler: T, common: Common) -> Self {
         let pb = common.get_progress_bar();
         Self {
             pb,
@@ -137,7 +202,7 @@ impl Generator {
                     }
                 }
             }
-            [] => self.check_position(setup),
+            [] => self.check_setup(setup),
         }
     }
 
@@ -169,7 +234,7 @@ impl Generator {
         }
     }
 
-    fn check_position(&mut self, setup: Setup) {
+    fn check_setup(&mut self, setup: Setup) {
         // setup is complete, check if valid
         for color in Color::ALL {
             let mut valid_setup = setup.clone();
@@ -201,7 +266,7 @@ impl Generator {
                     }
                 } else {
                     // only handle the position if it's not a duplicate
-                    (self.pos_handler)(
+                    self.pos_handler.handle_position(
                         &mut self.common,
                         &mut self.queue,
                         &self.tablebase,
@@ -235,50 +300,6 @@ impl Generator {
             "all_pos_vec capacity: {} after shrinking",
             self.common.all_pos.capacity()
         );
-    }
-}
-
-fn handle_outcome_of_legal_position(
-    common: &mut Common,
-    queue: &mut Queue,
-    tablebase: &Descendants,
-    chess: &Chess,
-    idx: u64,
-    all_pos_idx: usize,
-) {
-    match chess.outcome() {
-        Some(ChessOutcome::Decisive { winner }) => {
-            // we know the result is exact, since the game is over
-            let outcome = Report::Processed(if winner == common.winner {
-                assert!(common.can_mate());
-                Outcome::Win(0)
-            } else {
-                Outcome::Lose(0)
-            });
-            common.all_pos[all_pos_idx].set_to(chess, outcome);
-            if winner == common.winner {
-                queue.desired_outcome_pos_to_process.push_back(idx);
-            } else {
-                queue.losing_pos_to_process.push_back(idx);
-            }
-        }
-
-        Some(ChessOutcome::Draw) => {
-            common.all_pos[all_pos_idx].set_to(chess, Report::Processed(Outcome::Draw));
-            if !common.can_mate() {
-                queue.desired_outcome_pos_to_process.push_back(idx);
-            }
-        }
-        None => {
-            common.all_pos[all_pos_idx].set_to(
-                chess,
-                Report::Unprocessed(
-                    tablebase
-                        .outcome_from_captures_promotion(chess, common.winner)
-                        .unwrap_or(Outcome::Unknown),
-                ),
-            );
-        }
     }
 }
 
@@ -399,7 +420,7 @@ impl TableBaseBuilder {
     }
 }
 
-fn to_chess_with_illegal_checks(setup: Setup) -> Result<Chess, PositionError<Chess>> {
+pub fn to_chess_with_illegal_checks(setup: Setup) -> Result<Chess, PositionError<Chess>> {
     Chess::from_setup(setup, CastlingMode::Standard).or_else(|x| x.ignore_impossible_check())
 }
 #[cfg(test)]
