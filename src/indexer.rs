@@ -51,7 +51,7 @@ pub fn index(b: &RetroBoard) -> u64 {
         5 => rboard_checked.flip_vertical(),
         6 => rboard_checked.rotate_180(),
         7 => rboard_checked.flip_anti_diagonal(),
-        _ => panic!("Only 7 transformations expected"),
+        _ => unreachable!("Only 7 transformations expected"),
     };
     index_unchecked(&rboard_checked)
 }
