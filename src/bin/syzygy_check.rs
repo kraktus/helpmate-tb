@@ -7,7 +7,9 @@
 use std::collections::{HashMap, HashSet};
 
 use clap::Parser;
+use env_logger::{Builder, Target};
 use itertools::Itertools;
+use log::{debug, info, LevelFilter, warn};
 use retroboard::{
     shakmaty::{Bitboard, Board, Chess, Color, Color::*, Position, Setup, Square},
     RetroBoard,
@@ -73,11 +75,11 @@ impl PosHandler for SyzygyCheck {
             let transformed_pos = transformed_chess(chess, transfo);
             let transformed_all_pos_idx = common.index_table().encode(&transformed_pos);
             if transformed_all_pos_idx != all_pos_idx {
-                println!(
+                debug!(
                     "canonical board: {:?}, idx: {all_pos_idx}",
                     RetroBoard::from(chess.clone())
                 );
-                println!(
+                debug!(
                     "transformed board: {:?}, idx: {transformed_all_pos_idx}",
                     RetroBoard::from(transformed_pos.clone())
                 );
@@ -93,10 +95,15 @@ impl PosHandler for SyzygyCheck {
 }
 
 fn check_mat(mat: Material) {
-    let common = Common::new(mat, Color::White);
+    info!("looking at {mat:?}");
+    let common = Common::new(mat.clone(), Color::White);
     let mut gen = Generator::new_with_pos_handler(SyzygyCheck::default(), common);
     gen.generate_positions();
-    let (_, _, _) = gen.get_result();
+    let (_, _, syzygy_res) = gen.get_result();
+    if syzygy_res.duplicate_indexes.len() > 0 {
+        warn!("For {:?}, Found {:?} duplicates", mat, syzygy_res.duplicate_indexes.len());
+    }
+    info!("Max index is {:?}", syzygy_res.max_index);
 }
 
 #[derive(Parser, Debug)]
@@ -109,6 +116,16 @@ struct Opt {
         help = "maximum number of pieces on the board, will check all pawnless material config up to this number included"
     )]
     nb_pieces: usize,
+
+    #[clap(
+        short,
+        long,
+        value_parser,
+        help = "example \"KQvK\". If specified only this material configuration will be looked after"
+    )]
+    material: Option<String>,
+    #[clap(short, long, action = clap::ArgAction::Count, default_value_t = 3)]
+    verbose: u8,
 }
 
 fn gen_all_pawnless_mat_up_to(nb_pieces: usize) -> HashSet<Material> {
@@ -135,7 +152,24 @@ fn gen_all_pawnless_mat_up_to(nb_pieces: usize) -> HashSet<Material> {
 
 fn main() {
     let args = Opt::parse();
-    let all_mats_config = gen_all_pawnless_mat_up_to(args.nb_pieces);
+    let mut builder = Builder::new();
+    builder
+        .filter(
+            None,
+            match args.verbose {
+                1 => LevelFilter::Warn,
+                2 => LevelFilter::Info,
+                3 => LevelFilter::Debug,
+                _ => LevelFilter::Trace,
+            },
+        )
+        .default_format()
+        .target(Target::Stdout)
+        .init();
+    let all_mats_config = args
+        .material
+        .map(|x| [Material::from_str(&x).expect("invalid material")].into())
+        .unwrap_or_else(|| gen_all_pawnless_mat_up_to(args.nb_pieces));
     all_mats_config.into_iter().for_each(check_mat);
 }
 

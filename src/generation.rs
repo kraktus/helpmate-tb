@@ -283,20 +283,20 @@ impl<T: PosHandler> Generator<T> {
         let piece_vec = self.common.material.pieces_without_white_king();
         self.common.counter = 0;
         let white_king_bb = Bitboard(135007759); // a1-d1-d4 triangle
-        println!("{:?}", white_king_bb.0);
+        debug!("{:?}", white_king_bb.0);
         for white_king_sq in white_king_bb {
             let mut new_setup = Setup::empty();
             new_setup.board.set_piece_at(white_king_sq, White.king());
             self.generate_positions_internal(&piece_vec, new_setup, (White.king(), white_king_sq))
         }
-        self.pb.finish_with_message("positions generated");
-        println!("all_pos_vec capacity: {}", self.common.all_pos.capacity());
+        self.pb.finish_and_clear();
+        debug!("all_pos_vec capacity: {}", self.common.all_pos.capacity());
         while Some(&UNDEFINED_OUTCOME_BYCOLOR) == self.common.all_pos.last() {
             self.common.all_pos.pop();
         }
 
         self.common.all_pos.shrink_to_fit();
-        println!(
+        debug!(
             "all_pos_vec capacity: {} after shrinking",
             self.common.all_pos.capacity()
         );
