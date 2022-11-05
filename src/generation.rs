@@ -15,29 +15,43 @@ use std::collections::VecDeque;
 
 use indicatif::ProgressBar;
 
+pub trait WithBoard {
+    fn board(&self) -> &Board;
+}
+
+impl WithBoard for Board {
+    fn board(&self) -> &Board {
+        self
+    }
+}
+
+impl WithBoard for Chess {
+    fn board(&self) -> &Board {
+        Position::board(self)
+    }
+}
+
+impl WithBoard for RetroBoard {
+    fn board(&self) -> &Board {
+        self.board()
+    }
+}
+
 // Allow to use both `Chess` and `RetroBoard`
-pub trait SideToMove {
+pub trait SideToMove: WithBoard {
     // side to **move**, so opposite of side to unmove
     fn side_to_move(&self) -> Color;
-    fn board(&self) -> &Board;
 }
 
 impl SideToMove for Chess {
     fn side_to_move(&self) -> Color {
         self.turn()
     }
-    fn board(&self) -> &Board {
-        Position::board(self)
-    }
 }
 
 impl SideToMove for RetroBoard {
     fn side_to_move(&self) -> Color {
         !self.retro_turn()
-    }
-
-    fn board(&self) -> &Board {
-        self.board()
     }
 }
 

@@ -8,8 +8,8 @@ use retroboard::shakmaty::{
 };
 
 use crate::{
-    indexer_syzygy::{KK_IDX, Z0},
-    Material, SideToMove,
+    indexer_syzygy::{KK_IDX, Z0, TRIANGLE},
+    Material, generation::WithBoard,
 };
 use retroboard::RetroBoard;
 
@@ -87,30 +87,31 @@ const WHITE_KING_INDEX_TO_SQUARE: [Square; 10] = [
     Square::D4,
 ];
 
-pub fn index(b: &RetroBoard) -> u64 {
-    let mut rboard_checked = b.clone();
+pub fn index(b: &impl WithBoard) -> u64 {
+    let mut board_check = b.board().clone();
     let board_transfo_needed =
         WHITE_KING_SQUARES_TO_TRANSFO[b.board().king_of(White).expect("white king") as usize];
     match board_transfo_needed {
         0 => (),
-        1 => rboard_checked.flip_diagonal(),
-        2 => rboard_checked.flip_horizontal(),
-        3 => rboard_checked.rotate_90(),
-        4 => rboard_checked.rotate_270(),
-        5 => rboard_checked.flip_vertical(),
-        6 => rboard_checked.rotate_180(),
-        7 => rboard_checked.flip_anti_diagonal(),
+        1 => board_check.flip_diagonal(),
+        2 => board_check.flip_horizontal(),
+        3 => board_check.rotate_90(),
+        4 => board_check.rotate_270(),
+        5 => board_check.flip_vertical(),
+        6 => board_check.rotate_180(),
+        7 => board_check.flip_anti_diagonal(),
         _ => unreachable!("Only 7 transformations expected"),
     };
-    index_unchecked(&rboard_checked)
+    index_unchecked(&board_check)
 }
 
 /// ASSUME the white king is in the a1-d1-d4 corner already
 /// Do not take the turn into account the turn
-pub fn index_unchecked(b: &impl SideToMove) -> u64 {
+pub fn index_unchecked(b: &impl WithBoard) -> u64 {
     let mut idx = KK_IDX
-        [WHITE_KING_SQUARES_TO_INDEX[b.board().king_of(White).expect("white king") as usize]]
+        [TRIANGLE[b.board().king_of(White).expect("white king") as usize] as usize]
         [b.board().king_of(Black).expect("black king") as usize];
+    println!("{idx:?}");
     for role in [
         Role::Pawn,
         Role::Knight,
@@ -122,12 +123,14 @@ pub fn index_unchecked(b: &impl SideToMove) -> u64 {
             for sq in b.board().by_piece(Piece { role, color }) {
                 idx *= 64;
                 idx += sq as u64;
+                println!("{idx:?}");
             }
         }
     }
     idx
 }
 
+// DEBUG now the turn is not taken into account
 pub fn restore_from_index(material: &Material, index: u64) -> RetroBoard {
     let mut setup = Setup::empty();
     setup.board = restore_from_index_board(material, index);
@@ -258,6 +261,7 @@ mod tests {
             };
             let rboard =
                 RetroBoard::from_setup(setup, CastlingMode::Standard).expect("Valid setup");
+            println!("{rboard:?}");
             let idx = index(&rboard);
             let config = mat("KvK");
             let rboard_restored = restore_from_index_board(&config, idx);

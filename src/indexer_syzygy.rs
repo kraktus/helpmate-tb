@@ -25,7 +25,7 @@ const MAX_PIECES: usize = 7;
 
 /// Maps squares into the a1-d1-d4 triangle.
 #[rustfmt::skip]
-const TRIANGLE: [u64; 64] = [
+pub const TRIANGLE: [u64; 64] = [
     6, 0, 1, 2, 2, 1, 0, 6,
     0, 7, 3, 4, 4, 3, 7, 0,
     1, 3, 8, 5, 5, 8, 3, 1,
