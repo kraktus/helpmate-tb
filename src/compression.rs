@@ -10,7 +10,7 @@ use zstd::stream::{decode_all, encode_all};
 use crate::{OutcomeU8, Outcomes, Report, ReportU8, Reports, ReportsSlice};
 
 // in byte, the size of the uncompressed block we want
-const BLOCK_SIZE: usize = 500 * 1000000;
+const BLOCK_SIZE: usize = 500 * 1_000_000;
 
 // number of elements we take from `outcomes`
 // We want the uncompressed size of a block to be ~500Mb (arbitrary size)

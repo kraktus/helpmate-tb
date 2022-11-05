@@ -134,6 +134,7 @@ impl MaterialSide {
     }
 }
 
+#[must_use]
 pub fn is_black_stronger(board: &Board) -> bool {
     MaterialSide::from(board.material_side(Color::Black))
         > MaterialSide::from(board.material_side(Color::White))
@@ -277,6 +278,7 @@ pub const KN_K: Material = Material {
 
 impl Material {
     /// Get the material configuration for a [`Board`].
+    #[must_use]
     pub fn from_board(board: &Board) -> Self {
         Self {
             by_color: ByColor::new_with(|color| MaterialSide {
@@ -287,6 +289,7 @@ impl Material {
     }
 
     #[allow(clippy::should_implement_trait)] // no idea how to rename, but don't want to have it return a result
+    #[must_use]
     pub fn from_str(s: &str) -> Option<Self> {
         if s.len() > 64 + 1 {
             return None;
@@ -302,22 +305,27 @@ impl Material {
         })
     }
 
+    #[must_use]
     pub fn count(&self) -> usize {
-        self.by_color.iter().map(|side| side.count()).sum()
+        self.by_color.iter().map(MaterialSide::count).sum()
     }
 
+    #[must_use]
     pub fn is_symmetric(&self) -> bool {
         self.by_color.white == self.by_color.black
     }
 
+    #[must_use]
     pub fn has_pawns(&self) -> bool {
-        self.by_color.iter().any(|side| side.has_pawns())
+        self.by_color.iter().any(MaterialSide::has_pawns)
     }
 
+    #[must_use]
     pub fn unique_pieces(&self) -> u8 {
-        self.by_color.iter().map(|side| side.unique_roles()).sum()
+        self.by_color.iter().map(MaterialSide::unique_roles).sum()
     }
 
+    #[must_use]
     pub fn min_like_man(&self) -> u8 {
         self.by_color
             .iter()
@@ -330,6 +338,7 @@ impl Material {
 
     /// For any color
     // TODO is this actually needed or the only material configurations where no color can mate are "KvK", "KBvK" and "KNvK"?
+    #[must_use]
     pub fn is_mate_possible(&self) -> bool {
         // order is arbitrary
         let (white, black) = (
@@ -339,6 +348,7 @@ impl Material {
         white.is_mate_possible(black)
     }
 
+    #[must_use]
     pub fn can_mate(&self, color: Color) -> bool {
         let my_side = self.by_color.get(color);
         let opposite_side = self.by_color.get(!color);
@@ -392,6 +402,7 @@ impl Material {
 
     /// Vec containing all unique material configurations not containing the root material.
     /// Sorted by positions with fewer pieces first
+    #[must_use]
     pub fn descendants_recursive(&self, include_drawn_materials: bool) -> Vec<Self> {
         let mut descendants_recursive: Vec<Self> =
             self.descendants_recursive_internal(include_drawn_materials);
@@ -413,6 +424,7 @@ impl Material {
             .collect()
     }
 
+    #[must_use]
     pub fn by_piece(&self, piece: Piece) -> u8 {
         *self.by_color.get(piece.color).get(piece.role)
     }
@@ -432,6 +444,7 @@ impl Material {
         pieces
     }
 
+    #[must_use]
     pub fn pieces_without_white_king(&self) -> Pieces {
         self.pieces_with_white_king(false)
     }

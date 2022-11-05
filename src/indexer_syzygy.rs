@@ -262,8 +262,8 @@ const PP_IDX: [[u64; 64]; 10] = [[
 /// The a7-a5-c5 triangle.
 const TEST45: Bitboard = Bitboard(0x1_0307_0000_0000);
 
-pub const A1_H8_DIAG: Bitboard = Bitboard(0x8040201008040201);
-pub const A8_H1_DIAG: Bitboard = Bitboard(0x102040810204080);
+pub const A1_H8_DIAG: Bitboard = Bitboard(0x8040_2010_0804_0201);
+pub const A8_H1_DIAG: Bitboard = Bitboard(0x0102_0408_1020_4080);
 
 const CONSTS: Consts = Consts::new();
 
@@ -452,6 +452,7 @@ impl GroupData {
 }
 
 impl Table {
+    #[must_use]
     pub fn new(material: &Material) -> Self {
         let material_info = get_info_table(material).unwrap();
         let files: ArrayVec<ArrayVec<GroupData, 2>, 4> = material_info
@@ -731,7 +732,7 @@ impl Table {
             material.by_color.white.has_pawns() && material.by_color.black.has_pawns();
         let mut next = 1;
         let mut group_sq = side.lens[0];
-        for lens in side.lens.iter().cloned().skip(1) {
+        for lens in side.lens.iter().copied().skip(1) {
             let (prev_squares, group_squares) = squares.split_at_mut(group_sq);
             let group_squares = &mut group_squares[..lens];
             group_squares.sort_unstable();
@@ -765,8 +766,8 @@ mod tests {
 
     #[test]
     fn test_bb() {
-        assert_eq!(A1_H8_DIAG, Bitboard(9241421688590303745));
-        assert_eq!(A8_H1_DIAG, Bitboard(72624976668147840));
+        assert_eq!(A1_H8_DIAG, Bitboard(9_241_421_688_590_303_745));
+        assert_eq!(A8_H1_DIAG, Bitboard(72_624_976_668_147_840));
     }
 
     #[test]
@@ -778,7 +779,7 @@ mod tests {
             .into_position(CastlingMode::Chess960)
             .unwrap();
         let idx = table.encode(&chess);
-        assert_eq!(idx, 484157);
+        assert_eq!(idx, 484_157);
     }
 
     #[test]
@@ -790,7 +791,7 @@ mod tests {
             .into_position(CastlingMode::Chess960)
             .unwrap();
         let idx = table.encode(&chess);
-        assert_eq!(idx, 1907795);
+        assert_eq!(idx, 1_907_795);
     }
 
     #[test]
@@ -802,9 +803,9 @@ mod tests {
             .into_position(CastlingMode::Chess960)
             .unwrap();
         let idx = table.encode(&chess);
-        assert_eq!(idx, 1907815); // should really be 1907795
-                                  // the patch for this position was reverted because it introduced
-                                  // test_encode_recognised_symetry_syzygy_index_3bis
+        assert_eq!(idx, 1_907_815); // should really be 1907795
+                                    // the patch for this position was reverted because it introduced
+                                    // test_encode_recognised_symetry_syzygy_index_3bis
     }
 
     #[test]
@@ -816,7 +817,7 @@ mod tests {
             .into_position(CastlingMode::Chess960)
             .unwrap();
         let idx = table.encode(&chess);
-        assert_eq!(idx, 242414);
+        assert_eq!(idx, 242_414);
     }
 
     #[test]
@@ -828,7 +829,7 @@ mod tests {
             .into_position(CastlingMode::Chess960)
             .unwrap();
         let idx = table.encode(&chess);
-        assert_eq!(idx, 242414);
+        assert_eq!(idx, 242_414);
     }
 
     #[test]
@@ -840,7 +841,7 @@ mod tests {
             .into_position(CastlingMode::Chess960)
             .unwrap();
         let idx = table.encode(&chess);
-        assert_eq!(idx, 544235);
+        assert_eq!(idx, 544_235);
     }
 
     // same position as in _3, but flipped on the vertical axis
@@ -853,7 +854,7 @@ mod tests {
             .into_position(CastlingMode::Chess960)
             .unwrap();
         let idx = table.encode(&chess);
-        assert_eq!(idx, 544235);
+        assert_eq!(idx, 544_235);
     }
 
     #[test]
@@ -871,8 +872,8 @@ mod tests {
             .unwrap();
         let idx = table.encode(&chess);
         let idx_2 = table.encode(&chess_2);
-        assert_eq!(idx, 1907429);
-        assert_eq!(idx_2, 1907795);
+        assert_eq!(idx, 1_907_429);
+        assert_eq!(idx_2, 1_907_795);
     }
 
     #[test]
@@ -925,7 +926,7 @@ mod tests {
             .unwrap();
         let idx_1 = table.encode(&chess_1);
         let idx_2 = table.encode(&chess_2);
-        assert_eq!(idx_1, 325388);
-        assert_eq!(idx_2, 325388);
+        assert_eq!(idx_1, 325_388);
+        assert_eq!(idx_2, 325_388);
     }
 }

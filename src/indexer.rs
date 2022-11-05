@@ -1,5 +1,5 @@
 /// Naive indexer compated to `indexer_syzygy`
-/// It only handles mapping the white king to the A1_D1_D4 triangle and then hardcoding the 462 positions two kings
+/// It only handles mapping the white king to the `A1_D1_D4` triangle and then hardcoding the 462 positions two kings
 /// can have.
 /// It has the benefit of being fast and easily reversible
 use retroboard::shakmaty::{
@@ -8,13 +8,13 @@ use retroboard::shakmaty::{
 };
 
 use crate::{
-    generation::{WithBoard, A1_H1_H8, IndexWithTurn},
+    generation::{IndexWithTurn, WithBoard, A1_H1_H8},
     indexer_syzygy::{INV_TRIANGLE, KK_IDX, TRIANGLE, Z0},
-    Material, A1_H8_DIAG, SideToMove,
+    Material, SideToMove, A1_H8_DIAG,
 };
 use retroboard::RetroBoard;
 
-pub const A1_D1_D4: Bitboard = Bitboard(135007759);
+pub const A1_D1_D4: Bitboard = Bitboard(135_007_759);
 
 // impossible king square setup because by construction the white king
 // should be in the A1_D1_D4 triangle
@@ -70,8 +70,8 @@ const WHITE_KING_SQUARES_TO_TRANSFO: [u64; 64] = [
 pub fn index(b: &impl SideToMove) -> IndexWithTurn {
     let idx = index_without_turn(b);
     IndexWithTurn {
-        idx, 
-        turn: b.side_to_move()
+        idx,
+        turn: b.side_to_move(),
     }
 }
 
@@ -104,13 +104,13 @@ fn index_without_turn(b: &impl WithBoard) -> u64 {
 pub fn index_unchecked(b: &impl SideToMove) -> IndexWithTurn {
     let idx = index_unchecked_without_turn(b);
     IndexWithTurn {
-        idx, 
-        turn: b.side_to_move()
+        idx,
+        turn: b.side_to_move(),
     }
 }
 
 /// ASSUME the white king is in the a1-d1-d4 corner already
-/// If the white king is on the A1_H8 diagonal, the black king MUST BE in the A1_H1_H8 triangle
+/// If the white king is on the `A1_H8` diagonal, the black king MUST BE in the `A1_H1_H8` triangle
 /// Do not take the turn into account the turn
 pub fn index_unchecked_without_turn(b: &impl WithBoard) -> u64 {
     let mut idx = KK_IDX[TRIANGLE[b.board().king_of(White).expect("white king") as usize] as usize]
@@ -124,7 +124,7 @@ pub fn index_unchecked_without_turn(b: &impl WithBoard) -> u64 {
         Role::Queen,
     ] {
         for color in Color::ALL {
-            for sq in b.board().by_piece(Piece { role, color }) {
+            for sq in b.board().by_piece(Piece { color, role }) {
                 idx *= 64;
                 idx += sq as u64;
                 println!("{idx:?}");
@@ -134,6 +134,7 @@ pub fn index_unchecked_without_turn(b: &impl WithBoard) -> u64 {
     idx
 }
 
+#[must_use]
 pub fn restore_from_index(material: &Material, index: IndexWithTurn) -> RetroBoard {
     let mut setup = Setup::empty();
     setup.board = restore_from_index_board(material, index.idx);
@@ -152,7 +153,7 @@ pub fn restore_from_index_board(material: &Material, index: u64) -> Board {
         Role::Pawn,
     ] {
         for color in [Black, White] {
-            let piece = Piece { role, color };
+            let piece = Piece { color, role };
             for _ in 0..material.by_piece(piece) {
                 board.set_piece_at(unsafe { Square::new_unchecked((idx % 64) as u32) }, piece);
                 idx /= 64;

@@ -14,6 +14,7 @@ pub struct Common {
 }
 
 impl Common {
+    #[must_use]
     pub fn new(material: Material, winner: Color) -> Self {
         Self {
             index_table: Table::new(&material),
@@ -25,6 +26,7 @@ impl Common {
         }
     }
 
+    #[must_use]
     pub fn get_progress_bar(&self) -> ProgressBar {
         let pb = ProgressBar::new(get_nb_pos(&self.material));
         pb.set_style(ProgressStyle::default_bar()
@@ -33,10 +35,12 @@ impl Common {
         pb
     }
 
+    #[must_use]
     pub fn can_mate(&self) -> bool {
         self.can_mate
     }
 
+    #[must_use]
     pub fn index_table(&self) -> &Table {
         &self.index_table
     }

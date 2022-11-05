@@ -34,6 +34,7 @@ pub struct MaterialWinner<'a> {
 }
 
 impl<'a> MaterialWinner<'a> {
+    #[must_use]
     pub fn new(material: &'a Material, winner: Color) -> Self {
         Self { material, winner }
     }
@@ -56,6 +57,7 @@ impl fmt::Debug for MaterialWinner<'_> {
 pub struct Descendants(HashMap<Material, ByColor<FileHandler>>);
 
 impl Descendants {
+    #[must_use]
     pub fn new(mat: &Material) -> Self {
         Self(
             mat.descendants_not_draw()
@@ -73,6 +75,7 @@ impl Descendants {
     }
 
     // For test purpose
+    #[must_use]
     pub fn empty() -> Self {
         Self(HashMap::new())
     }
@@ -98,7 +101,8 @@ impl Descendants {
     /// For the given position, compute all moves that are either captures and/or promotion,
     /// and return the best result
     /// Example:
-    /// "KPvRK" where the pawn can take and promote then mate in 4, or just promote and mate in 2, will return `Outcome::Win(2)`
+    /// "`KPvRK`" where the pawn can take and promote then mate in 4, or just promote and mate in 2, will return `Outcome::Win(2)`
+    #[must_use]
     pub fn outcome_from_captures_promotion(&self, pos: &Chess, winner: Color) -> Option<Outcome> {
         let mut moves = pos.legal_moves();
         moves.retain(|m| m.is_capture() || m.is_promotion());

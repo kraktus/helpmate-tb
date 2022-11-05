@@ -16,7 +16,8 @@ use retroboard::{
 };
 
 use helpmate_tb::{
-    to_chess_with_illegal_checks, Common, Descendants, Generator, Material, PosHandler, Queue, IndexWithTurn,
+    to_chess_with_illegal_checks, Common, Descendants, Generator, IndexWithTurn, Material,
+    PosHandler, Queue,
 };
 
 type Transfo = (
@@ -216,7 +217,10 @@ mod tests {
             &mut Queue::default(),
             &Descendants::empty(),
             &chess,
-            IndexWithTurn { idx: 0, turn: Color::White }, // not used
+            IndexWithTurn {
+                idx: 0,
+                turn: Color::White,
+            }, // not used
             all_pos_idx,
         );
         assert_eq!(syzygy_check.max_index, 1907795);

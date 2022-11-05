@@ -11,7 +11,7 @@ use retroboard::shakmaty::{
     FromSetup, Outcome as ChessOutcome, Piece, Position, PositionError, Setup, Square,
 };
 use retroboard::RetroBoard;
-use std::{collections::VecDeque, fmt::Display};
+use std::collections::VecDeque;
 
 use indicatif::ProgressBar;
 
@@ -101,7 +101,7 @@ pub struct Queue {
     pub losing_pos_to_process: VecDeque<IndexWithTurn>,
 }
 
-pub const A1_H1_H8: Bitboard = Bitboard(0x80c0e0f0f8fcfeff);
+pub const A1_H1_H8: Bitboard = Bitboard(0x80c0_e0f0_f8fc_feff);
 // const A8_A2_H7: Bitboard = A1_H1_H8.flip_diagonal().without_const(A1_H8_DIAG);
 
 // type PosHandler = fn(&mut Common, &mut Queue, &Descendants, &Chess, u64, usize);
@@ -180,6 +180,7 @@ pub struct Generator<T> {
 }
 
 impl Generator<DefaultGeneratorHandler> {
+    #[must_use]
     pub fn new(common: Common) -> Self {
         Self::new_with_pos_handler(DefaultGeneratorHandler, common)
     }
@@ -261,7 +262,7 @@ impl<T: PosHandler> Generator<T> {
             let mut valid_setup = setup.clone();
             valid_setup.turn = color;
             self.common.counter += 1;
-            if self.common.counter % 100000 == 0 {
+            if self.common.counter % 100_000 == 0 {
                 self.pb.set_position(self.common.counter);
             }
             if let Ok(chess) = to_chess_with_illegal_checks(valid_setup.clone()) {
@@ -282,9 +283,10 @@ impl<T: PosHandler> Generator<T> {
                         .get_by_pos(&chess)
                         .outcome()
                 {
-                    if self.common.material.has_pawns() {
-                        panic!("Index {all_pos_idx} already generated, board: {rboard:?}");
-                    }
+                    assert!(
+                        !self.common.material.has_pawns(),
+                        "Index {all_pos_idx} already generated, board: {rboard:?}"
+                    );
                 } else {
                     // only handle the position if it's not a duplicate
                     self.pos_handler.handle_position(
@@ -333,14 +335,14 @@ struct Tagger {
 impl Tagger {
     pub fn new(common: Common) -> Self {
         let pb = common.get_progress_bar();
-        Self { pb, common }
+        Self { common, pb }
     }
 
     pub fn process_positions(&mut self, queue: &mut VecDeque<IndexWithTurn>) {
         self.common.counter = 0;
         while let Some(idx) = queue.pop_front() {
             self.common.counter += 1;
-            if self.common.counter % 100000 == 0 {
+            if self.common.counter % 100_000 == 0 {
                 self.pb.set_position(self.common.counter);
             }
             let rboard = restore_from_index(&self.common.material, idx);
@@ -384,7 +386,7 @@ impl Tagger {
         }
 
         // all positions that are unknown at the end are drawn
-        for report_bc in self.common.all_pos.iter_mut() {
+        for report_bc in &mut self.common.all_pos {
             for report in report_bc.iter_mut() {
                 if Report::Unprocessed(Outcome::Unknown) == Report::from(*report) {
                     *report = ReportU8::from(Report::Processed(Outcome::Draw))
@@ -404,6 +406,7 @@ impl From<Tagger> for Common {
 pub struct TableBaseBuilder;
 
 impl TableBaseBuilder {
+    #[must_use]
     pub fn build(material: Material, winner: Color) -> Common {
         let common = Common::new(material, winner);
         let mut generator = Generator::new(common);
@@ -435,7 +438,8 @@ impl TableBaseBuilder {
 }
 
 pub fn to_chess_with_illegal_checks(setup: Setup) -> Result<Chess, PositionError<Chess>> {
-    Chess::from_setup(setup, CastlingMode::Standard).or_else(|x| x.ignore_impossible_check())
+    Chess::from_setup(setup, CastlingMode::Standard)
+        .or_else(retroboard::shakmaty::PositionError::ignore_impossible_check)
 }
 #[cfg(test)]
 mod tests {
@@ -444,7 +448,7 @@ mod tests {
 
     #[test]
     fn test_a1_h8_bb() {
-        assert_eq!(A1_H1_H8, Bitboard(9277662557957324543))
+        assert_eq!(A1_H1_H8, Bitboard(9_277_662_557_957_324_543))
     }
 
     #[test]
