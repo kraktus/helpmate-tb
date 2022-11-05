@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 use clap::Parser;
 use env_logger::{Builder, Target};
 use itertools::Itertools;
-use log::{debug, info, LevelFilter, warn};
+use log::{debug, info, warn, LevelFilter};
 use retroboard::{
     shakmaty::{Bitboard, Board, Chess, Color, Color::*, Position, Setup, Square},
     RetroBoard,
@@ -101,7 +101,11 @@ fn check_mat(mat: Material) {
     gen.generate_positions();
     let (_, _, syzygy_res) = gen.get_result();
     if syzygy_res.duplicate_indexes.len() > 0 {
-        warn!("For {:?}, Found {:?} duplicates", mat, syzygy_res.duplicate_indexes.len());
+        warn!(
+            "For {:?}, Found {:?} duplicates",
+            mat,
+            syzygy_res.duplicate_indexes.len()
+        );
     }
     info!("Max index is {:?}", syzygy_res.max_index);
 }
