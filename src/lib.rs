@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 mod common;
 mod compression;
 mod encoding;
