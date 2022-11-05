@@ -1,9 +1,60 @@
+use std::collections::hash_map;
+
+/// Naive indexer compated to `indexer_syzygy`
+/// It only handles mapping the white king to the A1_D1_D4 triangle and then hardcoding the 462 positions two kings
+/// can have.
+/// It has the benefit of being fast and easily reversible
 use retroboard::shakmaty::{
-    CastlingMode, Color, Color::Black, Color::White, FromSetup, Piece, Role, Setup, Square,
+    Bitboard, ByColor, CastlingMode, Color, Color::Black, Color::White, FromSetup, Piece, Role,
+    Setup, Square,
 };
 
-use crate::Material;
+use crate::{
+    indexer_syzygy::{KK_IDX, Z0},
+    Material,
+};
 use retroboard::RetroBoard;
+
+pub const A1_D1_D4: Bitboard = Bitboard(135007759);
+
+// impossible king square setup because by construction the white king
+// should be in the A1_D1_D4 triangle
+const IMPOSSIBLE_KING_SQ: ByColor<Square> = ByColor {
+    white: Square::H8,
+    black: Square::H8,
+};
+
+const fn invert_kk_idx(kk_idx: [[u64; 64]; 10]) -> [ByColor<Square>; 462] {
+    let mut res: [ByColor<Square>; 462] = [IMPOSSIBLE_KING_SQ; 462];
+    let mut white_king_sq: u32 = 0;
+    loop {
+        // for loops not available in const context
+        let mut black_king_sq: u32 = 0;
+        loop {
+            let idx = kk_idx[white_king_sq as usize][black_king_sq as usize];
+            if idx != Z0 {
+                res[idx as usize] = ByColor {
+                    white: Square::new(white_king_sq),
+                    black: Square::new(black_king_sq),
+                }
+            }
+
+            // simulating for 0..64
+            black_king_sq += 1;
+            if black_king_sq == 64 {
+                break;
+            }
+        }
+        // simulating for 0..10
+        white_king_sq += 1;
+        if white_king_sq == 10 {
+            break;
+        }
+    }
+    res
+}
+
+const INV_KK_IDX: [ByColor<Square>; 462] = invert_kk_idx(KK_IDX);
 
 #[rustfmt::skip]
 const WHITE_KING_SQUARES_TO_INDEX: [u64; 32] = [
@@ -57,17 +108,10 @@ pub fn index(b: &RetroBoard) -> u64 {
 }
 
 /// ASSUME the white king is in the a1-d1-d4 corner already
+/// Do not take the turn into account the turn
 pub fn index_unchecked(b: &RetroBoard) -> u64 {
-    let mut idx: u64 = b.retro_turn() as u64;
-    idx *= 10;
-    let white_king_idx =
-        WHITE_KING_SQUARES_TO_INDEX[b.board().king_of(White).expect("white king") as usize];
-    if white_king_idx >= 10 {
-        panic!("Wrong king index, retroboard: {:?}", b);
-    }
-    idx += white_king_idx;
-    idx *= 64;
-    idx += b.board().king_of(Black).expect("black king") as u64;
+    let mut idx = KK_IDX[b.board().king_of(White).expect("white king") as usize]
+        [b.board().king_of(Black).expect("black king") as usize];
     for role in [
         Role::Pawn,
         Role::Knight,
@@ -105,6 +149,8 @@ pub fn restore_from_index(material: &Material, index: u64) -> RetroBoard {
             }
         }
     }
+    debug_assert!(idx < 462);
+    //let
     setup.board.set_piece_at(
         unsafe { Square::new_unchecked((idx % 64) as u32) },
         Black.king(),
@@ -126,6 +172,13 @@ mod tests {
     use super::*;
     use retroboard::shakmaty::{Bitboard, Board};
     use std::num::NonZeroU32;
+
+    #[test]
+    fn test_inv_king_idx() {
+        for bc in INV_KK_IDX {
+            assert!(A1_D1_D4.contains(bc.white))
+        }
+    }
 
     #[test]
     fn test_white_king_squares_to_index() {

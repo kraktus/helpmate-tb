@@ -1,6 +1,6 @@
 use crate::{
-    index, index_unchecked, restore_from_index, Common, Descendants, Material, Outcome, OutcomeU8,
-    Report, ReportU8, A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
+    index, index_unchecked, indexer::A1_D1_D4, restore_from_index, Common, Descendants, Material,
+    Outcome, OutcomeU8, Report, ReportU8, A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
 };
 use log::debug;
 use retroboard::shakmaty::{
@@ -281,9 +281,7 @@ impl<T: PosHandler> Generator<T> {
     pub fn generate_positions(&mut self) {
         let piece_vec = self.common.material.pieces_without_white_king();
         self.common.counter = 0;
-        let white_king_bb = Bitboard(135007759); // a1-d1-d4 triangle
-        debug!("{:?}", white_king_bb.0);
-        for white_king_sq in white_king_bb {
+        for white_king_sq in A1_D1_D4 {
             let mut new_setup = Setup::empty();
             new_setup.board.set_piece_at(white_king_sq, White.king());
             self.generate_positions_internal(&piece_vec, new_setup, (White.king(), white_king_sq))

@@ -69,11 +69,11 @@ const MULT_TWIST: [u64; 64] = [
 
 /// Unused entry. Initialized to `-1`, so that most uses will cause noticable
 /// overflow in debug mode.
-const Z0: u64 = u64::max_value();
+pub const Z0: u64 = u64::max_value();
 
 /// Encoding of all 462 configurations of two not-connected kings.
 #[rustfmt::skip]
-const KK_IDX: [[u64; 64]; 10] = [[
+pub const KK_IDX: [[u64; 64]; 10] = [[
      Z0,  Z0,  Z0,   0,   1,   2,   3,   4,
      Z0,  Z0,  Z0,   5,   6,   7,   8,   9,
      10,  11,  12,  13,  14,  15,  16,  17,
