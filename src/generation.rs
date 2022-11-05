@@ -16,7 +16,6 @@ use std::collections::VecDeque;
 use indicatif::ProgressBar;
 
 // Allow to use both `Chess` and `RetroBoard`
-// TODO replace all `dyn SideToMove` by enum using `enum_trait` crate for example
 pub trait SideToMove {
     // side to **move**, so opposite of side to unmove
     fn side_to_move(&self) -> Color;
@@ -46,10 +45,10 @@ pub trait SideToMoveGetter {
     type T;
     // chose `get_by_color` and not `get` not to shadow the original methods
     fn get_by_color(&self, color: Color) -> Self::T;
-    fn get_by_pos(&self, pos: &dyn SideToMove) -> Self::T {
+    fn get_by_pos(&self, pos: &impl SideToMove) -> Self::T {
         self.get_by_color(pos.side_to_move())
     }
-    fn set_to(&mut self, pos: &dyn SideToMove, t: Self::T);
+    fn set_to(&mut self, pos: &impl SideToMove, t: Self::T);
 }
 
 impl SideToMoveGetter for ByColor<ReportU8> {
@@ -57,7 +56,7 @@ impl SideToMoveGetter for ByColor<ReportU8> {
     fn get_by_color(&self, color: Color) -> Self::T {
         self.get(color).into()
     }
-    fn set_to(&mut self, pos: &dyn SideToMove, t: Self::T) {
+    fn set_to(&mut self, pos: &impl SideToMove, t: Self::T) {
         let x_mut = self.get_mut(pos.side_to_move());
         *x_mut = t.into();
     }
@@ -68,7 +67,7 @@ impl SideToMoveGetter for ByColor<OutcomeU8> {
     fn get_by_color(&self, color: Color) -> Self::T {
         self.get(color).into()
     }
-    fn set_to(&mut self, pos: &dyn SideToMove, t: Self::T) {
+    fn set_to(&mut self, pos: &impl SideToMove, t: Self::T) {
         let x_mut = self.get_mut(pos.side_to_move());
         *x_mut = t.into();
     }

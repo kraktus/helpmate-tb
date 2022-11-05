@@ -477,7 +477,7 @@ impl Table {
         }
     }
 
-    pub fn encode(&self, pos: &dyn SideToMove) -> usize {
+    pub fn encode(&self, pos: &impl SideToMove) -> usize {
         self.encode_checked(pos).unwrap_or_else(|| {
             panic!(
                 "Wrong position for the table, board {}, turn {:?}",
@@ -489,7 +489,7 @@ impl Table {
 
     /// Given a position, determine the unique (modulo symmetries) index into
     /// the corresponding subtable.
-    pub fn encode_checked(&self, pos: &dyn SideToMove) -> Option<usize> {
+    pub fn encode_checked(&self, pos: &impl SideToMove) -> Option<usize> {
         let material = Material::from_board(pos.board());
 
         let symmetric_btm = material.is_symmetric() && pos.side_to_move().is_black();
