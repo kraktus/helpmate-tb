@@ -1,4 +1,4 @@
-use std::collections::hash_map;
+
 
 /// Naive indexer compated to `indexer_syzygy`
 /// It only handles mapping the white king to the A1_D1_D4 triangle and then hardcoding the 462 positions two kings
