@@ -39,7 +39,7 @@ pub const TRIANGLE: [u64; 64] = [
 pub type Pieces = ArrayVec<Piece, MAX_PIECES>;
 
 /// Inverse of `TRIANGLE`.
-const INV_TRIANGLE: [usize; 10] = [1, 2, 3, 10, 11, 19, 0, 9, 18, 27];
+pub const INV_TRIANGLE: [usize; 10] = [1, 2, 3, 10, 11, 19, 0, 9, 18, 27];
 
 /// Maps the b1-h1-h7 triangle to `0..=27`.
 #[rustfmt::skip]

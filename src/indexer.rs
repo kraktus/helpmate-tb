@@ -9,7 +9,7 @@ use retroboard::shakmaty::{
 
 use crate::{
     generation::{WithBoard, A1_H1_H8},
-    indexer_syzygy::{KK_IDX, TRIANGLE, Z0},
+    indexer_syzygy::{KK_IDX, TRIANGLE, Z0, INV_TRIANGLE},
     Material, A1_H8_DIAG,
 };
 use retroboard::RetroBoard;
@@ -25,16 +25,16 @@ const IMPOSSIBLE_KING_SQ: ByColor<Square> = ByColor {
 
 const fn invert_kk_idx(kk_idx: [[u64; 64]; 10]) -> [ByColor<Square>; 462] {
     let mut res: [ByColor<Square>; 462] = [IMPOSSIBLE_KING_SQ; 462];
-    let mut white_king_sq: u32 = 0;
+    let mut white_king_sq: usize = 0;
     loop {
         // for loops not available in const context
-        let mut black_king_sq: u32 = 0;
+        let mut black_king_sq: usize = 0;
         loop {
-            let idx = kk_idx[white_king_sq as usize][black_king_sq as usize];
+            let idx = kk_idx[white_king_sq as usize][black_king_sq];
             if idx != Z0 {
                 res[idx as usize] = ByColor {
-                    white: WHITE_KING_INDEX_TO_SQUARE[white_king_sq as usize],
-                    black: Square::new(black_king_sq),
+                    white: Square::new(INV_TRIANGLE[white_king_sq] as u32),
+                    black: Square::new(black_king_sq as u32),
                 }
             }
 
@@ -196,13 +196,11 @@ mod tests {
     }
 
     #[test]
-    fn test_index_unchecked_overflow() {
+    fn test_index_unchecked_high_value_index() {
         let high_value_board = RetroBoard::new_no_pockets("3BNQQk/8/8/8/3K4/8/8/8 b - -").unwrap();
         let idx = index_unchecked(&high_value_board);
         let config = mat("KBNQQvK");
-        println!("{config:?}");
         let high_value_from_idx = restore_from_index_board(&config, idx);
-        assert_eq!(idx, 21474033534);
         assert_eq!(high_value_board.board(), &high_value_from_idx);
     }
 
