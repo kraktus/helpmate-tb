@@ -67,19 +67,6 @@ const WHITE_KING_SQUARES_TO_TRANSFO: [u64; 64] = [
     5, 5, 5, 5, 6, 6, 6, 6,
 ];
 
-const WHITE_KING_INDEX_TO_SQUARE: [Square; 10] = [
-    Square::A1,
-    Square::B1,
-    Square::C1,
-    Square::D1,
-    Square::B2,
-    Square::C2,
-    Square::D2,
-    Square::C3,
-    Square::D3,
-    Square::D4,
-];
-
 pub fn index(b: &impl WithBoard) -> u64 {
     let mut board_check = b.board().clone();
     let white_king_sq = b.board().king_of(White).expect("white king");
@@ -175,20 +162,6 @@ mod tests {
         for bc in INV_KK_IDX {
             assert!(A1_D1_D4.contains(bc.white))
         }
-    }
-
-    #[test]
-    fn test_white_king_index_to_squares() {
-        assert_eq!(WHITE_KING_INDEX_TO_SQUARE[0], Square::A1);
-        assert_eq!(WHITE_KING_INDEX_TO_SQUARE[1], Square::B1);
-        assert_eq!(WHITE_KING_INDEX_TO_SQUARE[2], Square::C1);
-        assert_eq!(WHITE_KING_INDEX_TO_SQUARE[3], Square::D1);
-        assert_eq!(WHITE_KING_INDEX_TO_SQUARE[4], Square::B2);
-        assert_eq!(WHITE_KING_INDEX_TO_SQUARE[5], Square::C2);
-        assert_eq!(WHITE_KING_INDEX_TO_SQUARE[6], Square::D2);
-        assert_eq!(WHITE_KING_INDEX_TO_SQUARE[7], Square::C3);
-        assert_eq!(WHITE_KING_INDEX_TO_SQUARE[8], Square::D3);
-        assert_eq!(WHITE_KING_INDEX_TO_SQUARE[9], Square::D4);
     }
 
     fn mat(fen: &str) -> Material {
