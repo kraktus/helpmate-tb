@@ -66,13 +66,13 @@ impl MaterialSide {
         }
     }
 
-    fn from_str_part(s: &str) -> Result<Self, ()> {
+    fn from_str_part(s: &str) -> Option<Self> {
         let mut side = Self::empty();
         for ch in s.as_bytes() {
-            let role = Role::from_char(char::from(*ch)).ok_or(())?;
+            let role = Role::from_char(char::from(*ch))?;
             *side.by_role.get_mut(role) += 1;
         }
-        Ok(side)
+        Some(side)
     }
 
     pub fn count(&self) -> usize {
@@ -286,26 +286,14 @@ impl Material {
         }
     }
 
-    pub fn from_iter<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = Piece>,
-    {
-        let mut by_color = ByColor::new_with(|_| MaterialSide::empty());
-        for piece in iter {
-            *by_color.get_mut(piece.color).by_role.get_mut(piece.role) += 1;
-        }
-        Self {
-            by_color: by_color.into(),
-        }
-    }
-
-    pub fn from_str(s: &str) -> Result<Self, ()> {
+    #[allow(clippy::should_implement_trait)] // no idea how to rename, but don't want to have it return a result
+    pub fn from_str(s: &str) -> Option<Self> {
         if s.len() > 64 + 1 {
-            return Err(());
+            return None;
         }
 
-        let (white, black) = s.split_once('v').ok_or(())?;
-        Ok(Self {
+        let (white, black) = s.split_once('v')?;
+        Some(Self {
             by_color: ByColor {
                 white: MaterialSide::from_str_part(white)?,
                 black: MaterialSide::from_str_part(black)?,
@@ -446,6 +434,21 @@ impl Material {
 
     pub fn pieces_without_white_king(&self) -> Pieces {
         self.pieces_with_white_king(false)
+    }
+}
+
+impl FromIterator<Piece> for Material {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = Piece>,
+    {
+        let mut by_color = ByColor::new_with(|_| MaterialSide::empty());
+        for piece in iter {
+            *by_color.get_mut(piece.color).by_role.get_mut(piece.role) += 1;
+        }
+        Self {
+            by_color: by_color.into(),
+        }
     }
 }
 
