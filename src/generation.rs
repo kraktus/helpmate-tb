@@ -93,7 +93,7 @@ pub struct Queue {
     pub losing_pos_to_process: VecDeque<u64>,
 }
 
-const A1_H1_H8: Bitboard = Bitboard(0x80c0e0f0f8fcfeff);
+pub const A1_H1_H8: Bitboard = Bitboard(0x80c0e0f0f8fcfeff);
 // const A8_A2_H7: Bitboard = A1_H1_H8.flip_diagonal().without_const(A1_H8_DIAG);
 
 // type PosHandler = fn(&mut Common, &mut Queue, &Descendants, &Chess, u64, usize);

@@ -8,8 +8,9 @@ use retroboard::shakmaty::{
 };
 
 use crate::{
-    indexer_syzygy::{KK_IDX, Z0, TRIANGLE},
-    Material, generation::WithBoard,
+    generation::{WithBoard, A1_H1_H8},
+    indexer_syzygy::{KK_IDX, TRIANGLE, Z0},
+    Material, A1_H8_DIAG,
 };
 use retroboard::RetroBoard;
 
@@ -55,14 +56,6 @@ const fn invert_kk_idx(kk_idx: [[u64; 64]; 10]) -> [ByColor<Square>; 462] {
 const INV_KK_IDX: [ByColor<Square>; 462] = invert_kk_idx(KK_IDX);
 
 #[rustfmt::skip]
-const WHITE_KING_SQUARES_TO_INDEX: [usize; 32] = [
-    0,  1, 2, 3, 10, 10, 10, 10,
-   10,  4, 5, 6, 10, 10, 10, 10,
-   10, 10, 7, 8, 10, 10, 10, 10,
-   10, 10,10, 9, 10, 10, 10, 10,
-];
-
-#[rustfmt::skip]
 const WHITE_KING_SQUARES_TO_TRANSFO: [u64; 64] = [
     0, 0, 0, 0, 2, 2, 2, 2,
     1, 0, 0, 0, 2, 2, 2, 3,
@@ -89,8 +82,10 @@ const WHITE_KING_INDEX_TO_SQUARE: [Square; 10] = [
 
 pub fn index(b: &impl WithBoard) -> u64 {
     let mut board_check = b.board().clone();
-    let board_transfo_needed =
-        WHITE_KING_SQUARES_TO_TRANSFO[b.board().king_of(White).expect("white king") as usize];
+    let white_king_sq = b.board().king_of(White).expect("white king");
+    // considering using a bitflag if this complexify too much
+    let board_transfo_needed = WHITE_KING_SQUARES_TO_TRANSFO[white_king_sq as usize];
+
     match board_transfo_needed {
         0 => (),
         1 => board_check.flip_diagonal(),
@@ -102,10 +97,17 @@ pub fn index(b: &impl WithBoard) -> u64 {
         7 => board_check.flip_anti_diagonal(),
         _ => unreachable!("Only 7 transformations expected"),
     };
+
+    if A1_H8_DIAG.contains(board_check.king_of(White).expect("white king"))
+        && !A1_H1_H8.contains(board_check.king_of(Black).expect("black king"))
+    {
+        board_check.flip_diagonal()
+    }
     index_unchecked(&board_check)
 }
 
 /// ASSUME the white king is in the a1-d1-d4 corner already
+/// If the white king is on the A1_H8 diagonal, the black king MUST BE in the A1_H1_H8 triangle
 /// Do not take the turn into account the turn
 pub fn index_unchecked(b: &impl WithBoard) -> u64 {
     let mut idx = KK_IDX
@@ -173,20 +175,6 @@ mod tests {
         for bc in INV_KK_IDX {
             assert!(A1_D1_D4.contains(bc.white))
         }
-    }
-
-    #[test]
-    fn test_white_king_squares_to_index() {
-        assert_eq!(WHITE_KING_SQUARES_TO_INDEX[Square::A1 as usize], 0);
-        assert_eq!(WHITE_KING_SQUARES_TO_INDEX[Square::B1 as usize], 1);
-        assert_eq!(WHITE_KING_SQUARES_TO_INDEX[Square::C1 as usize], 2);
-        assert_eq!(WHITE_KING_SQUARES_TO_INDEX[Square::D1 as usize], 3);
-        assert_eq!(WHITE_KING_SQUARES_TO_INDEX[Square::B2 as usize], 4);
-        assert_eq!(WHITE_KING_SQUARES_TO_INDEX[Square::C2 as usize], 5);
-        assert_eq!(WHITE_KING_SQUARES_TO_INDEX[Square::D2 as usize], 6);
-        assert_eq!(WHITE_KING_SQUARES_TO_INDEX[Square::C3 as usize], 7);
-        assert_eq!(WHITE_KING_SQUARES_TO_INDEX[Square::D3 as usize], 8);
-        assert_eq!(WHITE_KING_SQUARES_TO_INDEX[Square::D4 as usize], 9);
     }
 
     #[test]
