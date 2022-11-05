@@ -166,7 +166,7 @@ mod tests {
         let config = mat("KBNQQvK");
         println!("{config:?}");
         let high_value_from_idx = restore_from_index(&config, idx);
-        assert_eq!(idx, 21474565947);
+        assert_eq!(idx, 21474033534);
         assert_eq!(high_value_board, high_value_from_idx);
     }
 
