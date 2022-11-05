@@ -1,17 +1,15 @@
-
-
 /// Naive indexer compated to `indexer_syzygy`
 /// It only handles mapping the white king to the A1_D1_D4 triangle and then hardcoding the 462 positions two kings
 /// can have.
 /// It has the benefit of being fast and easily reversible
 use retroboard::shakmaty::{
-    Bitboard, ByColor, CastlingMode, Color, Color::Black, Color::White, FromSetup, Piece, Role,
-    Setup, Square,
+    Bitboard, Board, ByColor, CastlingMode, Color, Color::Black, Color::White, FromSetup, Piece,
+    Role, Setup, Square,
 };
 
 use crate::{
     indexer_syzygy::{KK_IDX, Z0},
-    Material,
+    Material, SideToMove,
 };
 use retroboard::RetroBoard;
 
@@ -34,7 +32,7 @@ const fn invert_kk_idx(kk_idx: [[u64; 64]; 10]) -> [ByColor<Square>; 462] {
             let idx = kk_idx[white_king_sq as usize][black_king_sq as usize];
             if idx != Z0 {
                 res[idx as usize] = ByColor {
-                    white: Square::new(white_king_sq),
+                    white: WHITE_KING_INDEX_TO_SQUARE[white_king_sq as usize],
                     black: Square::new(black_king_sq),
                 }
             }
@@ -57,7 +55,7 @@ const fn invert_kk_idx(kk_idx: [[u64; 64]; 10]) -> [ByColor<Square>; 462] {
 const INV_KK_IDX: [ByColor<Square>; 462] = invert_kk_idx(KK_IDX);
 
 #[rustfmt::skip]
-const WHITE_KING_SQUARES_TO_INDEX: [u64; 32] = [
+const WHITE_KING_SQUARES_TO_INDEX: [usize; 32] = [
     0,  1, 2, 3, 10, 10, 10, 10,
    10,  4, 5, 6, 10, 10, 10, 10,
    10, 10, 7, 8, 10, 10, 10, 10,
@@ -109,8 +107,9 @@ pub fn index(b: &RetroBoard) -> u64 {
 
 /// ASSUME the white king is in the a1-d1-d4 corner already
 /// Do not take the turn into account the turn
-pub fn index_unchecked(b: &RetroBoard) -> u64 {
-    let mut idx = KK_IDX[b.board().king_of(White).expect("white king") as usize]
+pub fn index_unchecked(b: &impl SideToMove) -> u64 {
+    let mut idx = KK_IDX
+        [WHITE_KING_SQUARES_TO_INDEX[b.board().king_of(White).expect("white king") as usize]]
         [b.board().king_of(Black).expect("black king") as usize];
     for role in [
         Role::Pawn,
@@ -130,8 +129,14 @@ pub fn index_unchecked(b: &RetroBoard) -> u64 {
 }
 
 pub fn restore_from_index(material: &Material, index: u64) -> RetroBoard {
-    let mut idx = index;
     let mut setup = Setup::empty();
+    setup.board = restore_from_index_board(material, index);
+    RetroBoard::from_setup(setup, CastlingMode::Standard).expect("Right setup")
+}
+
+pub fn restore_from_index_board(material: &Material, index: u64) -> Board {
+    let mut idx = index;
+    let mut board = Board::empty();
     for role in [
         Role::Queen,
         Role::Rook,
@@ -142,29 +147,16 @@ pub fn restore_from_index(material: &Material, index: u64) -> RetroBoard {
         for color in [Black, White] {
             let piece = Piece { role, color };
             for _ in 0..material.by_piece(piece) {
-                setup
-                    .board
-                    .set_piece_at(unsafe { Square::new_unchecked((idx % 64) as u32) }, piece);
+                board.set_piece_at(unsafe { Square::new_unchecked((idx % 64) as u32) }, piece);
                 idx /= 64;
             }
         }
     }
-    debug_assert!(idx < 462);
-    //let
-    setup.board.set_piece_at(
-        unsafe { Square::new_unchecked((idx % 64) as u32) },
-        Black.king(),
-    );
-    idx /= 64;
-    setup.board.set_piece_at(
-        WHITE_KING_INDEX_TO_SQUARE[(idx % 10) as usize],
-        White.king(),
-    );
-    idx /= 10;
-
-    // index takes as an input a `RetroBoard`, and `retro_turn` == !`turn` so to return the right retro-turn, we need to put the reverse turn.
-    setup.turn = Color::from_white(idx == 0);
-    RetroBoard::from_setup(setup, CastlingMode::Standard).expect("Right setup")
+    assert!(idx < 462);
+    let kings_sq = INV_KK_IDX[idx as usize];
+    board.set_piece_at(kings_sq.black, Black.king());
+    board.set_piece_at(kings_sq.white, White.king());
+    board //RetroBoard::from_setup(setup, CastlingMode::Standard).expect("Right setup")
 }
 
 #[cfg(test)]
@@ -218,9 +210,9 @@ mod tests {
         let idx = index_unchecked(&high_value_board);
         let config = mat("KBNQQvK");
         println!("{config:?}");
-        let high_value_from_idx = restore_from_index(&config, idx);
+        let high_value_from_idx = restore_from_index_board(&config, idx);
         assert_eq!(idx, 21474033534);
-        assert_eq!(high_value_board, high_value_from_idx);
+        assert_eq!(high_value_board.board(), &high_value_from_idx);
     }
 
     #[test]
@@ -228,8 +220,8 @@ mod tests {
         let two_kings = RetroBoard::new_no_pockets("8/7k/8/8/3K4/8/8/8 b").unwrap();
         let idx = index_unchecked(&two_kings);
         let config = mat("KvK");
-        let two_kings_from_idx = restore_from_index(&config, idx);
-        assert_eq!(two_kings, two_kings_from_idx);
+        let two_kings_from_idx = restore_from_index_board(&config, idx);
+        assert_eq!(two_kings.board(), &two_kings_from_idx);
     }
 
     #[test]
@@ -241,10 +233,10 @@ mod tests {
         let idx_swapped = index_unchecked(&knights_color_swapped);
         assert_ne!(idx, idx_swapped);
         let config = mat("KBNvKN");
-        let knights_from_idx = restore_from_index(&config, idx);
-        let knights_swapped_from_idx = restore_from_index(&config, idx_swapped);
-        assert_eq!(knights, knights_from_idx);
-        assert_eq!(knights_color_swapped, knights_swapped_from_idx);
+        let knights_from_idx = restore_from_index_board(&config, idx);
+        let knights_swapped_from_idx = restore_from_index_board(&config, idx_swapped);
+        assert_eq!(knights.board(), &knights_from_idx);
+        assert_eq!(knights_color_swapped.board(), &knights_swapped_from_idx);
     }
 
     #[test]
@@ -268,7 +260,7 @@ mod tests {
                 RetroBoard::from_setup(setup, CastlingMode::Standard).expect("Valid setup");
             let idx = index(&rboard);
             let config = mat("KvK");
-            let rboard_restored = restore_from_index(&config, idx);
+            let rboard_restored = restore_from_index_board(&config, idx);
             let white_king_bb = Bitboard::EMPTY
                 | Square::A1
                 | Square::B1
@@ -280,7 +272,7 @@ mod tests {
                 | Square::C3
                 | Square::D3
                 | Square::D4;
-            assert!(white_king_bb.contains(rboard_restored.king_of(White)));
+            assert!(white_king_bb.contains(rboard_restored.king_of(White).expect("White king")));
         }
     }
 }
