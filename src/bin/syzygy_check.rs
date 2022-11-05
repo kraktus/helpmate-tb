@@ -16,7 +16,7 @@ use retroboard::{
 };
 
 use helpmate_tb::{
-    to_chess_with_illegal_checks, Common, Descendants, Generator, Material, PosHandler, Queue,
+    to_chess_with_illegal_checks, Common, Descendants, Generator, Material, PosHandler, Queue, IndexWithTurn,
 };
 
 type Transfo = (
@@ -67,7 +67,7 @@ impl PosHandler for SyzygyCheck {
         _: &mut Queue,
         _: &Descendants,
         chess: &Chess,
-        _: u64,
+        _: IndexWithTurn,
         all_pos_idx: usize,
     ) {
         self.max_index = std::cmp::max(self.max_index, all_pos_idx);

@@ -8,9 +8,9 @@ use retroboard::shakmaty::{
 };
 
 use crate::{
-    generation::{WithBoard, A1_H1_H8},
+    generation::{WithBoard, A1_H1_H8, IndexWithTurn},
     indexer_syzygy::{INV_TRIANGLE, KK_IDX, TRIANGLE, Z0},
-    Material, A1_H8_DIAG,
+    Material, A1_H8_DIAG, SideToMove,
 };
 use retroboard::RetroBoard;
 
@@ -67,7 +67,15 @@ const WHITE_KING_SQUARES_TO_TRANSFO: [u64; 64] = [
     5, 5, 5, 5, 6, 6, 6, 6,
 ];
 
-pub fn index(b: &impl WithBoard) -> u64 {
+pub fn index(b: &impl SideToMove) -> IndexWithTurn {
+    let idx = index_without_turn(b);
+    IndexWithTurn {
+        idx, 
+        turn: b.side_to_move()
+    }
+}
+
+fn index_without_turn(b: &impl WithBoard) -> u64 {
     let mut board_check = b.board().clone();
     let white_king_sq = b.board().king_of(White).expect("white king");
     // considering using a bitflag if this complexify too much
@@ -90,13 +98,21 @@ pub fn index(b: &impl WithBoard) -> u64 {
     {
         board_check.flip_diagonal()
     }
-    index_unchecked(&board_check)
+    index_unchecked_without_turn(&board_check)
+}
+
+pub fn index_unchecked(b: &impl SideToMove) -> IndexWithTurn {
+    let idx = index_unchecked_without_turn(b);
+    IndexWithTurn {
+        idx, 
+        turn: b.side_to_move()
+    }
 }
 
 /// ASSUME the white king is in the a1-d1-d4 corner already
 /// If the white king is on the A1_H8 diagonal, the black king MUST BE in the A1_H1_H8 triangle
 /// Do not take the turn into account the turn
-pub fn index_unchecked(b: &impl WithBoard) -> u64 {
+pub fn index_unchecked_without_turn(b: &impl WithBoard) -> u64 {
     let mut idx = KK_IDX[TRIANGLE[b.board().king_of(White).expect("white king") as usize] as usize]
         [b.board().king_of(Black).expect("black king") as usize];
     println!("{idx:?}");
@@ -118,10 +134,10 @@ pub fn index_unchecked(b: &impl WithBoard) -> u64 {
     idx
 }
 
-// DEBUG now the turn is not taken into account
-pub fn restore_from_index(material: &Material, index: u64) -> RetroBoard {
+pub fn restore_from_index(material: &Material, index: IndexWithTurn) -> RetroBoard {
     let mut setup = Setup::empty();
-    setup.board = restore_from_index_board(material, index);
+    setup.board = restore_from_index_board(material, index.idx);
+    setup.turn = index.turn;
     RetroBoard::from_setup(setup, CastlingMode::Standard).expect("Right setup")
 }
 

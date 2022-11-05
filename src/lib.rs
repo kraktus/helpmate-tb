@@ -18,7 +18,7 @@ pub use compression::EncoderDecoder;
 pub use encoding::get_info_table;
 pub use generation::{
     to_chess_with_illegal_checks, Generator, PosHandler, Queue, SideToMove, SideToMoveGetter,
-    TableBaseBuilder,
+    TableBaseBuilder, IndexWithTurn
 };
 pub use indexer::{index, index_unchecked, restore_from_index};
 pub use indexer_syzygy::{Pieces, Table, A1_H8_DIAG, A8_H1_DIAG};

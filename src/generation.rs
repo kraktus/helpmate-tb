@@ -11,7 +11,7 @@ use retroboard::shakmaty::{
     FromSetup, Outcome as ChessOutcome, Piece, Position, PositionError, Setup, Square,
 };
 use retroboard::RetroBoard;
-use std::collections::VecDeque;
+use std::{collections::VecDeque, fmt::Display};
 
 use indicatif::ProgressBar;
 
@@ -86,11 +86,19 @@ impl SideToMoveGetter for ByColor<OutcomeU8> {
         *x_mut = t.into();
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct IndexWithTurn {
+    pub idx: u64,
+    pub turn: Color,
+}
+
+// the index is independant of the turn, so must be stored separately
 #[derive(Debug, Clone, Default)]
 pub struct Queue {
     // depending on the material configuration can be either won or drawn position
-    pub desired_outcome_pos_to_process: VecDeque<u64>,
-    pub losing_pos_to_process: VecDeque<u64>,
+    pub desired_outcome_pos_to_process: VecDeque<IndexWithTurn>,
+    pub losing_pos_to_process: VecDeque<IndexWithTurn>,
 }
 
 pub const A1_H1_H8: Bitboard = Bitboard(0x80c0e0f0f8fcfeff);
@@ -105,7 +113,7 @@ pub trait PosHandler {
         queue: &mut Queue,
         tablebase: &Descendants,
         chess: &Chess,
-        idx: u64,
+        idx: IndexWithTurn,
         all_pos_idx: usize,
     );
 }
@@ -121,7 +129,7 @@ impl PosHandler for DefaultGeneratorHandler {
         queue: &mut Queue,
         tablebase: &Descendants,
         chess: &Chess,
-        idx: u64,
+        idx: IndexWithTurn,
         all_pos_idx: usize,
     ) {
         match chess.outcome() {
@@ -328,7 +336,7 @@ impl Tagger {
         Self { pb, common }
     }
 
-    pub fn process_positions(&mut self, queue: &mut VecDeque<u64>) {
+    pub fn process_positions(&mut self, queue: &mut VecDeque<IndexWithTurn>) {
         self.common.counter = 0;
         while let Some(idx) = queue.pop_front() {
             self.common.counter += 1;
@@ -344,8 +352,8 @@ impl Tagger {
                 .unwrap_or_else(|| {
                     panic!(
                         "idx get_by_pos {}, idx recomputed {}, rboard {:?}",
-                        idx,
-                        index(&rboard),
+                        idx.idx,
+                        index(&rboard).idx,
                         rboard
                     )
                 })
