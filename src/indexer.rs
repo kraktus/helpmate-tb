@@ -188,7 +188,7 @@ mod tests {
         let high_value_board = RetroBoard::new_no_pockets("3BNQQk/8/8/8/3K4/8/8/8 b - -").unwrap();
         let idx = index_unchecked(&high_value_board);
         let config = mat("KBNQQvK");
-        let high_value_from_idx = restore_from_index_board(&config, idx);
+        let high_value_from_idx = restore_from_index_board(&config, idx.idx);
         assert_eq!(high_value_board.board(), &high_value_from_idx);
     }
 
@@ -197,7 +197,7 @@ mod tests {
         let two_kings = RetroBoard::new_no_pockets("8/7k/8/8/3K4/8/8/8 b").unwrap();
         let idx = index_unchecked(&two_kings);
         let config = mat("KvK");
-        let two_kings_from_idx = restore_from_index_board(&config, idx);
+        let two_kings_from_idx = restore_from_index_board(&config, idx.idx);
         assert_eq!(two_kings.board(), &two_kings_from_idx);
     }
 
@@ -210,8 +210,8 @@ mod tests {
         let idx_swapped = index_unchecked(&knights_color_swapped);
         assert_ne!(idx, idx_swapped);
         let config = mat("KBNvKN");
-        let knights_from_idx = restore_from_index_board(&config, idx);
-        let knights_swapped_from_idx = restore_from_index_board(&config, idx_swapped);
+        let knights_from_idx = restore_from_index_board(&config, idx.idx);
+        let knights_swapped_from_idx = restore_from_index_board(&config, idx_swapped.idx);
         assert_eq!(knights.board(), &knights_from_idx);
         assert_eq!(knights_color_swapped.board(), &knights_swapped_from_idx);
     }
@@ -238,7 +238,7 @@ mod tests {
             println!("{rboard:?}");
             let idx = index(&rboard);
             let config = mat("KvK");
-            let rboard_restored = restore_from_index_board(&config, idx);
+            let rboard_restored = restore_from_index_board(&config, idx.idx);
             let white_king_bb = Bitboard::EMPTY
                 | Square::A1
                 | Square::B1

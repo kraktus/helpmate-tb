@@ -216,7 +216,7 @@ mod tests {
             &mut Queue::default(),
             &Descendants::empty(),
             &chess,
-            0, // not used
+            IndexWithTurn { idx: 0, turn: Color::White }, // not used
             all_pos_idx,
         );
         assert_eq!(syzygy_check.max_index, 1907795);
