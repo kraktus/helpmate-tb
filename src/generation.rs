@@ -231,7 +231,7 @@ impl<T: PosHandler> Generator<T> {
             // by convention the former piece put on the board
             // should have a "higher" square than the later to avoid
             // generating the same position but with identical pieces swapped
-            
+
             Bitboard::from_iter(
                 (0..last_square.into()).map(unsafe { |sq| Square::new_unchecked(sq) }),
             )
@@ -330,56 +330,51 @@ impl Tagger {
 
     pub fn process_positions(&mut self, queue: &mut VecDeque<u64>) {
         self.common.counter = 0;
-        loop {
-            if let Some(idx) = queue.pop_front() {
-                self.common.counter += 1;
-                if self.common.counter % 100000 == 0 {
-                    self.pb.set_position(self.common.counter);
-                }
-                let rboard = restore_from_index(&self.common.material, idx);
-                let out: Outcome = self
-                    .common
-                    .all_pos
-                    .get(self.common.index_table().encode(&rboard))
-                    .map(|bc| bc.get_by_pos(&rboard))
-                    .unwrap_or_else(|| {
-                        panic!(
-                            "idx get_by_pos {}, idx recomputed {}, rboard {:?}",
-                            idx,
-                            index(&rboard),
-                            rboard
-                        )
-                    })
-                    .outcome();
-                assert_ne!(out, Outcome::Undefined);
-                for m in rboard.legal_unmoves() {
-                    let mut rboard_after_unmove = rboard.clone();
-                    rboard_after_unmove.push(&m);
-                    // let chess_after_unmove: Chess = rboard_after_unmove.clone().into();
-                    let idx_after_unmove = index(&rboard_after_unmove);
-                    let idx_all_pos_after_unmove =
-                        self.common.index_table().encode(&rboard_after_unmove);
-                    match self.common.all_pos[idx_all_pos_after_unmove]
-                        .get_by_pos(&rboard_after_unmove)
-                    {
-                        Report::Processed(Outcome::Undefined) => {
-                            panic!("pos before: {rboard:?}, and after {m:?} pos not found, illegal? {rboard_after_unmove:?}, idx: {idx_all_pos_after_unmove:?}")
-                        }
-                        Report::Unprocessed(fetched_outcome) => {
-                            // we know the position is unprocessed
-                            queue.push_back(idx_after_unmove);
-                            let processed_outcome =
-                                Report::Processed((out + 1).max(fetched_outcome));
-                            self.common.all_pos[idx_all_pos_after_unmove]
-                                .set_to(&rboard_after_unmove, processed_outcome);
-                        }
-                        Report::Processed(_) => (),
+        while let Some(idx) = queue.pop_front() {
+            self.common.counter += 1;
+            if self.common.counter % 100000 == 0 {
+                self.pb.set_position(self.common.counter);
+            }
+            let rboard = restore_from_index(&self.common.material, idx);
+            let out: Outcome = self
+                .common
+                .all_pos
+                .get(self.common.index_table().encode(&rboard))
+                .map(|bc| bc.get_by_pos(&rboard))
+                .unwrap_or_else(|| {
+                    panic!(
+                        "idx get_by_pos {}, idx recomputed {}, rboard {:?}",
+                        idx,
+                        index(&rboard),
+                        rboard
+                    )
+                })
+                .outcome();
+            assert_ne!(out, Outcome::Undefined);
+            for m in rboard.legal_unmoves() {
+                let mut rboard_after_unmove = rboard.clone();
+                rboard_after_unmove.push(&m);
+                // let chess_after_unmove: Chess = rboard_after_unmove.clone().into();
+                let idx_after_unmove = index(&rboard_after_unmove);
+                let idx_all_pos_after_unmove =
+                    self.common.index_table().encode(&rboard_after_unmove);
+                match self.common.all_pos[idx_all_pos_after_unmove].get_by_pos(&rboard_after_unmove)
+                {
+                    Report::Processed(Outcome::Undefined) => {
+                        panic!("pos before: {rboard:?}, and after {m:?} pos not found, illegal? {rboard_after_unmove:?}, idx: {idx_all_pos_after_unmove:?}")
                     }
+                    Report::Unprocessed(fetched_outcome) => {
+                        // we know the position is unprocessed
+                        queue.push_back(idx_after_unmove);
+                        let processed_outcome = Report::Processed((out + 1).max(fetched_outcome));
+                        self.common.all_pos[idx_all_pos_after_unmove]
+                            .set_to(&rboard_after_unmove, processed_outcome);
+                    }
+                    Report::Processed(_) => (),
                 }
-            } else {
-                break;
             }
         }
+
         // all positions that are unknown at the end are drawn
         for report_bc in self.common.all_pos.iter_mut() {
             for report in report_bc.iter_mut() {

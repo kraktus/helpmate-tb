@@ -9,7 +9,7 @@ use retroboard::shakmaty::{
 
 use crate::{
     generation::{WithBoard, A1_H1_H8},
-    indexer_syzygy::{KK_IDX, TRIANGLE, Z0, INV_TRIANGLE},
+    indexer_syzygy::{INV_TRIANGLE, KK_IDX, TRIANGLE, Z0},
     Material, A1_H8_DIAG,
 };
 use retroboard::RetroBoard;
@@ -97,8 +97,7 @@ pub fn index(b: &impl WithBoard) -> u64 {
 /// If the white king is on the A1_H8 diagonal, the black king MUST BE in the A1_H1_H8 triangle
 /// Do not take the turn into account the turn
 pub fn index_unchecked(b: &impl WithBoard) -> u64 {
-    let mut idx = KK_IDX
-        [TRIANGLE[b.board().king_of(White).expect("white king") as usize] as usize]
+    let mut idx = KK_IDX[TRIANGLE[b.board().king_of(White).expect("white king") as usize] as usize]
         [b.board().king_of(Black).expect("black king") as usize];
     println!("{idx:?}");
     for role in [
