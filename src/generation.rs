@@ -231,10 +231,10 @@ impl<T: PosHandler> Generator<T> {
             // by convention the former piece put on the board
             // should have a "higher" square than the later to avoid
             // generating the same position but with identical pieces swapped
-            let bb_squares_inf = Bitboard::from_iter(
+            
+            Bitboard::from_iter(
                 (0..last_square.into()).map(unsafe { |sq| Square::new_unchecked(sq) }),
-            );
-            bb_squares_inf
+            )
         }
         // Do not restrict duplicate pieces as they already have other constraints
         // and combining with this one resulting in the generating function not to be surjective anymore
@@ -383,7 +383,7 @@ impl Tagger {
         // all positions that are unknown at the end are drawn
         for report_bc in self.common.all_pos.iter_mut() {
             for report in report_bc.iter_mut() {
-                if Report::Unprocessed(Outcome::Unknown) == Report::from(report.clone()) {
+                if Report::Unprocessed(Outcome::Unknown) == Report::from(*report) {
                     *report = ReportU8::from(Report::Processed(Outcome::Draw))
                 }
             }

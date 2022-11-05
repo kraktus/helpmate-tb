@@ -100,7 +100,7 @@ fn check_mat(mat: Material) {
     let mut gen = Generator::new_with_pos_handler(SyzygyCheck::default(), common);
     gen.generate_positions();
     let (_, _, syzygy_res) = gen.get_result();
-    if syzygy_res.duplicate_indexes.len() > 0 {
+    if !syzygy_res.duplicate_indexes.is_empty() {
         warn!(
             "For {:?}, Found {:?} duplicates",
             mat,
