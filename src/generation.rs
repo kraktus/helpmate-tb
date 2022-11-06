@@ -205,7 +205,7 @@ impl<T: PosHandler> Generator<T> {
     fn generate_positions_internal(
         &mut self,
         piece_vec: &[Piece],
-        setup: Setup,
+        setup: &Setup,
         last_piece_and_square: (Piece, Square),
     ) {
         match piece_vec {
@@ -220,7 +220,7 @@ impl<T: PosHandler> Generator<T> {
                     if setup.board.piece_at(sq).is_none() {
                         let mut new_setup = setup.clone();
                         new_setup.board.set_piece_at(sq, *piece);
-                        self.generate_positions_internal(tail, new_setup, (*piece, sq));
+                        self.generate_positions_internal(tail, &new_setup, (*piece, sq));
                     }
                 }
             }
@@ -240,10 +240,9 @@ impl<T: PosHandler> Generator<T> {
             // by convention the former piece put on the board
             // should have a "higher" square than the later to avoid
             // generating the same position but with identical pieces swapped
-
-            Bitboard::from_iter(
-                (0..last_square.into()).map(unsafe { |sq| Square::new_unchecked(sq) }),
-            )
+            (0..last_square.into())
+                .map(unsafe { |sq| Square::new_unchecked(sq) })
+                .collect()
         }
         // Do not restrict duplicate pieces as they already have other constraints
         // and combining with this one resulting in the generating function not to be surjective anymore
@@ -256,7 +255,7 @@ impl<T: PosHandler> Generator<T> {
         }
     }
 
-    fn check_setup(&mut self, setup: Setup) {
+    fn check_setup(&mut self, setup: &Setup) {
         // setup is complete, check if valid
         for color in Color::ALL {
             let mut valid_setup = setup.clone();
@@ -279,15 +278,10 @@ impl<T: PosHandler> Generator<T> {
                 // We consider the syzygy indexer trusty enough for pawnless positions to allow for
                 // duplicates
                 if Outcome::Undefined
-                    != self.common.all_pos[all_pos_idx]
+                    == self.common.all_pos[all_pos_idx]
                         .get_by_pos(&chess)
                         .outcome()
                 {
-                    assert!(
-                        !self.common.material.has_pawns(),
-                        "Index {all_pos_idx} already generated, board: {rboard:?}"
-                    );
-                } else {
                     // only handle the position if it's not a duplicate
                     self.pos_handler.handle_position(
                         &mut self.common,
@@ -296,6 +290,11 @@ impl<T: PosHandler> Generator<T> {
                         &chess,
                         idx,
                         all_pos_idx,
+                    );
+                } else {
+                    assert!(
+                        !self.common.material.has_pawns(),
+                        "Index {all_pos_idx} already generated, board: {rboard:?}"
                     );
                 }
             }
@@ -308,7 +307,7 @@ impl<T: PosHandler> Generator<T> {
         for white_king_sq in A1_D1_D4 {
             let mut new_setup = Setup::empty();
             new_setup.board.set_piece_at(white_king_sq, White.king());
-            self.generate_positions_internal(&piece_vec, new_setup, (White.king(), white_king_sq))
+            self.generate_positions_internal(&piece_vec, &new_setup, (White.king(), white_king_sq))
         }
         self.pb.finish_and_clear();
         debug!("all_pos_vec capacity: {}", self.common.all_pos.capacity());
@@ -350,15 +349,17 @@ impl Tagger {
                 .common
                 .all_pos
                 .get(self.common.index_table().encode(&rboard))
-                .map(|bc| bc.get_by_pos(&rboard))
-                .unwrap_or_else(|| {
-                    panic!(
-                        "idx get_by_pos {}, idx recomputed {}, rboard {:?}",
-                        idx.idx,
-                        index(&rboard).idx,
-                        rboard
-                    )
-                })
+                .map_or_else(
+                    || {
+                        panic!(
+                            "idx get_by_pos {}, idx recomputed {}, rboard {:?}",
+                            idx.idx,
+                            index(&rboard).idx,
+                            rboard
+                        )
+                    },
+                    |bc| bc.get_by_pos(&rboard),
+                )
                 .outcome();
             assert_ne!(out, Outcome::Undefined);
             for m in rboard.legal_unmoves() {

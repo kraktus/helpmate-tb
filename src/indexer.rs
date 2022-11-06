@@ -23,7 +23,7 @@ const IMPOSSIBLE_KING_SQ: ByColor<Square> = ByColor {
     black: Square::H8,
 };
 
-const fn invert_kk_idx(kk_idx: [[u64; 64]; 10]) -> [ByColor<Square>; 462] {
+const fn invert_kk_idx(kk_idx: &[[u64; 64]; 10]) -> [ByColor<Square>; 462] {
     let mut res: [ByColor<Square>; 462] = [IMPOSSIBLE_KING_SQ; 462];
     let mut white_king_sq: usize = 0;
     loop {
@@ -53,7 +53,7 @@ const fn invert_kk_idx(kk_idx: [[u64; 64]; 10]) -> [ByColor<Square>; 462] {
     res
 }
 
-const INV_KK_IDX: [ByColor<Square>; 462] = invert_kk_idx(KK_IDX);
+const INV_KK_IDX: [ByColor<Square>; 462] = invert_kk_idx(&KK_IDX);
 
 #[rustfmt::skip]
 const WHITE_KING_SQUARES_TO_TRANSFO: [u64; 64] = [

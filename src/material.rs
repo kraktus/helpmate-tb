@@ -31,6 +31,7 @@ use std::iter;
 
 use serde::de;
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct MaterialSide {
     by_role: ByRole<u8>,
@@ -189,6 +190,7 @@ impl fmt::Debug for MaterialSide {
 /// Wrapper to ensure `Material` is always normalised
 /// There should be no way to mutate it, and only one way to create it:
 /// `From<ByColor<MaterialSide>>`
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct ByColorNormalisedMaterialSide(ByColor<MaterialSide>);
 
@@ -207,6 +209,7 @@ impl Deref for ByColorNormalisedMaterialSide {
 }
 
 /// A material key.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct Material {
     pub by_color: ByColorNormalisedMaterialSide,

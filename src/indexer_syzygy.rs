@@ -462,11 +462,7 @@ impl Table {
                 infos
                     .iter()
                     .map(|side| {
-                        GroupData::new(
-                            ArrayVec::from_iter(side.pieces.clone().into_iter()),
-                            side.order,
-                            file,
-                        )
+                        GroupData::new(side.pieces.clone().into_iter().collect(), side.order, file)
                     })
                     .collect()
             })
@@ -490,6 +486,8 @@ impl Table {
 
     /// Given a position, determine the unique (modulo symmetries) index into
     /// the corresponding subtable.
+    #[allow(clippy::similar_names)] // changing names would make comparison with upstream more difficult
+    #[allow(clippy::too_many_lines)] // same for refactoring
     pub fn encode_checked(&self, pos: &impl SideToMove) -> Option<usize> {
         let material = Material::from_board(pos.board());
 
