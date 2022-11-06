@@ -394,7 +394,7 @@ impl Tagger {
                 }
             }
         }
-        self.pb.finish_with_message("positions processed");
+        self.pb.finish_and_clear();
     }
 }
 

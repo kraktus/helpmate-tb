@@ -432,15 +432,32 @@ impl Material {
         *self.by_color.get(piece.color).get(piece.role)
     }
 
+    // yield the kings of both color first, then all white pieces, then all black pieces
     fn pieces_with_white_king(&self, with_white_king: bool) -> Pieces {
         let mut pieces = Pieces::new();
         for color in Color::ALL {
-            for role in Role::ALL {
+            let piece = Piece {
+                color,
+                role: Role::King,
+            };
+            if with_white_king || !(piece == Color::White.king()) {
+                for _ in 0..self.by_piece(piece) {
+                    pieces.push(piece)
+                }
+            }
+        }
+        for color in Color::ALL {
+            // important to have the kings first for indexing
+            for role in [
+                Role::Pawn,
+                Role::Knight,
+                Role::Bishop,
+                Role::Rook,
+                Role::Queen,
+            ] {
                 let piece = Piece { color, role };
-                if with_white_king || !(piece == Color::White.king()) {
-                    for _ in 0..self.by_piece(piece) {
-                        pieces.push(piece)
-                    }
+                for _ in 0..self.by_piece(piece) {
+                    pieces.push(piece)
                 }
             }
         }
@@ -510,11 +527,11 @@ mod tests {
     fn test_pieces_without_white_king_from_material() {
         let mat = Material::from_str("KRQvKBN").unwrap();
         let pieces: Pieces = (&[
+            Black.king(),
             White.rook(),
             White.queen(),
             Black.knight(),
             Black.bishop(),
-            Black.king(),
         ] as &[_])
             .try_into()
             .unwrap();

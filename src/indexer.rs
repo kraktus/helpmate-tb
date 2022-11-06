@@ -115,7 +115,7 @@ pub fn index_unchecked(b: &impl SideToMove) -> IndexWithTurn {
 pub fn index_unchecked_without_turn(b: &impl WithBoard) -> u64 {
     let mut idx = KK_IDX[TRIANGLE[b.board().king_of(White).expect("white king") as usize] as usize]
         [b.board().king_of(Black).expect("black king") as usize];
-    println!("{idx:?}");
+    debug_assert!(idx < 462, "Corrupted KK index, board: {:?}", b.board());
     for role in [
         Role::Pawn,
         Role::Knight,
@@ -127,7 +127,6 @@ pub fn index_unchecked_without_turn(b: &impl WithBoard) -> u64 {
             for sq in b.board().by_piece(Piece { color, role }) {
                 idx *= 64;
                 idx += sq as u64;
-                println!("{idx:?}");
             }
         }
     }
@@ -160,7 +159,7 @@ pub fn restore_from_index_board(material: &Material, index: u64) -> Board {
             }
         }
     }
-    assert!(idx < 462);
+    debug_assert!(idx < 462, "Corrupted index: {index}");
     let kings_sq = INV_KK_IDX[idx as usize];
     board.set_piece_at(kings_sq.black, Black.king());
     board.set_piece_at(kings_sq.white, White.king());
