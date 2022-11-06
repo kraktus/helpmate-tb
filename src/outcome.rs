@@ -3,6 +3,7 @@ use std::cmp::Ordering;
 use std::ops::Add;
 use std::ops::Not;
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct OutcomeOutOfBound;
 
@@ -25,16 +26,19 @@ pub enum Report {
 pub struct ReportU8(u8);
 
 impl ReportU8 {
+    #[must_use]
     pub fn from_raw_u8(u: u8) -> Self {
         Self(u)
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[repr(transparent)]
 #[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
 pub struct OutcomeU8(u8);
 
 impl OutcomeU8 {
+    #[must_use]
     pub fn from_raw_u8(u: u8) -> Option<Self> {
         if u < 128 {
             Some(Self(u))
@@ -43,6 +47,7 @@ impl OutcomeU8 {
         }
     }
 
+    #[must_use]
     pub fn as_raw_u8(&self) -> u8 {
         self.0
     }
@@ -50,10 +55,10 @@ impl OutcomeU8 {
 
 impl Report {
     #[inline]
+    #[must_use]
     pub fn outcome(&self) -> Outcome {
         match self {
-            Self::Unprocessed(outcome) => *outcome,
-            Self::Processed(outcome) => *outcome,
+            Self::Unprocessed(outcome) | Self::Processed(outcome) => *outcome,
         }
     }
 }
@@ -84,6 +89,7 @@ impl From<&ReportU8> for Report {
 }
 
 /// According to winnner set in `Generator`. This struct need to fit in a u7
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
 pub enum Outcome {
     // TODO replace by an enum with 63 elements?
@@ -120,6 +126,7 @@ impl From<&OutcomeU8> for Outcome {
 }
 
 impl Ord for Outcome {
+    #[allow(clippy::match_same_arms)] // clearer to follow the flow even if there is some duplicates here
     fn cmp(&self, other: &Self) -> Ordering {
         match (self, other) {
             (Self::Undefined, _) | (_, Self::Undefined) => {

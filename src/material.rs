@@ -31,6 +31,7 @@ use std::iter;
 
 use serde::de;
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct MaterialSide {
     by_role: ByRole<u8>,
@@ -66,13 +67,13 @@ impl MaterialSide {
         }
     }
 
-    fn from_str_part(s: &str) -> Result<Self, ()> {
+    fn from_str_part(s: &str) -> Option<Self> {
         let mut side = Self::empty();
         for ch in s.as_bytes() {
-            let role = Role::from_char(char::from(*ch)).ok_or(())?;
+            let role = Role::from_char(char::from(*ch))?;
             *side.by_role.get_mut(role) += 1;
         }
-        Ok(side)
+        Some(side)
     }
 
     pub fn count(&self) -> usize {
@@ -134,6 +135,7 @@ impl MaterialSide {
     }
 }
 
+#[must_use]
 pub fn is_black_stronger(board: &Board) -> bool {
     MaterialSide::from(board.material_side(Color::Black))
         > MaterialSide::from(board.material_side(Color::White))
@@ -188,6 +190,7 @@ impl fmt::Debug for MaterialSide {
 /// Wrapper to ensure `Material` is always normalised
 /// There should be no way to mutate it, and only one way to create it:
 /// `From<ByColor<MaterialSide>>`
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct ByColorNormalisedMaterialSide(ByColor<MaterialSide>);
 
@@ -206,6 +209,7 @@ impl Deref for ByColorNormalisedMaterialSide {
 }
 
 /// A material key.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct Material {
     pub by_color: ByColorNormalisedMaterialSide,
@@ -277,6 +281,7 @@ pub const KN_K: Material = Material {
 
 impl Material {
     /// Get the material configuration for a [`Board`].
+    #[must_use]
     pub fn from_board(board: &Board) -> Self {
         Self {
             by_color: ByColor::new_with(|color| MaterialSide {
@@ -286,26 +291,15 @@ impl Material {
         }
     }
 
-    pub fn from_iter<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = Piece>,
-    {
-        let mut by_color = ByColor::new_with(|_| MaterialSide::empty());
-        for piece in iter {
-            *by_color.get_mut(piece.color).by_role.get_mut(piece.role) += 1;
-        }
-        Self {
-            by_color: by_color.into(),
-        }
-    }
-
-    pub fn from_str(s: &str) -> Result<Self, ()> {
+    #[allow(clippy::should_implement_trait)] // no idea how to rename, but don't want to have it return a result
+    #[must_use]
+    pub fn from_str(s: &str) -> Option<Self> {
         if s.len() > 64 + 1 {
-            return Err(());
+            return None;
         }
 
-        let (white, black) = s.split_once('v').ok_or(())?;
-        Ok(Self {
+        let (white, black) = s.split_once('v')?;
+        Some(Self {
             by_color: ByColor {
                 white: MaterialSide::from_str_part(white)?,
                 black: MaterialSide::from_str_part(black)?,
@@ -314,22 +308,27 @@ impl Material {
         })
     }
 
+    #[must_use]
     pub fn count(&self) -> usize {
-        self.by_color.iter().map(|side| side.count()).sum()
+        self.by_color.iter().map(MaterialSide::count).sum()
     }
 
+    #[must_use]
     pub fn is_symmetric(&self) -> bool {
         self.by_color.white == self.by_color.black
     }
 
+    #[must_use]
     pub fn has_pawns(&self) -> bool {
-        self.by_color.iter().any(|side| side.has_pawns())
+        self.by_color.iter().any(MaterialSide::has_pawns)
     }
 
+    #[must_use]
     pub fn unique_pieces(&self) -> u8 {
-        self.by_color.iter().map(|side| side.unique_roles()).sum()
+        self.by_color.iter().map(MaterialSide::unique_roles).sum()
     }
 
+    #[must_use]
     pub fn min_like_man(&self) -> u8 {
         self.by_color
             .iter()
@@ -342,6 +341,7 @@ impl Material {
 
     /// For any color
     // TODO is this actually needed or the only material configurations where no color can mate are "KvK", "KBvK" and "KNvK"?
+    #[must_use]
     pub fn is_mate_possible(&self) -> bool {
         // order is arbitrary
         let (white, black) = (
@@ -351,6 +351,7 @@ impl Material {
         white.is_mate_possible(black)
     }
 
+    #[must_use]
     pub fn can_mate(&self, color: Color) -> bool {
         let my_side = self.by_color.get(color);
         let opposite_side = self.by_color.get(!color);
@@ -404,6 +405,7 @@ impl Material {
 
     /// Vec containing all unique material configurations not containing the root material.
     /// Sorted by positions with fewer pieces first
+    #[must_use]
     pub fn descendants_recursive(&self, include_drawn_materials: bool) -> Vec<Self> {
         let mut descendants_recursive: Vec<Self> =
             self.descendants_recursive_internal(include_drawn_materials);
@@ -425,27 +427,61 @@ impl Material {
             .collect()
     }
 
+    #[must_use]
     pub fn by_piece(&self, piece: Piece) -> u8 {
         *self.by_color.get(piece.color).get(piece.role)
     }
 
+    // yield the kings of both color first, then all white pieces, then all black pieces
     fn pieces_with_white_king(&self, with_white_king: bool) -> Pieces {
         let mut pieces = Pieces::new();
         for color in Color::ALL {
-            for role in Role::ALL {
+            let piece = Piece {
+                color,
+                role: Role::King,
+            };
+            if with_white_king || !(piece == Color::White.king()) {
+                for _ in 0..self.by_piece(piece) {
+                    pieces.push(piece)
+                }
+            }
+        }
+        for color in Color::ALL {
+            // important to have the kings first for indexing
+            for role in [
+                Role::Pawn,
+                Role::Knight,
+                Role::Bishop,
+                Role::Rook,
+                Role::Queen,
+            ] {
                 let piece = Piece { color, role };
-                if with_white_king || !(piece == Color::White.king()) {
-                    for _ in 0..self.by_piece(piece) {
-                        pieces.push(piece)
-                    }
+                for _ in 0..self.by_piece(piece) {
+                    pieces.push(piece)
                 }
             }
         }
         pieces
     }
 
+    #[must_use]
     pub fn pieces_without_white_king(&self) -> Pieces {
         self.pieces_with_white_king(false)
+    }
+}
+
+impl FromIterator<Piece> for Material {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = Piece>,
+    {
+        let mut by_color = ByColor::new_with(|_| MaterialSide::empty());
+        for piece in iter {
+            *by_color.get_mut(piece.color).by_role.get_mut(piece.role) += 1;
+        }
+        Self {
+            by_color: by_color.into(),
+        }
     }
 }
 
@@ -491,11 +527,11 @@ mod tests {
     fn test_pieces_without_white_king_from_material() {
         let mat = Material::from_str("KRQvKBN").unwrap();
         let pieces: Pieces = (&[
+            Black.king(),
             White.rook(),
             White.queen(),
             Black.knight(),
             Black.bishop(),
-            Black.king(),
         ] as &[_])
             .try_into()
             .unwrap();

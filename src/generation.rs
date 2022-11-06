@@ -1,6 +1,6 @@
 use crate::{
-    index, index_unchecked, restore_from_index, Common, Descendants, Material, Outcome, OutcomeU8,
-    Report, ReportU8, A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
+    index, index_unchecked, indexer::A1_D1_D4, restore_from_index, Common, Descendants, Material,
+    Outcome, OutcomeU8, Report, ReportU8, A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
 };
 use log::debug;
 use retroboard::shakmaty::{
@@ -15,29 +15,43 @@ use std::collections::VecDeque;
 
 use indicatif::ProgressBar;
 
+pub trait WithBoard {
+    fn board(&self) -> &Board;
+}
+
+impl WithBoard for Board {
+    fn board(&self) -> &Board {
+        self
+    }
+}
+
+impl WithBoard for Chess {
+    fn board(&self) -> &Board {
+        Position::board(self)
+    }
+}
+
+impl WithBoard for RetroBoard {
+    fn board(&self) -> &Board {
+        self.board()
+    }
+}
+
 // Allow to use both `Chess` and `RetroBoard`
-pub trait SideToMove {
+pub trait SideToMove: WithBoard {
     // side to **move**, so opposite of side to unmove
     fn side_to_move(&self) -> Color;
-    fn board(&self) -> &Board;
 }
 
 impl SideToMove for Chess {
     fn side_to_move(&self) -> Color {
         self.turn()
     }
-    fn board(&self) -> &Board {
-        Position::board(self)
-    }
 }
 
 impl SideToMove for RetroBoard {
     fn side_to_move(&self) -> Color {
         !self.retro_turn()
-    }
-
-    fn board(&self) -> &Board {
-        self.board()
     }
 }
 
@@ -72,14 +86,22 @@ impl SideToMoveGetter for ByColor<OutcomeU8> {
         *x_mut = t.into();
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct IndexWithTurn {
+    pub idx: u64,
+    pub turn: Color,
+}
+
+// the index is independant of the turn, so must be stored separately
 #[derive(Debug, Clone, Default)]
 pub struct Queue {
     // depending on the material configuration can be either won or drawn position
-    pub desired_outcome_pos_to_process: VecDeque<u64>,
-    pub losing_pos_to_process: VecDeque<u64>,
+    pub desired_outcome_pos_to_process: VecDeque<IndexWithTurn>,
+    pub losing_pos_to_process: VecDeque<IndexWithTurn>,
 }
 
-const A1_H1_H8: Bitboard = Bitboard(0x80c0e0f0f8fcfeff);
+pub const A1_H1_H8: Bitboard = Bitboard(0x80c0_e0f0_f8fc_feff);
 // const A8_A2_H7: Bitboard = A1_H1_H8.flip_diagonal().without_const(A1_H8_DIAG);
 
 // type PosHandler = fn(&mut Common, &mut Queue, &Descendants, &Chess, u64, usize);
@@ -91,7 +113,7 @@ pub trait PosHandler {
         queue: &mut Queue,
         tablebase: &Descendants,
         chess: &Chess,
-        idx: u64,
+        idx: IndexWithTurn,
         all_pos_idx: usize,
     );
 }
@@ -107,7 +129,7 @@ impl PosHandler for DefaultGeneratorHandler {
         queue: &mut Queue,
         tablebase: &Descendants,
         chess: &Chess,
-        idx: u64,
+        idx: IndexWithTurn,
         all_pos_idx: usize,
     ) {
         match chess.outcome() {
@@ -158,6 +180,7 @@ pub struct Generator<T> {
 }
 
 impl Generator<DefaultGeneratorHandler> {
+    #[must_use]
     pub fn new(common: Common) -> Self {
         Self::new_with_pos_handler(DefaultGeneratorHandler, common)
     }
@@ -182,7 +205,7 @@ impl<T: PosHandler> Generator<T> {
     fn generate_positions_internal(
         &mut self,
         piece_vec: &[Piece],
-        setup: Setup,
+        setup: &Setup,
         last_piece_and_square: (Piece, Square),
     ) {
         match piece_vec {
@@ -197,7 +220,7 @@ impl<T: PosHandler> Generator<T> {
                     if setup.board.piece_at(sq).is_none() {
                         let mut new_setup = setup.clone();
                         new_setup.board.set_piece_at(sq, *piece);
-                        self.generate_positions_internal(tail, new_setup, (*piece, sq));
+                        self.generate_positions_internal(tail, &new_setup, (*piece, sq));
                     }
                 }
             }
@@ -217,10 +240,9 @@ impl<T: PosHandler> Generator<T> {
             // by convention the former piece put on the board
             // should have a "higher" square than the later to avoid
             // generating the same position but with identical pieces swapped
-            let bb_squares_inf = Bitboard::from_iter(
-                (0..last_square.into()).map(unsafe { |sq| Square::new_unchecked(sq) }),
-            );
-            bb_squares_inf
+            (0..last_square.into())
+                .map(unsafe { |sq| Square::new_unchecked(sq) })
+                .collect()
         }
         // Do not restrict duplicate pieces as they already have other constraints
         // and combining with this one resulting in the generating function not to be surjective anymore
@@ -233,13 +255,13 @@ impl<T: PosHandler> Generator<T> {
         }
     }
 
-    fn check_setup(&mut self, setup: Setup) {
+    fn check_setup(&mut self, setup: &Setup) {
         // setup is complete, check if valid
         for color in Color::ALL {
             let mut valid_setup = setup.clone();
             valid_setup.turn = color;
             self.common.counter += 1;
-            if self.common.counter % 100000 == 0 {
+            if self.common.counter % 100_000 == 0 {
                 self.pb.set_position(self.common.counter);
             }
             if let Ok(chess) = to_chess_with_illegal_checks(valid_setup.clone()) {
@@ -256,14 +278,10 @@ impl<T: PosHandler> Generator<T> {
                 // We consider the syzygy indexer trusty enough for pawnless positions to allow for
                 // duplicates
                 if Outcome::Undefined
-                    != self.common.all_pos[all_pos_idx]
+                    == self.common.all_pos[all_pos_idx]
                         .get_by_pos(&chess)
                         .outcome()
                 {
-                    if self.common.material.has_pawns() {
-                        panic!("Index {all_pos_idx} already generated, board: {rboard:?}");
-                    }
-                } else {
                     // only handle the position if it's not a duplicate
                     self.pos_handler.handle_position(
                         &mut self.common,
@@ -273,6 +291,11 @@ impl<T: PosHandler> Generator<T> {
                         idx,
                         all_pos_idx,
                     );
+                } else {
+                    assert!(
+                        !self.common.material.has_pawns(),
+                        "Index {all_pos_idx} already generated, board: {rboard:?}"
+                    );
                 }
             }
         }
@@ -281,12 +304,10 @@ impl<T: PosHandler> Generator<T> {
     pub fn generate_positions(&mut self) {
         let piece_vec = self.common.material.pieces_without_white_king();
         self.common.counter = 0;
-        let white_king_bb = Bitboard(135007759); // a1-d1-d4 triangle
-        debug!("{:?}", white_king_bb.0);
-        for white_king_sq in white_king_bb {
+        for white_king_sq in A1_D1_D4 {
             let mut new_setup = Setup::empty();
             new_setup.board.set_piece_at(white_king_sq, White.king());
-            self.generate_positions_internal(&piece_vec, new_setup, (White.king(), white_king_sq))
+            self.generate_positions_internal(&piece_vec, &new_setup, (White.king(), white_king_sq))
         }
         self.pb.finish_and_clear();
         debug!("all_pos_vec capacity: {}", self.common.all_pos.capacity());
@@ -313,70 +334,67 @@ struct Tagger {
 impl Tagger {
     pub fn new(common: Common) -> Self {
         let pb = common.get_progress_bar();
-        Self { pb, common }
+        Self { common, pb }
     }
 
-    pub fn process_positions(&mut self, queue: &mut VecDeque<u64>) {
+    pub fn process_positions(&mut self, queue: &mut VecDeque<IndexWithTurn>) {
         self.common.counter = 0;
-        loop {
-            if let Some(idx) = queue.pop_front() {
-                self.common.counter += 1;
-                if self.common.counter % 100000 == 0 {
-                    self.pb.set_position(self.common.counter);
-                }
-                let rboard = restore_from_index(&self.common.material, idx);
-                let out: Outcome = self
-                    .common
-                    .all_pos
-                    .get(self.common.index_table().encode(&rboard))
-                    .map(|bc| bc.get_by_pos(&rboard))
-                    .unwrap_or_else(|| {
+        while let Some(idx) = queue.pop_front() {
+            self.common.counter += 1;
+            if self.common.counter % 100_000 == 0 {
+                self.pb.set_position(self.common.counter);
+            }
+            let rboard = restore_from_index(&self.common.material, idx);
+            let out: Outcome = self
+                .common
+                .all_pos
+                .get(self.common.index_table().encode(&rboard))
+                .map_or_else(
+                    || {
                         panic!(
                             "idx get_by_pos {}, idx recomputed {}, rboard {:?}",
-                            idx,
-                            index(&rboard),
+                            idx.idx,
+                            index(&rboard).idx,
                             rboard
                         )
-                    })
-                    .outcome();
-                assert_ne!(out, Outcome::Undefined);
-                for m in rboard.legal_unmoves() {
-                    let mut rboard_after_unmove = rboard.clone();
-                    rboard_after_unmove.push(&m);
-                    // let chess_after_unmove: Chess = rboard_after_unmove.clone().into();
-                    let idx_after_unmove = index(&rboard_after_unmove);
-                    let idx_all_pos_after_unmove =
-                        self.common.index_table().encode(&rboard_after_unmove);
-                    match self.common.all_pos[idx_all_pos_after_unmove]
-                        .get_by_pos(&rboard_after_unmove)
-                    {
-                        Report::Processed(Outcome::Undefined) => {
-                            panic!("pos before: {rboard:?}, and after {m:?} pos not found, illegal? {rboard_after_unmove:?}, idx: {idx_all_pos_after_unmove:?}")
-                        }
-                        Report::Unprocessed(fetched_outcome) => {
-                            // we know the position is unprocessed
-                            queue.push_back(idx_after_unmove);
-                            let processed_outcome =
-                                Report::Processed((out + 1).max(fetched_outcome));
-                            self.common.all_pos[idx_all_pos_after_unmove]
-                                .set_to(&rboard_after_unmove, processed_outcome);
-                        }
-                        Report::Processed(_) => (),
+                    },
+                    |bc| bc.get_by_pos(&rboard),
+                )
+                .outcome();
+            assert_ne!(out, Outcome::Undefined);
+            for m in rboard.legal_unmoves() {
+                let mut rboard_after_unmove = rboard.clone();
+                rboard_after_unmove.push(&m);
+                // let chess_after_unmove: Chess = rboard_after_unmove.clone().into();
+                let idx_after_unmove = index(&rboard_after_unmove);
+                let idx_all_pos_after_unmove =
+                    self.common.index_table().encode(&rboard_after_unmove);
+                match self.common.all_pos[idx_all_pos_after_unmove].get_by_pos(&rboard_after_unmove)
+                {
+                    Report::Processed(Outcome::Undefined) => {
+                        panic!("pos before: {rboard:?}, and after {m:?} pos not found, illegal? {rboard_after_unmove:?}, idx: {idx_all_pos_after_unmove:?}")
                     }
+                    Report::Unprocessed(fetched_outcome) => {
+                        // we know the position is unprocessed
+                        queue.push_back(idx_after_unmove);
+                        let processed_outcome = Report::Processed((out + 1).max(fetched_outcome));
+                        self.common.all_pos[idx_all_pos_after_unmove]
+                            .set_to(&rboard_after_unmove, processed_outcome);
+                    }
+                    Report::Processed(_) => (),
                 }
-            } else {
-                break;
             }
         }
+
         // all positions that are unknown at the end are drawn
-        for report_bc in self.common.all_pos.iter_mut() {
+        for report_bc in &mut self.common.all_pos {
             for report in report_bc.iter_mut() {
-                if Report::Unprocessed(Outcome::Unknown) == Report::from(report.clone()) {
+                if Report::Unprocessed(Outcome::Unknown) == Report::from(*report) {
                     *report = ReportU8::from(Report::Processed(Outcome::Draw))
                 }
             }
         }
-        self.pb.finish_with_message("positions processed");
+        self.pb.finish_and_clear();
     }
 }
 
@@ -389,6 +407,7 @@ impl From<Tagger> for Common {
 pub struct TableBaseBuilder;
 
 impl TableBaseBuilder {
+    #[must_use]
     pub fn build(material: Material, winner: Color) -> Common {
         let common = Common::new(material, winner);
         let mut generator = Generator::new(common);
@@ -420,7 +439,8 @@ impl TableBaseBuilder {
 }
 
 pub fn to_chess_with_illegal_checks(setup: Setup) -> Result<Chess, PositionError<Chess>> {
-    Chess::from_setup(setup, CastlingMode::Standard).or_else(|x| x.ignore_impossible_check())
+    Chess::from_setup(setup, CastlingMode::Standard)
+        .or_else(retroboard::shakmaty::PositionError::ignore_impossible_check)
 }
 #[cfg(test)]
 mod tests {
@@ -429,7 +449,7 @@ mod tests {
 
     #[test]
     fn test_a1_h8_bb() {
-        assert_eq!(A1_H1_H8, Bitboard(9277662557957324543))
+        assert_eq!(A1_H1_H8, Bitboard(9_277_662_557_957_324_543))
     }
 
     #[test]

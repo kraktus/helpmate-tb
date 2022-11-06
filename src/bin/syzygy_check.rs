@@ -16,7 +16,8 @@ use retroboard::{
 };
 
 use helpmate_tb::{
-    to_chess_with_illegal_checks, Common, Descendants, Generator, Material, PosHandler, Queue,
+    to_chess_with_illegal_checks, Common, Descendants, Generator, IndexWithTurn, Material,
+    PosHandler, Queue,
 };
 
 type Transfo = (
@@ -67,7 +68,7 @@ impl PosHandler for SyzygyCheck {
         _: &mut Queue,
         _: &Descendants,
         chess: &Chess,
-        _: u64,
+        _: IndexWithTurn,
         all_pos_idx: usize,
     ) {
         self.max_index = std::cmp::max(self.max_index, all_pos_idx);
@@ -100,7 +101,7 @@ fn check_mat(mat: Material) {
     let mut gen = Generator::new_with_pos_handler(SyzygyCheck::default(), common);
     gen.generate_positions();
     let (_, _, syzygy_res) = gen.get_result();
-    if syzygy_res.duplicate_indexes.len() > 0 {
+    if !syzygy_res.duplicate_indexes.is_empty() {
         warn!(
             "For {:?}, Found {:?} duplicates",
             mat,
@@ -216,7 +217,10 @@ mod tests {
             &mut Queue::default(),
             &Descendants::empty(),
             &chess,
-            0, // not used
+            IndexWithTurn {
+                idx: 0,
+                turn: Color::White,
+            }, // not used
             all_pos_idx,
         );
         assert_eq!(syzygy_check.max_index, 1907795);
