@@ -56,8 +56,7 @@ impl Report {
     #[must_use]
     pub fn outcome(&self) -> Outcome {
         match self {
-            Self::Unprocessed(outcome) => *outcome,
-            Self::Processed(outcome) => *outcome,
+            Self::Unprocessed(outcome) | Self::Processed(outcome) => *outcome,
         }
     }
 }
@@ -124,6 +123,8 @@ impl From<&OutcomeU8> for Outcome {
 }
 
 impl Ord for Outcome {
+
+    #[allow(clippy::match_same_arms)] // clearer to follow the flow even if there is some duplicates here
     fn cmp(&self, other: &Self) -> Ordering {
         match (self, other) {
             (Self::Undefined, _) | (_, Self::Undefined) => {
