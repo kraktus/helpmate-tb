@@ -146,7 +146,7 @@ mod tests {
             .unwrap();
         let material = Material::from_board(chess.board());
         let winner = White;
-        let descendants = Descendants::new(&material);
+        let descendants: Descendants<DefaultIndexer> = Descendants::new(&material);
         assert_eq!(
             descendants.outcome_from_captures_promotion(&chess, winner),
             Some(Outcome::Win(1))
@@ -161,7 +161,7 @@ mod tests {
             .unwrap();
         let material = Material::from_board(chess.board());
         let winner = White;
-        let descendants = Descendants::new(&material);
+        let descendants: Descendants<DefaultIndexer> = Descendants::new(&material);
         assert_eq!(
             descendants.outcome_from_captures_promotion(&chess, winner),
             Some(Outcome::Draw)
@@ -176,7 +176,7 @@ mod tests {
             .unwrap();
         let material = Material::from_board(chess.board());
         let winner = Black;
-        let descendants = Descendants::new(&material);
+        let descendants: Descendants<DefaultIndexer> = Descendants::new(&material);
         assert_eq!(
             descendants.outcome_from_captures_promotion(&chess, winner),
             Some(Outcome::Draw)
@@ -191,7 +191,7 @@ mod tests {
             .unwrap();
         let material = Material::from_board(chess.board());
         let winner = Black;
-        let descendants = Descendants::new(&material);
+        let descendants: Descendants<DefaultIndexer> = Descendants::new(&material);
         assert_eq!(
             descendants.outcome_from_captures_promotion(&chess, winner),
             Some(Outcome::Win(1))
@@ -206,7 +206,7 @@ mod tests {
                 .into_position(Standard)
                 .unwrap();
             let material = Material::from_board(chess.board());
-            let descendants = Descendants::new(&material);
+            let descendants: Descendants<DefaultIndexer> = Descendants::new(&material);
             assert_eq!(
                 descendants.outcome_from_captures_promotion(&chess, winner),
                 Some(Outcome::Draw)
