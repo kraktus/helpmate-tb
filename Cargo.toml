@@ -27,7 +27,6 @@ debug-assertions = true # allow to easily spot bugs with the indexer
 [profile.dhat] # for profiling only # dhat
 inherits = "release"
 debug = 1
-features = ["dhat"]
 
 [[bin]]
 name = "syzygy-check"
