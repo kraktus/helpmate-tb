@@ -777,8 +777,8 @@ impl Table {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use retroboard::shakmaty::{fen::Fen, CastlingMode, Chess};
     use paste::paste;
+    use retroboard::shakmaty::{fen::Fen, CastlingMode, Chess};
 
     #[test]
     fn test_bb() {
@@ -813,165 +813,23 @@ mod tests {
 
     gen_tests_syzgy! {
        _1, "KBNvK", "8/8/8/8/8/8/8/KNBk4 w - - 0 1", 484_157,
+       _2, "KBNvK", "8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1", 1_907_795,
+       non_recognised_symetry, "KBNvK", "8/8/2k5/8/4N3/2K2B2/8/8 w - - 0 1", 1_907_815, // should really be 1907795
+       // ^ the patch for this position was reverted because it introduced other FPs
+       recognised_symetry, "KBNvK", "8/8/8/8/8/8/N7/KBk5 b - - 0 1", 242_414,
+       recognised_symetry_2, "KBNvK", "8/8/8/8/8/k7/B7/KN6 b - - 0 1", 242_414,
+       recognised_symetry_3, "KRRvK", "1R6/8/8/3K4/8/8/2R5/7k w - - 0 1", 544_235,
+       // same position as in _3, but flipped on the vertical axis
+       recognised_symetry_3bis, "KRRvK", "7k/2R5/8/8/3K4/8/8/1R6 w - - 0 1", 544_235,
+       // check that inverting the position of the knight and bishop yields different indexes
+       switch_bishop_and_knight_part1, "KBNvK", "8/8/2N5/3B4/8/2K2k2/8/8 b - - 0 1", 1_907_429,
+       switch_bishop_and_knight_part2, "KBNvK", "8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1", 1_907_795,
+       // check that swapping the colors yield the same position
+       inverting_color_part1, "KQvK", "8/8/8/8/8/8/2Q5/k1K5 w - -", 23506,
+       inverting_color_part2, "KQvK", "8/8/8/8/8/8/2q5/K1k5 b - - 0 1", 23506,
+       diagonalised_part1, "KQvK", "8/8/8/8/8/2K5/Q7/2k5 w - -", 4967,
+       diagonalised_part2, "KQvK", "8/8/8/8/8/k1K5/8/1Q6 w - - 0 1", 4967,
+       diagonalised2_part1, "KBNvK","8/8/8/8/N7/k7/8/2KB4 w - - 0 1", 325_388,
+       diagonalised2_part2, "KBNvK","8/8/8/8/B7/K7/8/2kN4 w - - 0 1", 325_388,
     }
-
-    // #[test]
-    // fn test_encode_function_against_syzygy_value() {
-    //     let material = Material::from_str("KBNvK").unwrap();
-    //     let table = Table::new(&material);
-    //     let chess: Chess = Fen::from_ascii(b"8/8/8/8/8/8/8/KNBk4 w - - 0 1")
-    //         .unwrap()
-    //         .into_position(CastlingMode::Chess960)
-    //         .unwrap();
-    //     let idx = table.encode(&chess);
-    //     assert_eq!(idx, 484_157);
-    // }
-
-    // #[test]
-    // fn test_encode_non_recognised_symetry_syzygy_index_1() {
-    //     let material = Material::from_str("KBNvK").unwrap();
-    //     let table = Table::new(&material);
-    //     let chess: Chess = Fen::from_ascii(b"8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1")
-    //         .unwrap()
-    //         .into_position(CastlingMode::Chess960)
-    //         .unwrap();
-    //     let idx = table.encode(&chess);
-    //     assert_eq!(idx, 1_907_795);
-    // }
-
-    // #[test]
-    // fn test_encode_non_recognised_symetry_syzygy_index_2() {
-    //     let material = Material::from_str("KBNvK").unwrap();
-    //     let table = Table::new(&material);
-    //     let chess: Chess = Fen::from_ascii(b"8/8/2k5/8/4N3/2K2B2/8/8 w - - 0 1")
-    //         .unwrap()
-    //         .into_position(CastlingMode::Chess960)
-    //         .unwrap();
-    //     let idx = table.encode(&chess);
-    //     assert_eq!(idx, 1_907_815); // should really be 1907795
-    //                                 // the patch for this position was reverted because it introduced
-    //                                 // test_encode_recognised_symetry_syzygy_index_3bis
-    // }
-
-    // #[test]
-    // fn test_encode_recognised_symetry_syzygy_index_1() {
-    //     let material = Material::from_str("KBNvK").unwrap();
-    //     let table = Table::new(&material);
-    //     let chess: Chess = Fen::from_ascii(b"8/8/8/8/8/8/N7/KBk5 b - - 0 1")
-    //         .unwrap()
-    //         .into_position(CastlingMode::Chess960)
-    //         .unwrap();
-    //     let idx = table.encode(&chess);
-    //     assert_eq!(idx, 242_414);
-    // }
-
-    // #[test]
-    // fn test_encode_recognised_symetry_syzygy_index_2() {
-    //     let material = Material::from_str("KBNvK").unwrap();
-    //     let table = Table::new(&material);
-    //     let chess: Chess = Fen::from_ascii(b"8/8/8/8/8/k7/B7/KN6 b - - 0 1")
-    //         .unwrap()
-    //         .into_position(CastlingMode::Chess960)
-    //         .unwrap();
-    //     let idx = table.encode(&chess);
-    //     assert_eq!(idx, 242_414);
-    // }
-
-    // #[test]
-    // fn test_encode_recognised_symetry_syzygy_index_3() {
-    //     let material = Material::from_str("KRRvK").unwrap();
-    //     let table = Table::new(&material);
-    //     let chess: Chess = Fen::from_ascii(b"1R6/8/8/3K4/8/8/2R5/7k w - - 0 1")
-    //         .unwrap()
-    //         .into_position(CastlingMode::Chess960)
-    //         .unwrap();
-    //     let idx = table.encode(&chess);
-    //     assert_eq!(idx, 544_235);
-    // }
-
-    // // same position as in _3, but flipped on the vertical axis
-    // #[test]
-    // fn test_encode_recognised_symetry_syzygy_index_3bis() {
-    //     let material = Material::from_str("KRRvK").unwrap();
-    //     let table = Table::new(&material);
-    //     let chess: Chess = Fen::from_ascii(b"7k/2R5/8/8/3K4/8/8/1R6 w - - 0 1")
-    //         .unwrap()
-    //         .into_position(CastlingMode::Chess960)
-    //         .unwrap();
-    //     let idx = table.encode(&chess);
-    //     assert_eq!(idx, 544_235);
-    // }
-
-    // #[test]
-    // fn test_encode_switch_bishop_and_knight() {
-    //     let material = Material::from_str("KBNvK").unwrap();
-    //     let table = Table::new(&material);
-    //     let chess: Chess = Fen::from_ascii(b"8/8/2N5/3B4/8/2K2k2/8/8 b - - 0 1")
-    //         .unwrap()
-    //         .into_position(CastlingMode::Chess960)
-    //         .unwrap();
-
-    //     let chess_2: Chess = Fen::from_ascii(b"8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1")
-    //         .unwrap()
-    //         .into_position(CastlingMode::Chess960)
-    //         .unwrap();
-    //     let idx = table.encode(&chess);
-    //     let idx_2 = table.encode(&chess_2);
-    //     assert_eq!(idx, 1_907_429);
-    //     assert_eq!(idx_2, 1_907_795);
-    // }
-
-    // #[test]
-    // fn test_getting_index_when_board_color_are_inverted() {
-    //     let material = Material::from_str("KQvK").unwrap();
-    //     let table = Table::new(&material);
-    //     let chess_1: Chess = Fen::from_ascii(b"8/8/8/8/8/8/2Q5/k1K5 w - -")
-    //         .unwrap()
-    //         .into_position(CastlingMode::Chess960)
-    //         .unwrap();
-    //     let chess_2: Chess = Fen::from_ascii(b"8/8/8/8/8/8/2q5/K1k5 b - - 0 1")
-    //         .unwrap()
-    //         .into_position(CastlingMode::Chess960)
-    //         .unwrap();
-    //     let idx_1 = table.encode(&chess_1);
-    //     let idx_2 = table.encode(&chess_2);
-    //     assert_eq!(idx_1, 23506);
-    //     assert_eq!(idx_2, 23506);
-    // }
-
-    // #[test]
-    // fn test_encode_diagonalised_syzgy() {
-    //     let material = Material::from_str("KQvK").unwrap();
-    //     let table = Table::new(&material);
-    //     let chess_1: Chess = Fen::from_ascii(b"8/8/8/8/8/2K5/Q7/2k5 w - -")
-    //         .unwrap()
-    //         .into_position(CastlingMode::Chess960)
-    //         .unwrap();
-    //     let chess_2: Chess = Fen::from_ascii(b"8/8/8/8/8/k1K5/8/1Q6 w - - 0 1")
-    //         .unwrap()
-    //         .into_position(CastlingMode::Chess960)
-    //         .unwrap();
-    //     let idx_1 = table.encode(&chess_1);
-    //     let idx_2 = table.encode(&chess_2);
-    //     assert_eq!(idx_1, 4967);
-    //     assert_eq!(idx_2, 4967);
-    // }
-
-    // #[test]
-    // fn test_encode_diagonalised_syzgy_2() {
-    //     let material = Material::from_str("KBNvK").unwrap();
-    //     let table = Table::new(&material);
-    //     let chess_1: Chess = Fen::from_ascii(b"8/8/8/8/N7/k7/8/2KB4 w - - 0 1")
-    //         .unwrap()
-    //         .into_position(CastlingMode::Chess960)
-    //         .unwrap();
-    //     let chess_2: Chess = Fen::from_ascii(b"8/8/8/8/B7/K7/8/2kN4 w - - 0 1")
-    //         .unwrap()
-    //         .into_position(CastlingMode::Chess960)
-    //         .unwrap();
-    //     let idx_1 = table.encode(&chess_1);
-    //     let idx_2 = table.encode(&chess_2);
-    //     assert_eq!(idx_1, 325_388);
-    //     assert_eq!(idx_2, 325_388);
-    // }
 }
