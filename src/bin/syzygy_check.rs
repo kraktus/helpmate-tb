@@ -197,9 +197,9 @@ fn transformed_chess(chess: &Chess, transfo: Transfo) -> Chess {
 
 #[cfg(test)]
 mod tests {
-    use retroboard::shakmaty::{fen::Fen, CastlingMode, Color};
+    
 
-    use crate::Material;
+    
 
     use super::*;
 

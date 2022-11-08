@@ -1,6 +1,6 @@
 use crate::{
     indexer::{Indexer, NaiveIndexer},
-    Material, Reports, Table, UNDEFINED_OUTCOME_BYCOLOR,
+    Material, Reports, UNDEFINED_OUTCOME_BYCOLOR,
 };
 
 use indicatif::{ProgressBar, ProgressStyle};
