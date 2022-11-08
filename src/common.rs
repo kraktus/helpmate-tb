@@ -1,13 +1,13 @@
 use crate::{
     indexer::{Indexer, NaiveIndexer},
-    Material, Reports, UNDEFINED_OUTCOME_BYCOLOR,
+    Material, Reports, UNDEFINED_OUTCOME_BYCOLOR, DefaultIndexer,
 };
 
 use indicatif::{ProgressBar, ProgressStyle};
 use retroboard::shakmaty::Color;
 
 #[derive(Debug)]
-pub struct Common<T = NaiveIndexer> {
+pub struct Common<T = DefaultIndexer> {
     pub all_pos: Reports,
     pub winner: Color,
     pub counter: u64,
@@ -16,11 +16,11 @@ pub struct Common<T = NaiveIndexer> {
     indexer: T,
 }
 
-impl Common {
+impl<T: Indexer> Common<T> {
     #[must_use]
     pub fn new(material: Material, winner: Color) -> Self {
         Self {
-            indexer: NaiveIndexer, // Table::new(&material),
+            indexer: T::new(&material),
             all_pos: vec![UNDEFINED_OUTCOME_BYCOLOR; get_nb_pos(&material) as usize / 10 * 9], // heuristic, less than 90% of pos are legals. Takes x2 (because each stored element is in fact 1 position, but with black and white to turn) more than number of legal positions
             winner,
             counter: 0,

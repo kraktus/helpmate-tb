@@ -86,6 +86,7 @@ const WHITE_KING_SQUARES_TO_TRANSFO: [u64; 64] = [
 ];
 
 pub trait Indexer {
+    fn new(mat: &Material) -> Self;
     fn encode_board_unchecked(&self, b: &Board) -> u64;
     fn encode_board(&self, b: &Board) -> u64;
     fn encode(&self, b: &impl SideToMove) -> IndexWithTurn {
@@ -116,6 +117,10 @@ pub trait DeIndexer {
 pub struct NaiveIndexer;
 
 impl Indexer for NaiveIndexer {
+    fn new(_: &Material) -> Self {
+        Self
+    }
+
     fn encode_board(&self, b: &Board) -> u64 {
         let mut board_check = b.clone();
         let white_king_sq = b.king_of(White).expect("white king");

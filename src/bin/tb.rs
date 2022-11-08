@@ -77,7 +77,7 @@ fn gen_one_material(mat: Material) {
         );
         encoder
             .compress(&common.all_pos)
-            .expect("Compression failed");
+            .expect("Compression failed for mat {mat:?}");
         stats(&common)
     }
 }

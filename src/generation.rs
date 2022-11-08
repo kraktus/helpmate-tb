@@ -1,7 +1,7 @@
 use crate::{
     indexer::{DeIndexer, Indexer, NaiveIndexer, A1_D1_D4},
     Common, Descendants, Material, Outcome, OutcomeU8, Report, ReportU8, A1_H8_DIAG,
-    UNDEFINED_OUTCOME_BYCOLOR,
+    UNDEFINED_OUTCOME_BYCOLOR, DefaultIndexer,
 };
 use log::debug;
 use retroboard::shakmaty::{
@@ -104,7 +104,7 @@ impl IndexWithTurn {
 
 // the index is independant of the turn, so must be stored separately
 #[derive(Debug, Clone, Default)]
-pub struct Queue<T = NaiveIndexer> {
+pub struct Queue<T = DefaultIndexer> {
     // depending on the material configuration can be either won or drawn position
     pub desired_outcome_pos_to_process: VecDeque<IndexWithTurn>,
     pub losing_pos_to_process: VecDeque<IndexWithTurn>,
@@ -350,13 +350,13 @@ struct Tagger<T> {
     reversible_indexer: T,
 }
 
-impl<'a, T: Indexer + DeIndexer> Tagger<T> {
-    pub fn new(common: Common, reversible_indexer: T) -> Self {
+impl<T: Indexer + DeIndexer> Tagger<T> {
+    pub fn new(common: Common) -> Self {
         let pb = common.get_progress_bar();
         Self {
+            reversible_indexer: T::new(&common.material),
             common,
             pb,
-            reversible_indexer,
         }
     }
 
@@ -391,6 +391,7 @@ impl<'a, T: Indexer + DeIndexer> Tagger<T> {
                 )
                 .outcome();
             assert_ne!(out, Outcome::Undefined);
+            assert_ne!(out, Outcome::Unknown);
             for m in rboard.legal_unmoves() {
                 let mut rboard_after_unmove = rboard.clone();
                 rboard_after_unmove.push(&m);
@@ -461,7 +462,7 @@ impl TableBaseBuilder {
             queue.losing_pos_to_process.len()
         );
         // Should be the same indexer than for `Queue`
-        let mut tagger = Tagger::<NaiveIndexer>::new(common, NaiveIndexer);
+        let mut tagger: Tagger<DefaultIndexer> = Tagger::new(common);
         tagger.process_positions(&mut queue);
         tagger.into()
     }

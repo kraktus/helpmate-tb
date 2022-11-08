@@ -197,9 +197,6 @@ fn transformed_chess(chess: &Chess, transfo: Transfo) -> Chess {
 
 #[cfg(test)]
 mod tests {
-    
-
-    
 
     use super::*;
 

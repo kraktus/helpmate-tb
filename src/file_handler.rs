@@ -5,25 +5,26 @@ use positioned_io::RandomAccessFile;
 use retroboard::shakmaty::{ByColor, Chess, Color, Position};
 
 use crate::{
-    indexer::Indexer, is_black_stronger, EncoderDecoder, Material, Outcome, Outcomes,
-    SideToMoveGetter, Table, KB_K, KN_K,
+    indexer::{Indexer, NaiveIndexer},
+    is_black_stronger, EncoderDecoder, Material, Outcome, Outcomes, SideToMoveGetter, Table, KB_K,
+    KN_K, DefaultIndexer,
 };
 
 #[derive(Debug)]
-struct FileHandler {
-    pub table: Table,
+struct FileHandler<T = DefaultIndexer> {
+    pub indexer: T,
     pub outcomes: Outcomes,
 }
 
-impl FileHandler {
+impl<T: Indexer> FileHandler<T> {
     pub fn new(mat: &MaterialWinner) -> Self {
         let raf = RandomAccessFile::open(format!("table/{mat:?}"))
             .unwrap_or_else(|_| panic!("table not found {mat:?}"));
         let outcomes = EncoderDecoder::new(raf)
             .decompress_file()
             .expect("decompression failed");
-        let table = Table::new(mat.material);
-        Self { table, outcomes }
+        let indexer = T::new(mat.material);
+        Self { indexer, outcomes }
     }
 }
 
@@ -54,9 +55,9 @@ impl fmt::Debug for MaterialWinner<'_> {
 }
 
 #[derive(Debug)]
-pub struct Descendants(HashMap<Material, ByColor<FileHandler>>);
+pub struct Descendants<T = DefaultIndexer>(HashMap<Material, ByColor<FileHandler<T>>>);
 
-impl Descendants {
+impl<T: Indexer> Descendants<T> {
     #[must_use]
     pub fn new(mat: &Material) -> Self {
         Self(
@@ -86,7 +87,6 @@ impl Descendants {
         let mat = Material::from_board(pos.board());
         // special case for material config known to be draw in every position
         if mat.count() == 2 || mat == KB_K || mat == KN_K {
-            // special case when only kings left
             return Outcome::Draw;
         }
         let table_file = self
@@ -94,7 +94,7 @@ impl Descendants {
             .get(&mat)
             .expect("Position to be among descendants")
             .get(winner ^ flip);
-        let idx = table_file.table.encode(pos).usize();
+        let idx = table_file.indexer.encode(pos).usize();
         table_file.outcomes[idx].get_by_color(pos.turn() ^ flip)
     }
 

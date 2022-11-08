@@ -452,6 +452,27 @@ impl GroupData {
 }
 
 impl Indexer for Table {
+    fn new(material: &Material) -> Self {
+        let material_info = get_info_table(material).unwrap();
+        let files: ArrayVec<ArrayVec<GroupData, 2>, 4> = material_info
+            .iter()
+            .enumerate()
+            .map(|(file, infos)| {
+                infos
+                    .iter()
+                    .map(|side| {
+                        GroupData::new(side.pieces.clone().into_iter().collect(), side.order, file)
+                    })
+                    .collect()
+            })
+            .collect();
+        Self {
+            num_unique_pieces: material.unique_pieces(),
+            min_like_man: material.min_like_man(),
+            files,
+        }
+    }
+
     fn encode_board_unchecked(&self, _: &retroboard::shakmaty::Board) -> u64 {
         unimplemented!("`Table` always take symetry into account")
     }
@@ -479,28 +500,6 @@ impl Indexer for Table {
 }
 
 impl Table {
-    #[must_use]
-    pub fn new(material: &Material) -> Self {
-        let material_info = get_info_table(material).unwrap();
-        let files: ArrayVec<ArrayVec<GroupData, 2>, 4> = material_info
-            .iter()
-            .enumerate()
-            .map(|(file, infos)| {
-                infos
-                    .iter()
-                    .map(|side| {
-                        GroupData::new(side.pieces.clone().into_iter().collect(), side.order, file)
-                    })
-                    .collect()
-            })
-            .collect();
-        Self {
-            num_unique_pieces: material.unique_pieces(),
-            min_like_man: material.min_like_man(),
-            files,
-        }
-    }
-
     /// Given a position, determine the unique (modulo symmetries) index into
     /// the corresponding subtable.
     #[allow(clippy::similar_names)] // changing names would make comparison with upstream more difficult
