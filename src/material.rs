@@ -26,7 +26,7 @@ use retroboard::shakmaty::{Board, ByColor, ByRole, Color, Piece, Role};
 use serde::Deserialize;
 use serde::Deserializer;
 
-use crate::Pieces;
+use crate::{indexer::PIECES_ORDER, Pieces};
 use std::iter;
 
 use serde::de;
@@ -435,27 +435,8 @@ impl Material {
     // yield the kings of both color first, then all white pieces, then all black pieces
     fn pieces_with_white_king(&self, with_white_king: bool) -> Pieces {
         let mut pieces = Pieces::new();
-        for color in Color::ALL {
-            let piece = Piece {
-                color,
-                role: Role::King,
-            };
+        for piece in PIECES_ORDER {
             if with_white_king || !(piece == Color::White.king()) {
-                for _ in 0..self.by_piece(piece) {
-                    pieces.push(piece)
-                }
-            }
-        }
-        for color in Color::ALL {
-            // important to have the kings first for indexing
-            for role in [
-                Role::Pawn,
-                Role::Knight,
-                Role::Bishop,
-                Role::Rook,
-                Role::Queen,
-            ] {
-                let piece = Piece { color, role };
                 for _ in 0..self.by_piece(piece) {
                     pieces.push(piece)
                 }

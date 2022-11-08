@@ -311,7 +311,7 @@ impl<T: PosHandler> Generator<T> {
                     );
                 } else {
                     assert!(
-                        !self.common.material.has_pawns(),
+                        false, // !self.common.material.has_pawns(),
                         "Index {all_pos_idx} already generated, board: {rboard:?}"
                     );
                 }

@@ -16,6 +16,24 @@ use retroboard::RetroBoard;
 
 pub const A1_D1_D4: Bitboard = Bitboard(135_007_759);
 
+pub const PIECES_ORDER: [Piece; 12] = [
+    // kings first
+    White.king(),
+    Black.king(),
+    // then all white pieces
+    White.pawn(),
+    White.knight(),
+    White.bishop(),
+    White.rook(),
+    White.queen(),
+    // finally all black pieces
+    Black.pawn(),
+    Black.knight(),
+    Black.bishop(),
+    Black.rook(),
+    Black.queen(),
+];
+
 // impossible king square setup because by construction the white king
 // should be in the A1_D1_D4 triangle
 const IMPOSSIBLE_KING_SQ: ByColor<Square> = ByColor {
@@ -116,11 +134,22 @@ impl Indexer for NaiveIndexer {
             _ => unreachable!("Only 7 transformations expected"),
         };
 
-        if A1_H8_DIAG.contains(board_check.king_of(White).expect("white king"))
-            && !A1_H1_H8.contains(board_check.king_of(Black).expect("black king"))
-        {
-            board_check.flip_diagonal()
+        // if A1_H8_DIAG.contains(board_check.king_of(White).expect("white king")) {
+        for piece in PIECES_ORDER.into_iter() {
+            // .skip(1) {
+            if !A1_H1_H8.is_superset(board_check.by_piece(piece)) {
+                board_check.flip_diagonal();
+                break;
+            } else if !A1_H8_DIAG.is_superset(board_check.by_piece(piece)) {
+                break;
+            }
         }
+        //}
+
+        //     && !A1_H1_H8.contains(board_check.king_of(Black).expect("black king"))
+        // {
+        //     board_check.flip_diagonal()
+        // }
         self.encode_board_unchecked(&board_check)
     }
 
@@ -131,7 +160,12 @@ impl Indexer for NaiveIndexer {
         let mut idx = KK_IDX
             [TRIANGLE[b.board().king_of(White).expect("white king") as usize] as usize]
             [b.board().king_of(Black).expect("black king") as usize];
-        debug_assert!(idx < 462, "Corrupted KK index, board: {:?}", b.board());
+        debug_assert!(
+            idx < 462,
+            "Corrupted KK index, board: {:?}, idx: {}",
+            b.board(),
+            idx
+        );
         for role in [
             Role::Pawn,
             Role::Knight,
@@ -210,6 +244,30 @@ mod tests {
         let config = mat("KvK");
         let two_kings_from_idx = NaiveIndexer.restore_board(&config, idx.idx);
         assert_eq!(two_kings.board(), &two_kings_from_idx);
+    }
+
+    #[test]
+    fn test_check_a1_h8_diagonal_symetry() {
+        for fen in [
+            "8/8/8/8/8/1QK5/8/k7 w - - 0 1",
+            "8/8/8/8/8/2K5/2Q5/k7 w - - 0 1",
+        ] {
+            let r = RetroBoard::new_no_pockets(fen).unwrap();
+            let idx = NaiveIndexer.encode(&r).idx;
+            assert_eq!(idx, 28938);
+        }
+    }
+
+    #[test]
+    fn test_check_a1_h8_diagonal_symetry2() {
+        for fen in [
+            "8/8/8/8/8/2K5/k1Q5/8 w - - 0 1",
+            "8/8/8/8/8/1QK5/8/1k6 w - - 0 1",
+        ] {
+            let r = RetroBoard::new_no_pockets(fen).unwrap();
+            let idx = NaiveIndexer.encode(&r).idx;
+            assert_eq!(idx, 25041);
+        }
     }
 
     #[test]

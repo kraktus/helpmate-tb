@@ -203,32 +203,32 @@ mod tests {
 
     use super::*;
 
-    #[test]
-    fn test_known_index_duplicate() {
-        let mut syzygy_check = SyzygyCheck::default();
-        let chess: Chess = Fen::from_ascii(b"8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1")
-            .unwrap()
-            .into_position(CastlingMode::Chess960)
-            .unwrap();
-        let mut common = Common::new(Material::from_str("KBNvK").unwrap(), Color::White);
-        let all_pos_idx = common.indexer().encode(&chess).usize();
-        syzygy_check.handle_position(
-            &mut common,
-            &mut Queue::default(),
-            &Descendants::empty(),
-            &chess,
-            IndexWithTurn {
-                idx: 0,
-                turn: Color::White,
-            }, // not used
-            all_pos_idx,
-        );
-        assert_eq!(syzygy_check.max_index, 1907795);
-        assert_eq!(
-            syzygy_check.duplicate_indexes,
-            [(1907795, [1907815].into())].into()
-        );
-    }
+    // #[test]
+    // fn test_known_syzygy_index_duplicate() {
+    //     let mut syzygy_check = SyzygyCheck::default();
+    //     let chess: Chess = Fen::from_ascii(b"8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1")
+    //         .unwrap()
+    //         .into_position(CastlingMode::Chess960)
+    //         .unwrap();
+    //     let mut common = Common::new(Material::from_str("KBNvK").unwrap(), Color::White);
+    //     let all_pos_idx = common.indexer().encode(&chess).usize();
+    //     syzygy_check.handle_position(
+    //         &mut common,
+    //         &mut Queue::default(),
+    //         &Descendants::empty(),
+    //         &chess,
+    //         IndexWithTurn {
+    //             idx: 0,
+    //             turn: Color::White,
+    //         }, // not used
+    //         all_pos_idx,
+    //     );
+    //     assert_eq!(syzygy_check.max_index, 1907795);
+    //     assert_eq!(
+    //         syzygy_check.duplicate_indexes,
+    //         [(1907795, [1907815].into())].into()
+    //     );
+    // }
 
     #[test]
     fn test_gen_all_pawnless_mat_up_to() {
