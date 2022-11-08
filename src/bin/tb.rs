@@ -14,10 +14,10 @@ use log::debug;
 
 use clap::Parser;
 
-#[cfg(dhat)]
+#[cfg(feature = "dhat")]
 use dhat::{Dhat, DhatAlloc};
 
-#[cfg(dhat)]
+#[cfg(feature = "dhat")]
 #[global_allocator]
 static ALLOCATOR: DhatAlloc = DhatAlloc;
 // 3 pieces before using index At t-gmax: 19,080,095 bytes (100%) in 47 blocks (100%), avg size 405,959.47 bytes
@@ -35,7 +35,7 @@ struct Opt {
 }
 
 fn main() {
-    #[cfg(dhat)]
+    #[cfg(feature = "dhat")]
     let _dhat = Dhat::start_heap_profiling();
     let args = Opt::parse();
     let mut builder = Builder::new();
