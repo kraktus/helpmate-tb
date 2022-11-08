@@ -1,6 +1,7 @@
 use crate::{
-    index, index_unchecked, indexer::A1_D1_D4, restore_from_index, Common, Descendants, Material,
-    Outcome, OutcomeU8, Report, ReportU8, A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
+    indexer::{DeIndexer, Indexer, NaiveIndexer, A1_D1_D4},
+    Common, Descendants, Material, Outcome, OutcomeU8, Report, ReportU8, A1_H8_DIAG,
+    UNDEFINED_OUTCOME_BYCOLOR,
 };
 use log::debug;
 use retroboard::shakmaty::{
@@ -11,7 +12,7 @@ use retroboard::shakmaty::{
     FromSetup, Outcome as ChessOutcome, Piece, Position, PositionError, Setup, Square,
 };
 use retroboard::RetroBoard;
-use std::collections::VecDeque;
+use std::{collections::VecDeque, ops::Deref};
 
 use indicatif::ProgressBar;
 
@@ -95,10 +96,19 @@ pub struct IndexWithTurn {
 
 // the index is independant of the turn, so must be stored separately
 #[derive(Debug, Clone, Default)]
-pub struct Queue {
+pub struct Queue<T = NaiveIndexer> {
     // depending on the material configuration can be either won or drawn position
     pub desired_outcome_pos_to_process: VecDeque<IndexWithTurn>,
     pub losing_pos_to_process: VecDeque<IndexWithTurn>,
+    reversible_indexer: T,
+}
+
+impl<T: Indexer + DeIndexer> Deref for Queue<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.reversible_indexer
+    }
 }
 
 pub const A1_H1_H8: Bitboard = Bitboard(0x80c0_e0f0_f8fc_feff);
@@ -267,7 +277,7 @@ impl<T: PosHandler> Generator<T> {
             if let Ok(chess) = to_chess_with_illegal_checks(valid_setup.clone()) {
                 let rboard = RetroBoard::from_setup(valid_setup, Standard)
                     .expect("if chess is valid then rboard should be too");
-                let idx = index_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
+                let idx = self.queue.encode_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
                 let all_pos_idx = self.common.index_table().encode(&chess);
                 // if format!("{}", rboard.board().board_fen(Bitboard::EMPTY))
                 //     == "7k/2R5/8/8/3K4/8/8/1R6"
@@ -326,25 +336,36 @@ impl<T: PosHandler> Generator<T> {
 /// When all legal positions have already been generated, start backward algo from all mates positions
 /// and tag them (ie associates an Outcome)
 #[derive(Debug)]
-struct Tagger {
+struct Tagger<T> {
     common: Common,
     pb: ProgressBar,
+    reversible_indexer: T,
 }
 
-impl Tagger {
-    pub fn new(common: Common) -> Self {
+impl<'a, T: Indexer + DeIndexer> Tagger<T> {
+    pub fn new(common: Common, reversible_indexer: T) -> Self {
         let pb = common.get_progress_bar();
-        Self { common, pb }
+        Self {
+            common,
+            pb,
+            reversible_indexer,
+        }
     }
 
-    pub fn process_positions(&mut self, queue: &mut VecDeque<IndexWithTurn>) {
+    pub fn process_positions(&mut self, queue: &mut Queue) {
+        // need to process FIRST winning positions, then losing ones.
+        self.process_one_queue(&mut queue.desired_outcome_pos_to_process);
+        self.process_one_queue(&mut queue.losing_pos_to_process);
+    }
+
+    pub fn process_one_queue(&mut self, one_queue: &mut VecDeque<IndexWithTurn>) {
         self.common.counter = 0;
-        while let Some(idx) = queue.pop_front() {
+        while let Some(idx) = one_queue.pop_front() {
             self.common.counter += 1;
             if self.common.counter % 100_000 == 0 {
                 self.pb.set_position(self.common.counter);
             }
-            let rboard = restore_from_index(&self.common.material, idx);
+            let rboard = self.reversible_indexer.restore(&self.common.material, idx);
             let out: Outcome = self
                 .common
                 .all_pos
@@ -354,7 +375,7 @@ impl Tagger {
                         panic!(
                             "idx get_by_pos {}, idx recomputed {}, rboard {:?}",
                             idx.idx,
-                            index(&rboard).idx,
+                            self.reversible_indexer.encode(&rboard).idx,
                             rboard
                         )
                     },
@@ -366,7 +387,7 @@ impl Tagger {
                 let mut rboard_after_unmove = rboard.clone();
                 rboard_after_unmove.push(&m);
                 // let chess_after_unmove: Chess = rboard_after_unmove.clone().into();
-                let idx_after_unmove = index(&rboard_after_unmove);
+                let idx_after_unmove = self.reversible_indexer.encode(&rboard_after_unmove);
                 let idx_all_pos_after_unmove =
                     self.common.index_table().encode(&rboard_after_unmove);
                 match self.common.all_pos[idx_all_pos_after_unmove].get_by_pos(&rboard_after_unmove)
@@ -376,7 +397,7 @@ impl Tagger {
                     }
                     Report::Unprocessed(fetched_outcome) => {
                         // we know the position is unprocessed
-                        queue.push_back(idx_after_unmove);
+                        one_queue.push_back(idx_after_unmove);
                         let processed_outcome = Report::Processed((out + 1).max(fetched_outcome));
                         self.common.all_pos[idx_all_pos_after_unmove]
                             .set_to(&rboard_after_unmove, processed_outcome);
@@ -398,8 +419,8 @@ impl Tagger {
     }
 }
 
-impl From<Tagger> for Common {
-    fn from(t: Tagger) -> Self {
+impl<T> From<Tagger<T>> for Common {
+    fn from(t: Tagger<T>) -> Self {
         t.common
     }
 }
@@ -412,7 +433,8 @@ impl TableBaseBuilder {
         let common = Common::new(material, winner);
         let mut generator = Generator::new(common);
         generator.generate_positions();
-        let (mut queue, common, _) = generator.get_result();
+        let (mut queue, common, _): (Queue, Common, DefaultGeneratorHandler) =
+            generator.get_result();
         debug!("nb pos {:?}", common.all_pos.len());
         debug!("counter {:?}", common.counter);
         debug!(
@@ -430,10 +452,9 @@ impl TableBaseBuilder {
             !common.winner,
             queue.losing_pos_to_process.len()
         );
-        let mut tagger = Tagger::new(common);
-        // need to process FIRST winning positions, then losing ones.
-        tagger.process_positions(&mut queue.desired_outcome_pos_to_process);
-        tagger.process_positions(&mut queue.losing_pos_to_process);
+        // Should be the same indexer than for `Queue`
+        let mut tagger = Tagger::<NaiveIndexer>::new(common, NaiveIndexer);
+        tagger.process_positions(&mut queue);
         tagger.into()
     }
 }

@@ -67,103 +67,114 @@ const WHITE_KING_SQUARES_TO_TRANSFO: [u64; 64] = [
     5, 5, 5, 5, 6, 6, 6, 6,
 ];
 
-pub fn index(b: &impl SideToMove) -> IndexWithTurn {
-    let idx = index_without_turn(b);
-    IndexWithTurn {
-        idx,
-        turn: b.side_to_move(),
-    }
-}
-
-fn index_without_turn(b: &impl WithBoard) -> u64 {
-    let mut board_check = b.board().clone();
-    let white_king_sq = b.board().king_of(White).expect("white king");
-    // considering using a bitflag if this complexify too much
-    let board_transfo_needed = WHITE_KING_SQUARES_TO_TRANSFO[white_king_sq as usize];
-
-    match board_transfo_needed {
-        0 => (),
-        1 => board_check.flip_diagonal(),
-        2 => board_check.flip_horizontal(),
-        3 => board_check.rotate_90(),
-        4 => board_check.rotate_270(),
-        5 => board_check.flip_vertical(),
-        6 => board_check.rotate_180(),
-        7 => board_check.flip_anti_diagonal(),
-        _ => unreachable!("Only 7 transformations expected"),
-    };
-
-    if A1_H8_DIAG.contains(board_check.king_of(White).expect("white king"))
-        && !A1_H1_H8.contains(board_check.king_of(Black).expect("black king"))
-    {
-        board_check.flip_diagonal()
-    }
-    index_unchecked_without_turn(&board_check)
-}
-
-pub fn index_unchecked(b: &impl SideToMove) -> IndexWithTurn {
-    let idx = index_unchecked_without_turn(b);
-    IndexWithTurn {
-        idx,
-        turn: b.side_to_move(),
-    }
-}
-
-/// ASSUME the white king is in the a1-d1-d4 corner already
-/// If the white king is on the `A1_H8` diagonal, the black king MUST BE in the `A1_H1_H8` triangle
-/// Do not take the turn into account the turn
-pub fn index_unchecked_without_turn(b: &impl WithBoard) -> u64 {
-    let mut idx = KK_IDX[TRIANGLE[b.board().king_of(White).expect("white king") as usize] as usize]
-        [b.board().king_of(Black).expect("black king") as usize];
-    debug_assert!(idx < 462, "Corrupted KK index, board: {:?}", b.board());
-    for role in [
-        Role::Pawn,
-        Role::Knight,
-        Role::Bishop,
-        Role::Rook,
-        Role::Queen,
-    ] {
-        for color in Color::ALL {
-            for sq in b.board().by_piece(Piece { color, role }) {
-                idx *= 64;
-                idx += sq as u64;
-            }
+pub trait Indexer {
+    fn encode_board_unchecked(&self, b: &Board) -> u64;
+    fn encode_board(&self, b: &Board) -> u64;
+    fn encode(&self, b: &impl SideToMove) -> IndexWithTurn {
+        IndexWithTurn {
+            idx: self.encode_board(b.board()),
+            turn: b.side_to_move(),
         }
     }
-    idx
-}
-
-#[must_use]
-pub fn restore_from_index(material: &Material, index: IndexWithTurn) -> RetroBoard {
-    let mut setup = Setup::empty();
-    setup.board = restore_from_index_board(material, index.idx);
-    setup.turn = index.turn;
-    RetroBoard::from_setup(setup, CastlingMode::Standard).expect("Right setup")
-}
-
-pub fn restore_from_index_board(material: &Material, index: u64) -> Board {
-    let mut idx = index;
-    let mut board = Board::empty();
-    for role in [
-        Role::Queen,
-        Role::Rook,
-        Role::Bishop,
-        Role::Knight,
-        Role::Pawn,
-    ] {
-        for color in [Black, White] {
-            let piece = Piece { color, role };
-            for _ in 0..material.by_piece(piece) {
-                board.set_piece_at(unsafe { Square::new_unchecked((idx % 64) as u32) }, piece);
-                idx /= 64;
-            }
+    fn encode_unchecked(&self, b: &impl SideToMove) -> IndexWithTurn {
+        IndexWithTurn {
+            idx: self.encode_board_unchecked(b.board()),
+            turn: b.side_to_move(),
         }
     }
-    debug_assert!(idx < 462, "Corrupted index: {index}");
-    let kings_sq = INV_KK_IDX[idx as usize];
-    board.set_piece_at(kings_sq.black, Black.king());
-    board.set_piece_at(kings_sq.white, White.king());
-    board //RetroBoard::from_setup(setup, CastlingMode::Standard).expect("Right setup")
+}
+
+pub trait DeIndexer {
+    fn restore_board(&self, material: &Material, index: u64) -> Board;
+    fn restore(&self, material: &Material, idx_with_turn: IndexWithTurn) -> RetroBoard {
+        let mut setup = Setup::empty();
+        setup.board = self.restore_board(material, idx_with_turn.idx);
+        setup.turn = idx_with_turn.turn;
+        RetroBoard::from_setup(setup, CastlingMode::Standard).expect("Right setup")
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct NaiveIndexer;
+
+impl Indexer for NaiveIndexer {
+    fn encode_board(&self, b: &Board) -> u64 {
+        let mut board_check = b.clone();
+        let white_king_sq = b.king_of(White).expect("white king");
+        // considering using a bitflag if this complexify too much
+        let board_transfo_needed = WHITE_KING_SQUARES_TO_TRANSFO[white_king_sq as usize];
+
+        match board_transfo_needed {
+            0 => (),
+            1 => board_check.flip_diagonal(),
+            2 => board_check.flip_horizontal(),
+            3 => board_check.rotate_90(),
+            4 => board_check.rotate_270(),
+            5 => board_check.flip_vertical(),
+            6 => board_check.rotate_180(),
+            7 => board_check.flip_anti_diagonal(),
+            _ => unreachable!("Only 7 transformations expected"),
+        };
+
+        if A1_H8_DIAG.contains(board_check.king_of(White).expect("white king"))
+            && !A1_H1_H8.contains(board_check.king_of(Black).expect("black king"))
+        {
+            board_check.flip_diagonal()
+        }
+        self.encode_board_unchecked(&board_check)
+    }
+
+    /// ASSUME the white king is in the a1-d1-d4 corner already
+    /// If the white king is on the `A1_H8` diagonal, the black king MUST BE in the `A1_H1_H8` triangle
+    /// Do not take the turn into account the turn
+    fn encode_board_unchecked(&self, b: &Board) -> u64 {
+        let mut idx = KK_IDX
+            [TRIANGLE[b.board().king_of(White).expect("white king") as usize] as usize]
+            [b.board().king_of(Black).expect("black king") as usize];
+        debug_assert!(idx < 462, "Corrupted KK index, board: {:?}", b.board());
+        for role in [
+            Role::Pawn,
+            Role::Knight,
+            Role::Bishop,
+            Role::Rook,
+            Role::Queen,
+        ] {
+            for color in Color::ALL {
+                for sq in b.board().by_piece(Piece { color, role }) {
+                    idx *= 64;
+                    idx += sq as u64;
+                }
+            }
+        }
+        idx
+    }
+}
+
+impl DeIndexer for NaiveIndexer {
+    fn restore_board(&self, material: &Material, index: u64) -> Board {
+        let mut idx = index;
+        let mut board = Board::empty();
+        for role in [
+            Role::Queen,
+            Role::Rook,
+            Role::Bishop,
+            Role::Knight,
+            Role::Pawn,
+        ] {
+            for color in [Black, White] {
+                let piece = Piece { color, role };
+                for _ in 0..material.by_piece(piece) {
+                    board.set_piece_at(unsafe { Square::new_unchecked((idx % 64) as u32) }, piece);
+                    idx /= 64;
+                }
+            }
+        }
+        debug_assert!(idx < 462, "Corrupted index: {index}");
+        let kings_sq = INV_KK_IDX[idx as usize];
+        board.set_piece_at(kings_sq.black, Black.king());
+        board.set_piece_at(kings_sq.white, White.king());
+        board
+    }
 }
 
 #[cfg(test)]
@@ -186,18 +197,18 @@ mod tests {
     #[test]
     fn test_index_unchecked_high_value_index() {
         let high_value_board = RetroBoard::new_no_pockets("3BNQQk/8/8/8/3K4/8/8/8 b - -").unwrap();
-        let idx = index_unchecked(&high_value_board);
+        let idx = NaiveIndexer.encode_unchecked(&high_value_board);
         let config = mat("KBNQQvK");
-        let high_value_from_idx = restore_from_index_board(&config, idx.idx);
+        let high_value_from_idx = NaiveIndexer.restore_board(&config, idx.idx);
         assert_eq!(high_value_board.board(), &high_value_from_idx);
     }
 
     #[test]
     fn test_index_unchecked_then_de_index() {
         let two_kings = RetroBoard::new_no_pockets("8/7k/8/8/3K4/8/8/8 b").unwrap();
-        let idx = index_unchecked(&two_kings);
+        let idx = NaiveIndexer.encode_unchecked(&two_kings);
         let config = mat("KvK");
-        let two_kings_from_idx = restore_from_index_board(&config, idx.idx);
+        let two_kings_from_idx = NaiveIndexer.restore_board(&config, idx.idx);
         assert_eq!(two_kings.board(), &two_kings_from_idx);
     }
 
@@ -206,12 +217,12 @@ mod tests {
         // check if the color of the pieces are not swapped.
         let knights = RetroBoard::new_no_pockets("8/8/8/8/8/1N6/8/KBkn4 b").unwrap();
         let knights_color_swapped = RetroBoard::new_no_pockets("8/8/8/8/8/1n6/8/KBkN4 b").unwrap();
-        let idx = index_unchecked(&knights);
-        let idx_swapped = index_unchecked(&knights_color_swapped);
+        let idx = NaiveIndexer.encode_unchecked(&knights);
+        let idx_swapped = NaiveIndexer.encode_unchecked(&knights_color_swapped);
         assert_ne!(idx, idx_swapped);
         let config = mat("KBNvKN");
-        let knights_from_idx = restore_from_index_board(&config, idx.idx);
-        let knights_swapped_from_idx = restore_from_index_board(&config, idx_swapped.idx);
+        let knights_from_idx = NaiveIndexer.restore_board(&config, idx.idx);
+        let knights_swapped_from_idx = NaiveIndexer.restore_board(&config, idx_swapped.idx);
         assert_eq!(knights.board(), &knights_from_idx);
         assert_eq!(knights_color_swapped.board(), &knights_swapped_from_idx);
     }
@@ -236,9 +247,9 @@ mod tests {
             let rboard =
                 RetroBoard::from_setup(setup, CastlingMode::Standard).expect("Valid setup");
             println!("{rboard:?}");
-            let idx = index(&rboard);
+            let idx = NaiveIndexer.encode(&rboard);
             let config = mat("KvK");
-            let rboard_restored = restore_from_index_board(&config, idx.idx);
+            let rboard_restored = NaiveIndexer.restore_board(&config, idx.idx);
             let white_king_bb = Bitboard::EMPTY
                 | Square::A1
                 | Square::B1

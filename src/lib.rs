@@ -28,6 +28,5 @@ pub use generation::{
     to_chess_with_illegal_checks, Generator, IndexWithTurn, PosHandler, Queue, SideToMove,
     SideToMoveGetter, TableBaseBuilder,
 };
-pub use indexer::{index, index_unchecked, restore_from_index};
 pub use indexer_syzygy::{Pieces, Table, A1_H8_DIAG, A8_H1_DIAG};
 pub use material::{is_black_stronger, Material, KB_K, KN_K};
