@@ -20,6 +20,9 @@ zstd = "0.11.2"
 deku = "0.13.1"
 positioned-io = "0.3"
 
+[dev-dependencies]
+paste = "1"
+
 [profile.release]
 overflow-checks = true # allow to easily spot bugs with the indexer
 debug-assertions = true # allow to easily spot bugs with the indexer

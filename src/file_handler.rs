@@ -5,8 +5,8 @@ use positioned_io::RandomAccessFile;
 use retroboard::shakmaty::{ByColor, Chess, Color, Position};
 
 use crate::{
-    is_black_stronger, EncoderDecoder, Material, Outcome, Outcomes, SideToMoveGetter, Table, KB_K,
-    KN_K,
+    indexer::Indexer, is_black_stronger, EncoderDecoder, Material, Outcome, Outcomes,
+    SideToMoveGetter, Table, KB_K, KN_K,
 };
 
 #[derive(Debug)]
@@ -94,7 +94,7 @@ impl Descendants {
             .get(&mat)
             .expect("Position to be among descendants")
             .get(winner ^ flip);
-        let idx = table_file.table.encode(pos);
+        let idx = table_file.table.encode(pos).usize();
         table_file.outcomes[idx].get_by_color(pos.turn() ^ flip)
     }
 

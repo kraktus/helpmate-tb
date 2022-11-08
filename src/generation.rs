@@ -94,6 +94,14 @@ pub struct IndexWithTurn {
     pub turn: Color,
 }
 
+impl IndexWithTurn {
+    pub fn usize(&self) -> usize {
+        self.idx
+            .try_into()
+            .expect("Only 64bits and larger are supported")
+    }
+}
+
 // the index is independant of the turn, so must be stored separately
 #[derive(Debug, Clone, Default)]
 pub struct Queue<T = NaiveIndexer> {
@@ -278,7 +286,7 @@ impl<T: PosHandler> Generator<T> {
                 let rboard = RetroBoard::from_setup(valid_setup, Standard)
                     .expect("if chess is valid then rboard should be too");
                 let idx = self.queue.encode_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
-                let all_pos_idx = self.common.index_table().encode(&chess);
+                let all_pos_idx = self.common.indexer().encode(&chess).usize();
                 // if format!("{}", rboard.board().board_fen(Bitboard::EMPTY))
                 //     == "7k/2R5/8/8/3K4/8/8/1R6"
                 // {
@@ -369,7 +377,7 @@ impl<'a, T: Indexer + DeIndexer> Tagger<T> {
             let out: Outcome = self
                 .common
                 .all_pos
-                .get(self.common.index_table().encode(&rboard))
+                .get(self.common.indexer().encode(&rboard).usize())
                 .map_or_else(
                     || {
                         panic!(
@@ -389,7 +397,7 @@ impl<'a, T: Indexer + DeIndexer> Tagger<T> {
                 // let chess_after_unmove: Chess = rboard_after_unmove.clone().into();
                 let idx_after_unmove = self.reversible_indexer.encode(&rboard_after_unmove);
                 let idx_all_pos_after_unmove =
-                    self.common.index_table().encode(&rboard_after_unmove);
+                    self.common.indexer().encode(&rboard_after_unmove).usize();
                 match self.common.all_pos[idx_all_pos_after_unmove].get_by_pos(&rboard_after_unmove)
                 {
                     Report::Processed(Outcome::Undefined) => {

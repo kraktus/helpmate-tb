@@ -16,7 +16,7 @@ use retroboard::{
 };
 
 use helpmate_tb::{
-    to_chess_with_illegal_checks, Common, Descendants, Generator, IndexWithTurn, Material,
+    to_chess_with_illegal_checks, Common, Descendants, Generator, IndexWithTurn, Indexer, Material,
     PosHandler, Queue,
 };
 
@@ -74,7 +74,7 @@ impl PosHandler for SyzygyCheck {
         self.max_index = std::cmp::max(self.max_index, all_pos_idx);
         for transfo in ALL_TRANSFO {
             let transformed_pos = transformed_chess(chess, transfo);
-            let transformed_all_pos_idx = common.index_table().encode(&transformed_pos);
+            let transformed_all_pos_idx = common.indexer().encode(&transformed_pos).usize();
             if transformed_all_pos_idx != all_pos_idx {
                 debug!(
                     "canonical board: {:?}, idx: {all_pos_idx}",
@@ -211,7 +211,7 @@ mod tests {
             .into_position(CastlingMode::Chess960)
             .unwrap();
         let mut common = Common::new(Material::from_str("KBNvK").unwrap(), Color::White);
-        let all_pos_idx = common.index_table().encode(&chess);
+        let all_pos_idx = common.indexer().encode(&chess).usize();
         syzygy_check.handle_position(
             &mut common,
             &mut Queue::default(),

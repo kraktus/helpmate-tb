@@ -1,23 +1,23 @@
-use crate::{Material, Reports, Table, UNDEFINED_OUTCOME_BYCOLOR};
+use crate::{indexer::Indexer, Material, Reports, Table, UNDEFINED_OUTCOME_BYCOLOR};
 
 use indicatif::{ProgressBar, ProgressStyle};
 use retroboard::shakmaty::Color;
 
 #[derive(Debug)]
-pub struct Common {
+pub struct Common<T = Table> {
     pub all_pos: Reports,
     pub winner: Color,
     pub counter: u64,
     pub material: Material,
     can_mate: bool, // if `true`, the desired outcome is winning, otherwise it's to draw
-    index_table: Table,
+    indexer: T,
 }
 
 impl Common {
     #[must_use]
     pub fn new(material: Material, winner: Color) -> Self {
         Self {
-            index_table: Table::new(&material),
+            indexer: Table::new(&material),
             all_pos: vec![UNDEFINED_OUTCOME_BYCOLOR; get_nb_pos(&material) as usize / 10 * 9], // heuristic, less than 90% of pos are legals. Takes x2 (because each stored element is in fact 1 position, but with black and white to turn) more than number of legal positions
             winner,
             counter: 0,
@@ -39,10 +39,12 @@ impl Common {
     pub fn can_mate(&self) -> bool {
         self.can_mate
     }
+}
 
+impl<T: Indexer> Common<T> {
     #[must_use]
-    pub fn index_table(&self) -> &Table {
-        &self.index_table
+    pub fn indexer(&self) -> &T {
+        &self.indexer
     }
 }
 
