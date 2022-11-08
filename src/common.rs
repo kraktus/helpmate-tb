@@ -1,5 +1,5 @@
 use crate::{
-    indexer::{Indexer, NaiveIndexer},
+    indexer::{Indexer},
     Material, Reports, UNDEFINED_OUTCOME_BYCOLOR, DefaultIndexer,
 };
 
