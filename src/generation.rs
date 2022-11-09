@@ -1,7 +1,7 @@
 use crate::{
     indexer::{DeIndexer, Indexer, A1_D1_D4},
-    Common, Descendants, Material, Outcome, OutcomeU8, Report, ReportU8, A1_H8_DIAG,
-    UNDEFINED_OUTCOME_BYCOLOR, DefaultIndexer,
+    Common, DefaultIndexer, Descendants, Material, Outcome, OutcomeU8, Report, ReportU8,
+    A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
 };
 use log::debug;
 use retroboard::shakmaty::{

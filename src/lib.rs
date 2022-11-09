@@ -33,6 +33,5 @@ use indexer::NaiveIndexer;
 pub use indexer_syzygy::{Pieces, Table, A1_H8_DIAG, A8_H1_DIAG};
 pub use material::{is_black_stronger, Material, KB_K, KN_K};
 
-
 // type alias to allow to change all default type indexer from one position
 pub type DefaultIndexer = NaiveIndexer;

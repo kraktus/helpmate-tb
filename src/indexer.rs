@@ -10,7 +10,7 @@ use retroboard::shakmaty::{
 use crate::{
     generation::{IndexWithTurn, WithBoard, A1_H1_H8},
     indexer_syzygy::{INV_TRIANGLE, KK_IDX, TRIANGLE, Z0},
-    Material, SideToMove, A1_H8_DIAG, is_black_stronger,
+    is_black_stronger, Material, SideToMove, A1_H8_DIAG,
 };
 use retroboard::RetroBoard;
 
@@ -215,7 +215,10 @@ impl DeIndexer for NaiveIndexer {
 fn swap_color_board(b: Board) -> Board {
     let (by_roles, by_color) = b.into_bitboards();
     let by_roles_inverted_180 = by_roles.map(|bb| bb.flip_vertical());
-    Board::from_bitboards(by_roles_inverted_180, by_color.map(|bb| bb.flip_vertical()).into_flipped())
+    Board::from_bitboards(
+        by_roles_inverted_180,
+        by_color.map(|bb| bb.flip_vertical()).into_flipped(),
+    )
 }
 
 #[cfg(test)]
@@ -235,12 +238,12 @@ mod tests {
         Material::from_str(fen).expect("valid fen config to init Material")
     }
 
-        #[test]
+    #[test]
     fn test_swap_color_board() {
         let b = Board::from_ascii_board_fen(b"8/8/2p2P2/3nN3/3Bb3/2R2r2/1Q4q1/K6k").unwrap();
-        let swapped_b = Board::from_ascii_board_fen(b"k6K/1q4Q1/2r2R2/3bB3/3Nn3/2P2p2/8/8").unwrap();
+        let swapped_b =
+            Board::from_ascii_board_fen(b"k6K/1q4Q1/2r2R2/3bB3/3Nn3/2P2p2/8/8").unwrap();
         assert_eq!(swap_color_board(b), swapped_b);
-
     }
 
     #[test]

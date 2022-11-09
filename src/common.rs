@@ -1,7 +1,4 @@
-use crate::{
-    indexer::{Indexer},
-    Material, Reports, UNDEFINED_OUTCOME_BYCOLOR, DefaultIndexer,
-};
+use crate::{indexer::Indexer, DefaultIndexer, Material, Reports, UNDEFINED_OUTCOME_BYCOLOR};
 
 use indicatif::{ProgressBar, ProgressStyle};
 use retroboard::shakmaty::Color;

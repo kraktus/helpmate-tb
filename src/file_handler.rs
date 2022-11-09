@@ -5,9 +5,8 @@ use positioned_io::RandomAccessFile;
 use retroboard::shakmaty::{ByColor, Chess, Color, Position};
 
 use crate::{
-    indexer::{Indexer},
-    is_black_stronger, EncoderDecoder, Material, Outcome, Outcomes, SideToMoveGetter, KB_K,
-    KN_K, DefaultIndexer,
+    indexer::Indexer, is_black_stronger, DefaultIndexer, EncoderDecoder, Material, Outcome,
+    Outcomes, SideToMoveGetter, KB_K, KN_K,
 };
 
 #[derive(Debug)]
