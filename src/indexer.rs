@@ -10,7 +10,7 @@ use retroboard::shakmaty::{
 use crate::{
     generation::{IndexWithTurn, WithBoard, A1_H1_H8},
     indexer_syzygy::{INV_TRIANGLE, KK_IDX, TRIANGLE, Z0},
-    Material, SideToMove, A1_H8_DIAG,
+    Material, SideToMove, A1_H8_DIAG, is_black_stronger,
 };
 use retroboard::RetroBoard;
 
@@ -123,8 +123,10 @@ impl Indexer for NaiveIndexer {
 
     fn encode_board(&self, b: &Board) -> u64 {
         let mut board_check = b.clone();
-        let white_king_sq = b.king_of(White).expect("white king");
-        // considering using a bitflag if this complexify too much
+        if is_black_stronger(b.board()) {
+            board_check = swap_color_board(board_check)
+        }
+        let white_king_sq = board_check.king_of(White).expect("white king");
         let board_transfo_needed = WHITE_KING_SQUARES_TO_TRANSFO[white_king_sq as usize];
 
         match board_transfo_needed {
@@ -139,7 +141,6 @@ impl Indexer for NaiveIndexer {
             _ => unreachable!("Only 7 transformations expected"),
         };
 
-        // if A1_H8_DIAG.contains(board_check.king_of(White).expect("white king")) {
         for piece in PIECES_ORDER.into_iter() {
             // .skip(1) {
             if !A1_H1_H8.is_superset(board_check.by_piece(piece)) {
@@ -149,12 +150,6 @@ impl Indexer for NaiveIndexer {
                 break;
             }
         }
-        //}
-
-        //     && !A1_H1_H8.contains(board_check.king_of(Black).expect("black king"))
-        // {
-        //     board_check.flip_diagonal()
-        // }
         self.encode_board_unchecked(&board_check)
     }
 
@@ -216,6 +211,13 @@ impl DeIndexer for NaiveIndexer {
     }
 }
 
+/// flip color of pieces and their positions vertically
+fn swap_color_board(b: Board) -> Board {
+    let (by_roles, by_color) = b.into_bitboards();
+    let by_roles_inverted_180 = by_roles.map(|bb| bb.flip_vertical());
+    Board::from_bitboards(by_roles_inverted_180, by_color.map(|bb| bb.flip_vertical()).into_flipped())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -231,6 +233,14 @@ mod tests {
 
     fn mat(fen: &str) -> Material {
         Material::from_str(fen).expect("valid fen config to init Material")
+    }
+
+        #[test]
+    fn test_swap_color_board() {
+        let b = Board::from_ascii_board_fen(b"8/8/2p2P2/3nN3/3Bb3/2R2r2/1Q4q1/K6k").unwrap();
+        let swapped_b = Board::from_ascii_board_fen(b"k6K/1q4Q1/2r2R2/3bB3/3Nn3/2P2p2/8/8").unwrap();
+        assert_eq!(swap_color_board(b), swapped_b);
+
     }
 
     #[test]
