@@ -32,6 +32,12 @@ struct Opt {
     recursive: bool,
     #[clap(short, long, action = clap::ArgAction::Count, default_value_t = 2)]
     verbose: u8,
+    #[clap(
+        long,
+        help = "If set, logs will not include a timestamp",
+        parse(from_flag)
+    )]
+    no_time: bool,
 }
 
 fn main() {
@@ -50,8 +56,12 @@ fn main() {
             },
         )
         .default_format()
-        .target(Target::Stdout)
-        .init();
+        .target(Target::Stdout);
+
+    if args.no_time {
+        builder.format_timestamp(None);
+    }
+    builder.init();
     let root_material = Material::from_str(&args.material).expect("Valid material config");
     let mut materials = if args.recursive {
         root_material.descendants_recursive(false)

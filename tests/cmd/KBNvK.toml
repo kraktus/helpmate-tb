@@ -1,0 +1,42 @@
+bin.name = "tb"
+args = "-m \"KBNvK\" --no-time"
+stdout = """[DEBUG helpmate_tb::generation] all_pos_vec capacity: 4288788
+[DEBUG helpmate_tb::generation] all_pos_vec capacity: 1891839 after shrinking
+[DEBUG helpmate_tb::generation] nb pos 1891839
+[DEBUG helpmate_tb::generation] counter 3813096
+[DEBUG helpmate_tb::generation] nb White mate 58
+[DEBUG helpmate_tb::generation] nb Black mates 0
+[DEBUG tb] From White perspective, win: 3064718, draw: 2748, lost: 0, unkown: 0
+[DEBUG tb] Index density = 81%
+[DEBUG tb] Win(0), 58
+[DEBUG tb] Win(1), 230
+[DEBUG tb] Win(2), 417
+[DEBUG tb] Win(3), 2538
+[DEBUG tb] Win(4), 8084
+[DEBUG tb] Win(5), 48104
+[DEBUG tb] Win(6), 109912
+[DEBUG tb] Win(7), 285316
+[DEBUG tb] Win(8), 523280
+[DEBUG tb] Win(9), 594013
+[DEBUG tb] Win(10), 752753
+[DEBUG tb] Win(11), 362230
+[DEBUG tb] Win(12), 283057
+[DEBUG tb] Win(13), 64143
+[DEBUG tb] Win(14), 27498
+[DEBUG tb] Win(15), 2989
+[DEBUG tb] Win(16), 96
+[DEBUG helpmate_tb::generation] all_pos_vec capacity: 4288788
+[DEBUG helpmate_tb::generation] all_pos_vec capacity: 1891839 after shrinking
+[DEBUG helpmate_tb::generation] nb pos 1891839
+[DEBUG helpmate_tb::generation] counter 3813096
+[DEBUG helpmate_tb::generation] nb Black stalemate/capture resulting in draw 1611
+[DEBUG helpmate_tb::generation] nb White mates 58
+[DEBUG tb] From Black perspective, win: 0, draw: 3067408, lost: 58, unkown: 0
+[DEBUG tb] Index density = 81%
+[DEBUG tb] Lose(0), 58
+"""
+stderr ="""dhat: Total:     118,428,359 bytes in 637 blocks
+dhat: At t-gmax: 20,565,209 bytes in 52 blocks
+dhat: At t-end:  1,563 bytes in 7 blocks
+dhat: The data in dhat-heap.json is viewable with dhat/dh_view.html
+"""

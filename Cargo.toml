@@ -22,6 +22,7 @@ positioned-io = "0.3"
 
 [dev-dependencies]
 paste = "1"
+trycmd = "0.14"
 
 [profile.release]
 overflow-checks = true # allow to easily spot bugs with the indexer
