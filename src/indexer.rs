@@ -142,7 +142,6 @@ impl Indexer for NaiveIndexer {
         };
 
         for piece in PIECES_ORDER.into_iter() {
-            // .skip(1) {
             if !A1_H1_H8.is_superset(board_check.by_piece(piece)) {
                 board_check.flip_diagonal();
                 break;
