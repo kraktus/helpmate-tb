@@ -64,4 +64,4 @@ jobs:
           command: miri
           args: test
         env:
-          MIRIFLAGS: "-Zmiri-tag-raw-pointers"
+          MIRIFLAGS: "-Zmiri-disable-isolation"
