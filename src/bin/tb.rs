@@ -4,7 +4,7 @@ pub use helpmate_tb::{
 };
 
 use env_logger::{Builder, Target};
-use log::LevelFilter;
+use log::{LevelFilter, info};
 
 use retroboard::shakmaty::Color;
 use std::collections::HashMap;
@@ -15,11 +15,8 @@ use log::debug;
 use clap::Parser;
 
 #[cfg(feature = "dhat")]
-use dhat::{Dhat, DhatAlloc};
-
-#[cfg(feature = "dhat")]
 #[global_allocator]
-static ALLOCATOR: DhatAlloc = DhatAlloc;
+static DHAT_ALLOCATOR: dhat::Alloc = dhat::Alloc;
 // 3 pieces before using index At t-gmax: 19,080,095 bytes (100%) in 47 blocks (100%), avg size 405,959.47 bytes
 // 4 pieces before using index At t-gmax: 610,457,858 bytes (100%) in 199 blocks (100%), avg size 3,067,627.43 bytes
 
@@ -42,7 +39,7 @@ struct Opt {
 
 fn main() {
     #[cfg(feature = "dhat")]
-    let _dhat = Dhat::start_heap_profiling();
+    let _profiler = dhat::Profiler::new_heap();
     let args = Opt::parse();
     let mut builder = Builder::new();
     builder
@@ -76,6 +73,7 @@ fn main() {
 
 fn gen_one_material(mat: Material) {
     for winner in Color::ALL {
+        info!("Generating {mat:?} with winner: {winner}");
         // white first, most interesting
         let common = TableBaseBuilder::build(mat.clone(), winner);
         let mut encoder = EncoderDecoder::new(

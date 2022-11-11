@@ -1,0 +1,34 @@
+[INFO  tb] Generating KQvK with winner: white
+[DEBUG helpmate_tb::generation] all_pos_vec capacity: 70308
+[DEBUG helpmate_tb::generation] all_pos_vec capacity: 29560 after shrinking
+[DEBUG helpmate_tb::generation] nb pos 29560
+[DEBUG helpmate_tb::generation] counter 62664
+[DEBUG helpmate_tb::generation] nb White mate 46
+[DEBUG helpmate_tb::generation] nb Black mates 0
+[DEBUG tb] From White perspective, win: 45723, draw: 414, lost: 0, unkown: 0
+[DEBUG tb] Index density = 78%
+[DEBUG tb] Win(0), 46
+[DEBUG tb] Win(1), 306
+[DEBUG tb] Win(2), 580
+[DEBUG tb] Win(3), 1751
+[DEBUG tb] Win(4), 4336
+[DEBUG tb] Win(5), 5851
+[DEBUG tb] Win(6), 11208
+[DEBUG tb] Win(7), 7267
+[DEBUG tb] Win(8), 9197
+[DEBUG tb] Win(9), 2551
+[DEBUG tb] Win(10), 1987
+[DEBUG tb] Win(11), 353
+[DEBUG tb] Win(12), 284
+[DEBUG tb] Win(13), 2
+[DEBUG tb] Win(14), 4
+[INFO  tb] Generating KQvK with winner: black
+[DEBUG helpmate_tb::generation] all_pos_vec capacity: 70308
+[DEBUG helpmate_tb::generation] all_pos_vec capacity: 29560 after shrinking
+[DEBUG helpmate_tb::generation] nb pos 29560
+[DEBUG helpmate_tb::generation] counter 62664
+[DEBUG helpmate_tb::generation] nb Black stalemate/capture resulting in draw 109
+[DEBUG helpmate_tb::generation] nb White mates 46
+[DEBUG tb] From Black perspective, win: 0, draw: 46091, lost: 46, unkown: 0
+[DEBUG tb] Index density = 78%
+[DEBUG tb] Lose(0), 46

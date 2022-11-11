@@ -1,6 +1,7 @@
 [alias]
 indexer_check = "run --release --bin indexer_check --"
 tb = "run --release --bin tb --"
+tb-dhat = "run --profile dhat --features dhat --bin tb --"
 test-snap = "test --profile dhat --features dhat -- --include-ignored"
-# gen-snap = "TRYCMD=overwrite test --profile dhat --features dhat --test cli_tests"
+gen-snap = "test --profile dhat --features dhat --features trycmd-overwrite --test cli_tests -- --ignored"
 # How to set up env variable in cargo aliases?
