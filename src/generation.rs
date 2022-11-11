@@ -314,7 +314,8 @@ impl<T: PosHandler> Generator<T> {
                     assert!(
                         // In positions without pawns with duplicate pieces, duplicate indexes are tolerated
                         // because could not find a way to generate positions without those
-                        !self.common.material.has_pawns() && self.common.material.min_like_man() > 1,
+                        !self.common.material.has_pawns()
+                            && self.common.material.min_like_man() > 1,
                         "Index {all_pos_idx} already generated, board: {rboard:?}"
                     );
                 }
@@ -472,8 +473,7 @@ impl TableBaseBuilder {
 }
 
 pub fn to_chess_with_illegal_checks(setup: Setup) -> Result<Chess, PositionError<Chess>> {
-    Chess::from_setup(setup, CastlingMode::Standard)
-        .or_else(PositionError::ignore_impossible_check)
+    Chess::from_setup(setup, CastlingMode::Standard).or_else(PositionError::ignore_impossible_check)
 }
 #[cfg(test)]
 mod tests {

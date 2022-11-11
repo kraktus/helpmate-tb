@@ -218,9 +218,7 @@ fn swap_color_board(b: Board) -> Board {
     let by_roles_inverted_180 = by_roles.map(Bitboard::flip_vertical);
     Board::from_bitboards(
         by_roles_inverted_180,
-        by_color
-            .map(Bitboard::flip_vertical)
-            .into_flipped(),
+        by_color.map(Bitboard::flip_vertical).into_flipped(),
     )
 }
 
