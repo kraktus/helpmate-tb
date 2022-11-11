@@ -10,7 +10,7 @@ dhat = ["dep:dhat"]
 trycmd-overwrite = [] # feature to allow snapshots tests to be updated via cargo alias
 
 [dependencies]
-clap = { version = "3.2", features = ["derive"] }
+clap = { version = "4.0", features = ["derive"] }
 retroboard = "0.2.6"
 arrayvec = { version = "0.7", features = ["serde"] }
 indicatif = "0.17.2"
