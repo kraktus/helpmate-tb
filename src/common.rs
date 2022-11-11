@@ -29,9 +29,13 @@ impl<T: Indexer> Common<T> {
     #[must_use]
     pub fn get_progress_bar(&self) -> ProgressBar {
         let pb = ProgressBar::new(get_nb_pos(&self.material));
-        pb.set_style(ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})")
-        .expect("Invalid indicatif template syntax")
-        .progress_chars("#>-"));
+        pb.set_style(
+            ProgressStyle::with_template(
+                "{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})",
+            )
+            .expect("Invalid indicatif template syntax")
+            .progress_chars("#>-"),
+        );
         pb
     }
 

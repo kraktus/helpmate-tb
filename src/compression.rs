@@ -263,7 +263,6 @@ mod tests {
         );
     }
 
-    
     #[cfg(not(miri))]
     #[test]
     fn test_block_compression_soundness() {
