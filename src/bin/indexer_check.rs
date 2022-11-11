@@ -112,24 +112,22 @@ fn check_mat(mat: Material) {
 }
 
 #[derive(Parser, Debug)]
-#[clap(author, version, about)]
+#[command(author, version, about)]
 struct Opt {
-    #[clap(
+    #[arg(
         short,
         long,
-        value_parser,
         help = "maximum number of pieces on the board, will check all pawnless material config up to this number included"
     )]
     nb_pieces: usize,
 
-    #[clap(
+    #[arg(
         short,
         long,
-        value_parser,
         help = "example \"KQvK\". If specified only this material configuration will be looked after"
     )]
     material: Option<String>,
-    #[clap(short, long, action = clap::ArgAction::Count, default_value_t = 3)]
+    #[arg(short, long, action = clap::ArgAction::Count, default_value_t = 3)]
     verbose: u8,
 }
 
@@ -192,7 +190,7 @@ fn transformed_chess(chess: &Chess, transfo: Transfo) -> Chess {
         halfmoves: chess.halfmoves(),
         fullmoves: chess.fullmoves(),
     })
-    .expect("illegal position after applying sysmetry")
+    .expect("illegal position after applying symetry")
 }
 
 #[cfg(test)]

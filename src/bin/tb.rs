@@ -12,7 +12,7 @@ use std::fs::File;
 
 use log::debug;
 
-use clap::Parser;
+use clap::{Parser, ArgAction};
 
 #[cfg(feature = "dhat")]
 #[global_allocator]
@@ -21,18 +21,18 @@ static DHAT_ALLOCATOR: dhat::Alloc = dhat::Alloc;
 // 4 pieces before using index At t-gmax: 610,457,858 bytes (100%) in 199 blocks (100%), avg size 3,067,627.43 bytes
 
 #[derive(Parser, Debug)]
-#[clap(author, version, about)]
+#[command(author, version, about)]
 struct Opt {
-    #[clap(short, long, value_parser, help = "example \"KQvK\"")]
+    #[arg(short, long, help = "example \"KQvK\"")]
     material: String,
-    #[clap(short, long, parse(from_flag))]
+    #[arg(short, long, action = ArgAction::SetTrue)]
     recursive: bool,
-    #[clap(short, long, action = clap::ArgAction::Count, default_value_t = 2)]
+    #[arg(short, long, action = ArgAction::Count, default_value_t = 2)]
     verbose: u8,
-    #[clap(
+    #[arg(
         long,
         help = "If set, logs will not include a timestamp",
-        parse(from_flag)
+        action = ArgAction::SetTrue
     )]
     no_time: bool,
 }
