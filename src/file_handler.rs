@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use std::fmt;
+use std::{collections::HashMap, str::FromStr};
 
 use positioned_io::RandomAccessFile;
 use retroboard::shakmaty::{ByColor, Chess, Color, Position};
@@ -10,15 +10,16 @@ use crate::{
 };
 
 #[derive(Debug)]
-struct FileHandler<T = DefaultIndexer> {
+pub struct FileHandler<T = DefaultIndexer> {
     pub indexer: T,
     pub outcomes: Outcomes,
 }
 
 impl<T: Indexer> FileHandler<T> {
     pub fn new(mat: &MaterialWinner) -> Self {
-        let raf = RandomAccessFile::open(format!("table/{mat:?}"))
-            .unwrap_or_else(|_| panic!("table not found {mat:?}"));
+        let raf = RandomAccessFile::open(format!("table/{mat:?}")).unwrap_or_else(|e| {
+            panic!("table not found {e:?}, run from the root directory of the project")
+        });
         let outcomes = EncoderDecoder::new(raf)
             .decompress_file()
             .expect("decompression failed");
@@ -146,7 +147,7 @@ mod tests {
             .unwrap();
         let material = Material::from_board(chess.board());
         let winner = White;
-        let descendants: Descendants<DefaultIndexer> = Descendants::new(&material);
+        let descendants: Descendants = Descendants::new(&material);
         assert_eq!(
             descendants.outcome_from_captures_promotion(&chess, winner),
             Some(Outcome::Win(1))
@@ -162,7 +163,7 @@ mod tests {
             .unwrap();
         let material = Material::from_board(chess.board());
         let winner = White;
-        let descendants: Descendants<DefaultIndexer> = Descendants::new(&material);
+        let descendants: Descendants = Descendants::new(&material);
         assert_eq!(
             descendants.outcome_from_captures_promotion(&chess, winner),
             Some(Outcome::Draw)
@@ -178,7 +179,7 @@ mod tests {
             .unwrap();
         let material = Material::from_board(chess.board());
         let winner = Black;
-        let descendants: Descendants<DefaultIndexer> = Descendants::new(&material);
+        let descendants: Descendants = Descendants::new(&material);
         assert_eq!(
             descendants.outcome_from_captures_promotion(&chess, winner),
             Some(Outcome::Draw)
@@ -194,7 +195,7 @@ mod tests {
             .unwrap();
         let material = Material::from_board(chess.board());
         let winner = Black;
-        let descendants: Descendants<DefaultIndexer> = Descendants::new(&material);
+        let descendants: Descendants = Descendants::new(&material);
         assert_eq!(
             descendants.outcome_from_captures_promotion(&chess, winner),
             Some(Outcome::Win(1))
@@ -209,7 +210,7 @@ mod tests {
                 .into_position(Standard)
                 .unwrap();
             let material = Material::from_board(chess.board());
-            let descendants: Descendants<DefaultIndexer> = Descendants::new(&material);
+            let descendants: Descendants = Descendants::new(&material);
             assert_eq!(
                 descendants.outcome_from_captures_promotion(&chess, winner),
                 Some(Outcome::Draw)

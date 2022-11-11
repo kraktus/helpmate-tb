@@ -43,3 +43,7 @@ path = "src/bin/indexer_check.rs"
 [[bin]]
 name = "tb"
 path = "src/bin/tb.rs"
+
+[[bin]]
+name = "explore"
+path = "src/bin/explore.rs"

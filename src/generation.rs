@@ -348,7 +348,7 @@ impl<T: PosHandler> Generator<T> {
 /// When all legal positions have already been generated, start backward algo from all mates positions
 /// and tag them (ie associates an Outcome)
 #[derive(Debug)]
-struct Tagger<T> {
+struct Tagger<T = DefaultIndexer> {
     common: Common,
     pb: ProgressBar,
     reversible_indexer: T,
@@ -466,7 +466,7 @@ impl TableBaseBuilder {
             queue.losing_pos_to_process.len()
         );
         // Should be the same indexer than for `Queue`
-        let mut tagger: Tagger<DefaultIndexer> = Tagger::new(common);
+        let mut tagger: Tagger = Tagger::new(common);
         tagger.process_positions(&mut queue);
         tagger.into()
     }

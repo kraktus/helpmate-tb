@@ -2,6 +2,7 @@ use retroboard::shakmaty::ByColor;
 use std::cmp::Ordering;
 use std::ops::Add;
 use std::ops::Not;
+use std::str::FromStr;
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -106,6 +107,37 @@ pub const UNDEFINED_OUTCOME_BYCOLOR: ByColor<ReportU8> = ByColor {
     black: ReportU8(255),
     white: ReportU8(255),
 };
+
+/// Accept win18 for Win(18)
+// lose1 for Lose(1)
+impl FromStr for Outcome {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.to_lowercase();
+        if !s.is_ascii() {
+            Err("must be ascii only")
+        } else if s == "unknown" {
+            Ok(Self::Unknown)
+        } else if s == "draw" {
+            Ok(Self::Draw)
+        } else if s == "undefined" {
+            Ok(Self::Undefined)
+        } else if s.starts_with("win") {
+            // we have checked the string only contain ascii before
+            u8::from_str(&s[3..])
+                .map(Self::Win)
+                .map_err(|_| "invalid win value, must be of the form winXXX e.g win12")
+        } else if s.starts_with("lose") {
+            // we have checked the string only contain ascii before
+            u8::from_str(&s[4..])
+                .map(Self::Lose)
+                .map_err(|_| "invalid lose value, must be of the form loseXXX e.g lose12")
+        } else {
+            Err("invalid format, must be either: 'draw', 'loseXXX', 'winXXX', 'unknown', 'undefined'")
+        }
+    }
+}
 
 impl From<OutcomeU8> for Outcome {
     fn from(u: OutcomeU8) -> Self {
@@ -213,6 +245,17 @@ mod tests {
             let outcome_u8 = OutcomeU8(i);
             assert_eq!(OutcomeU8::from(Outcome::from(outcome_u8)), outcome_u8)
         }
+    }
+
+    #[test]
+    fn test_from_str_outcome() {
+        assert_eq!(Outcome::from_str("DRAW"), Ok(Outcome::Draw));
+        assert_eq!(Outcome::from_str("unknown"), Ok(Outcome::Unknown));
+        assert_eq!(Outcome::from_str("Undefined"), Ok(Outcome::Undefined));
+        assert_eq!(Outcome::from_str("WiN12"), Ok(Outcome::Win(12)));
+        assert_eq!(Outcome::from_str("lose6"), Ok(Outcome::Lose(6)));
+        assert!(Outcome::from_str("foo").is_err());
+        assert!(Outcome::from_str("§").is_err());
     }
 
     #[test]

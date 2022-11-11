@@ -1,4 +1,5 @@
 [alias]
+explore = "run --release --bin explore --"
 indexer_check = "run --release --bin indexer_check --"
 tb = "run --release --bin tb --"
 tb-dhat = "run --profile dhat --features dhat --bin tb --"
