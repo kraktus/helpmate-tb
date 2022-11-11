@@ -145,7 +145,7 @@ impl Indexer for NaiveIndexer {
 
         for piece in PIECES_ORDER {
             // we check if flipping would result in a "lower" bitboard
-            // dictionary order for all their square. 
+            // dictionary order for all their square.
             // This is a better way to check if there is a symetry on the A1_H8 diagonal
             if board_check.by_piece(piece).flip_diagonal() < board_check.by_piece(piece) {
                 board_check.flip_diagonal();

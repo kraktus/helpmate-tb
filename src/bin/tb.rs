@@ -4,7 +4,7 @@ pub use helpmate_tb::{
 };
 
 use env_logger::{Builder, Target};
-use log::{LevelFilter, info};
+use log::{info, LevelFilter};
 
 use retroboard::shakmaty::Color;
 use std::collections::HashMap;

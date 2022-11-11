@@ -195,7 +195,7 @@ fn from_bytes_exact<'a, T: deku::DekuContainerRead<'a>>(buf: &'a [u8]) -> io::Re
 #[cfg(test)]
 mod tests {
     use super::*;
-    use deku::ctx::Size;
+    use deku::ctx::BitSize;
 
     const DUMMY_NUMBER: usize = 10000;
 
@@ -231,8 +231,8 @@ mod tests {
         };
         assert_eq!(BlockHeader::BYTE_SIZE, test.to_bytes().unwrap().len());
         assert_eq!(
-            Size::of::<BlockHeader>(),
-            Size::Bits(BlockHeader::BYTE_SIZE * 8),
+            BitSize::of::<BlockHeader>(),
+            BitSize(BlockHeader::BYTE_SIZE * 8),
         )
     }
 
