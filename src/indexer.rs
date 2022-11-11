@@ -8,7 +8,7 @@ use retroboard::shakmaty::{
 };
 
 use crate::{
-    generation::{IndexWithTurn, WithBoard, A1_H1_H8},
+    generation::{IndexWithTurn, WithBoard},
     indexer_syzygy::{INV_TRIANGLE, KK_IDX, TRIANGLE, Z0},
     is_black_stronger, Material, SideToMove, A1_H8_DIAG,
 };
@@ -144,7 +144,10 @@ impl Indexer for NaiveIndexer {
         };
 
         for piece in PIECES_ORDER {
-            if !A1_H1_H8.is_superset(board_check.by_piece(piece)) {
+            // we check if flipping would result in a "lower" bitboard
+            // dictionary order for all their square. 
+            // This is a better way to check if there is a symetry on the A1_H8 diagonal
+            if board_check.by_piece(piece).flip_diagonal() < board_check.by_piece(piece) {
                 board_check.flip_diagonal();
                 break;
             } else if !A1_H8_DIAG.is_superset(board_check.by_piece(piece)) {
@@ -267,25 +270,46 @@ mod tests {
 
     #[test]
     fn test_check_a1_h8_diagonal_symetry() {
-        for fen in [
-            "8/8/8/8/8/1QK5/8/k7 w - - 0 1",
-            "8/8/8/8/8/2K5/2Q5/k7 w - - 0 1",
-        ] {
-            let r = RetroBoard::new_no_pockets(fen).unwrap();
-            let idx = NaiveIndexer.encode(&r).idx;
+        for fen in ["8/8/8/8/8/1QK5/8/k7", "8/8/8/8/8/2K5/2Q5/k7"] {
+            let r = Board::from_ascii_board_fen(fen.as_bytes()).unwrap();
+            let idx = NaiveIndexer.encode_board(&r);
             assert_eq!(idx, 28938);
         }
     }
 
     #[test]
     fn test_check_a1_h8_diagonal_symetry2() {
-        for fen in [
-            "8/8/8/8/8/2K5/k1Q5/8 w - - 0 1",
-            "8/8/8/8/8/1QK5/8/1k6 w - - 0 1",
-        ] {
-            let r = RetroBoard::new_no_pockets(fen).unwrap();
-            let idx = NaiveIndexer.encode(&r).idx;
+        for fen in ["8/8/8/8/8/2K5/k1Q5/8", "8/8/8/8/8/1QK5/8/1k6"] {
+            let r = Board::from_ascii_board_fen(fen.as_bytes()).unwrap();
+            let idx = NaiveIndexer.encode_board(&r);
             assert_eq!(idx, 25041);
+        }
+    }
+
+    #[test]
+    fn test_check_a1_h8_diagonal_symetry3() {
+        for fen in ["5R1k/7R/8/8/8/8/8/K7", "6Rk/8/7R/8/8/8/8/K7"] {
+            let r = Board::from_ascii_board_fen(fen.as_bytes()).unwrap();
+            let idx = NaiveIndexer.encode_board(&r);
+            assert_eq!(idx, 1830397);
+        }
+    }
+
+    #[test]
+    fn test_check_a1_h8_diagonal_symetry4() {
+        for fen in ["5R1k/7R/8/8/8/8/8/K7", "6Rk/8/7R/8/8/8/8/K7"] {
+            let r = Board::from_ascii_board_fen(fen.as_bytes()).unwrap();
+            let idx = NaiveIndexer.encode_board(&r);
+            assert_eq!(idx, 1830397);
+        }
+    }
+
+    #[test]
+    fn test_check_a1_h8_diagonal_symetry5() {
+        for fen in ["5RRk/7R/8/8/8/8/8/K7", "6Rk/7R/7R/8/8/8/8/K7"] {
+            let r = Board::from_ascii_board_fen(fen.as_bytes()).unwrap();
+            let idx = NaiveIndexer.encode_board(&r);
+            assert_eq!(idx, 117112318);
         }
     }
 
