@@ -18,7 +18,7 @@ mod outcome;
 
 pub use crate::common::Common;
 pub use crate::file_handler::{Descendants, FileHandler, MaterialWinner};
-pub use crate::indexer::Indexer;
+pub use crate::indexer::{DeIndexer, Indexer};
 pub use crate::outcome::{
     Outcome, OutcomeU8, Outcomes, OutcomesSlice, Report, ReportU8, Reports, ReportsSlice,
     UNDEFINED_OUTCOME_BYCOLOR,

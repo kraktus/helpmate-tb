@@ -3,7 +3,7 @@ pub use helpmate_tb::{
     Common, EncoderDecoder, Material, MaterialWinner, Outcome, SideToMoveGetter, TableBaseBuilder,
     UNDEFINED_OUTCOME_BYCOLOR,
 };
-use helpmate_tb::{FileHandler, Outcomes};
+use helpmate_tb::{DeIndexer, FileHandler, IndexWithTurn, Outcomes};
 use log::{info, LevelFilter};
 use std::{collections::HashMap, path::Path, str::FromStr};
 
@@ -65,27 +65,27 @@ fn main() {
             };
             let mat = Material::from_str(&mat_str).expect("Valid material config");
             let mat_win = MaterialWinner::new(&mat, winner);
-            stats_one_mat(mat_win, args.exclude_summary);
+            stats_one_mat(mat_win, &args);
         }
     } else {
         let mat = Material::from_str(&args.material).expect("Valid material config");
         let mat_win = MaterialWinner::new(&mat, args.winner);
-        stats_one_mat(mat_win, args.exclude_summary);
+        stats_one_mat(mat_win, &args);
     }
 }
 
-fn stats_one_mat(mat_win: MaterialWinner, exclude_summary: bool) {
+fn stats_one_mat(mat_win: MaterialWinner, args: &Opt) {
     info!(
         "Generating {:?} with winner: {}",
         mat_win.material, mat_win.winner
     );
     let file_handler: FileHandler = FileHandler::new(&mat_win);
-    if !exclude_summary {
-        stats(mat_win.winner, &file_handler.outcomes)
+    if !args.exclude_summary {
+        stats(mat_win, &file_handler, args.outcome)
     }
 }
 
-fn stats(winner: Color, outcomes: &Outcomes) {
+fn stats(mat_win: MaterialWinner, file_handler: &FileHandler, searched_outcome: Option<Outcome>) {
     let mut draw = 0;
     let mut win = 0;
     let mut lose = 0;
@@ -93,9 +93,21 @@ fn stats(winner: Color, outcomes: &Outcomes) {
     let mut distrib: HashMap<Outcome, u64> = HashMap::new();
     let mut undefined_outcome: usize = 0;
 
-    for by_color_outcome in outcomes {
-        for color in Color::ALL {
-            let outcome = by_color_outcome.get_by_color(color);
+    for (idx, by_color_outcome) in file_handler.outcomes.iter().enumerate() {
+        for turn in Color::ALL {
+            let outcome = by_color_outcome.get_by_color(turn);
+            if Some(outcome) == searched_outcome {
+                info!(
+                    "Macthing {outcome:?}, position {:?}",
+                    file_handler.indexer.restore(
+                        mat_win.material,
+                        IndexWithTurn {
+                            idx: idx as u64,
+                            turn
+                        }
+                    )
+                )
+            }
             distrib.insert(outcome, *distrib.get(&outcome).unwrap_or(&0) + 1);
             match outcome {
                 Outcome::Draw => draw += 1,
@@ -108,11 +120,12 @@ fn stats(winner: Color, outcomes: &Outcomes) {
     }
     info!(
         "From {:?} perspective, win: {win:?}, draw: {draw:?}, lost: {lose:?}, unkown: {unkown:?}",
-        winner
+        mat_win.winner
     );
     info!(
         "Index density = {:?}%",
-        (outcomes.len() * 2 - undefined_outcome) * 100 / (outcomes.len() * 2)
+        (file_handler.outcomes.len() * 2 - undefined_outcome) * 100
+            / (file_handler.outcomes.len() * 2)
     );
     for i in 0..u8::MAX {
         if let Some(nb_win) = distrib.get(&Outcome::Win(i)) {
