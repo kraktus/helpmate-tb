@@ -1,0 +1,4 @@
+[alias]
+test-snap = "test --profile dhat --features dhat -- --include-ignored"
+# gen-snap = "TRYCMD=overwrite test --profile dhat --features dhat --test cli_tests"
+# How to set up env variable in cargo aliases?
