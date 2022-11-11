@@ -103,6 +103,7 @@ pub trait Indexer {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 pub trait DeIndexer {
     fn restore_board(&self, material: &Material, index: u64) -> Board;
     fn restore(&self, material: &Material, idx_with_turn: IndexWithTurn) -> RetroBoard {
@@ -113,6 +114,7 @@ pub trait DeIndexer {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Copy, Default)]
 pub struct NaiveIndexer;
 
@@ -141,7 +143,7 @@ impl Indexer for NaiveIndexer {
             _ => unreachable!("Only 7 transformations expected"),
         };
 
-        for piece in PIECES_ORDER.into_iter() {
+        for piece in PIECES_ORDER {
             if !A1_H1_H8.is_superset(board_check.by_piece(piece)) {
                 board_check.flip_diagonal();
                 break;
@@ -213,10 +215,12 @@ impl DeIndexer for NaiveIndexer {
 /// flip color of pieces and their positions vertically
 fn swap_color_board(b: Board) -> Board {
     let (by_roles, by_color) = b.into_bitboards();
-    let by_roles_inverted_180 = by_roles.map(|bb| bb.flip_vertical());
+    let by_roles_inverted_180 = by_roles.map(Bitboard::flip_vertical);
     Board::from_bitboards(
         by_roles_inverted_180,
-        by_color.map(|bb| bb.flip_vertical()).into_flipped(),
+        by_color
+            .map(Bitboard::flip_vertical)
+            .into_flipped(),
     )
 }
 

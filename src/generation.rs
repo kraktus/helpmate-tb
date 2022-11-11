@@ -95,6 +95,7 @@ pub struct IndexWithTurn {
 }
 
 impl IndexWithTurn {
+    #[must_use]
     pub fn usize(&self) -> usize {
         self.idx
             .try_into()
@@ -311,7 +312,9 @@ impl<T: PosHandler> Generator<T> {
                     );
                 } else {
                     assert!(
-                        false, // !self.common.material.has_pawns(),
+                        // In positions without pawns with duplicate pieces, duplicate indexes are tolerated
+                        // because could not find a way to generate positions without those
+                        !self.common.material.has_pawns() && self.common.material.min_like_man() > 1,
                         "Index {all_pos_idx} already generated, board: {rboard:?}"
                     );
                 }
@@ -470,7 +473,7 @@ impl TableBaseBuilder {
 
 pub fn to_chess_with_illegal_checks(setup: Setup) -> Result<Chess, PositionError<Chess>> {
     Chess::from_setup(setup, CastlingMode::Standard)
-        .or_else(retroboard::shakmaty::PositionError::ignore_impossible_check)
+        .or_else(PositionError::ignore_impossible_check)
 }
 #[cfg(test)]
 mod tests {
