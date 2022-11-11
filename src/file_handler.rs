@@ -137,6 +137,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(miri))]
     #[test]
     fn test_outcome_from_captures_promotion_without_switching_color_white() {
         let chess: Chess = Fen::from_ascii("1k6/1r6/1K6/8/4Q3/8/8/8 w - - 0 1".as_bytes())
@@ -152,6 +153,7 @@ mod tests {
         );
     }
 
+    #[cfg(not(miri))]
     #[test]
     fn test_outcome_from_captures_promotion_with_switching_color_white() {
         let chess: Chess = Fen::from_ascii("3K4/1r2Q3/8/8/8/8/8/3k4 b - - 0 1".as_bytes())
@@ -167,6 +169,7 @@ mod tests {
         );
     }
 
+    #[cfg(not(miri))]
     #[test]
     fn test_outcome_from_captures_promotion_without_switching_color_black() {
         let chess: Chess = Fen::from_ascii("1Qk5/6Q1/8/8/8/8/8/3K4 b - - 0 1".as_bytes())
@@ -182,6 +185,7 @@ mod tests {
         );
     }
 
+    #[cfg(not(miri))]
     #[test]
     fn test_outcome_from_captures_promotion_with_switching_color_black() {
         let chess: Chess = Fen::from_ascii("8/8/8/8/8/1k6/3r4/1K1Q4 b - - 0 1".as_bytes())
