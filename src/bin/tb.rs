@@ -12,7 +12,7 @@ use std::fs::File;
 
 use log::debug;
 
-use clap::{Parser, ArgAction};
+use clap::{ArgAction, Parser};
 
 #[cfg(feature = "dhat")]
 #[global_allocator]
