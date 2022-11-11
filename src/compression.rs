@@ -236,6 +236,7 @@ mod tests {
         )
     }
 
+    #[cfg(not(miri))]
     #[test]
     fn test_block_byte_serialisation() {
         let block = Block::new(&dummy_reports(), 0).unwrap();
@@ -248,6 +249,7 @@ mod tests {
         assert_eq!(block, block_2);
     }
 
+    #[cfg(not(miri))]
     #[test]
     fn test_outcome_decompression() {
         let reports = dummy_reports();
@@ -261,6 +263,8 @@ mod tests {
         );
     }
 
+    
+    #[cfg(not(miri))]
     #[test]
     fn test_block_compression_soundness() {
         let reports = dummy_reports();
