@@ -1,0 +1,25 @@
+[package]
+name = "helpmate_tb_cli"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+dhat = ["dep:dhat"]
+trycmd-overwrite = [] # feature to allow snapshots tests to be updated via cargo alias
+
+[dependencies]
+retroboard = "0.2.6"
+clap = { version = "4.0", features = ["derive"] }
+dhat = {version = "0.3",  optional = true }
+helpmate_tb = { path = "../lib" }
+env_logger = "0.9"
+log = "0.4"
+
+[dev-dependencies]
+trycmd = "0.14"
+
+[profile.release]
+overflow-checks = true # allow to easily spot bugs with the indexer
+debug-assertions = true # allow to easily spot bugs with the indexer

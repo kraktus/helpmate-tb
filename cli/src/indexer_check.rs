@@ -15,6 +15,8 @@ use retroboard::{
     RetroBoard,
 };
 
+use std::str::FromStr;
+
 use helpmate_tb::{
     to_chess_with_illegal_checks, Common, Descendants, Generator, IndexWithTurn, Indexer, Material,
     PosHandler, Queue,

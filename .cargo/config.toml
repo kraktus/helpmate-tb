@@ -1,7 +1,3 @@
 [alias]
-explore = "run --release --bin explore --"
-indexer_check = "run --release --bin indexer_check --"
-tb = "run --release --bin tb --"
-tb-dhat = "run --profile dhat --features dhat --bin tb --"
 test-snap = "test --profile dhat --features dhat -- --include-ignored"
 gen-snap = "test --profile dhat --features dhat --features trycmd-overwrite --test cli_tests -- --ignored" # include `--ignored` to run test ignored by default 

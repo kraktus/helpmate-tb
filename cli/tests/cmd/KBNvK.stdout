@@ -1,0 +1,36 @@
+[INFO  helpmate_tb_cli::generate] Generating KBNvK with winner: white
+[DEBUG helpmate_tb::generation] all_pos_vec capacity: 4288788
+[DEBUG helpmate_tb::generation] all_pos_vec capacity: 1891839 after shrinking
+[DEBUG helpmate_tb::generation] nb pos 1891839
+[DEBUG helpmate_tb::generation] counter 3813096
+[DEBUG helpmate_tb::generation] nb White mate 58
+[DEBUG helpmate_tb::generation] nb Black mates 0
+[DEBUG helpmate_tb_cli::generate] From White perspective, win: 3064718, draw: 2748, lost: 0, unkown: 0
+[DEBUG helpmate_tb_cli::generate] Index density = 81%
+[DEBUG helpmate_tb_cli::generate] Win(0), 58
+[DEBUG helpmate_tb_cli::generate] Win(1), 230
+[DEBUG helpmate_tb_cli::generate] Win(2), 417
+[DEBUG helpmate_tb_cli::generate] Win(3), 2538
+[DEBUG helpmate_tb_cli::generate] Win(4), 8084
+[DEBUG helpmate_tb_cli::generate] Win(5), 48104
+[DEBUG helpmate_tb_cli::generate] Win(6), 109912
+[DEBUG helpmate_tb_cli::generate] Win(7), 285316
+[DEBUG helpmate_tb_cli::generate] Win(8), 523280
+[DEBUG helpmate_tb_cli::generate] Win(9), 594013
+[DEBUG helpmate_tb_cli::generate] Win(10), 752753
+[DEBUG helpmate_tb_cli::generate] Win(11), 362230
+[DEBUG helpmate_tb_cli::generate] Win(12), 283057
+[DEBUG helpmate_tb_cli::generate] Win(13), 64143
+[DEBUG helpmate_tb_cli::generate] Win(14), 27498
+[DEBUG helpmate_tb_cli::generate] Win(15), 2989
+[DEBUG helpmate_tb_cli::generate] Win(16), 96
+[INFO  helpmate_tb_cli::generate] Generating KBNvK with winner: black
+[DEBUG helpmate_tb::generation] all_pos_vec capacity: 4288788
+[DEBUG helpmate_tb::generation] all_pos_vec capacity: 1891839 after shrinking
+[DEBUG helpmate_tb::generation] nb pos 1891839
+[DEBUG helpmate_tb::generation] counter 3813096
+[DEBUG helpmate_tb::generation] nb Black stalemate/capture resulting in draw 1611
+[DEBUG helpmate_tb::generation] nb White mates 58
+[DEBUG helpmate_tb_cli::generate] From Black perspective, win: 0, draw: 3067408, lost: 58, unkown: 0
+[DEBUG helpmate_tb_cli::generate] Index density = 81%
+[DEBUG helpmate_tb_cli::generate] Lose(0), 58

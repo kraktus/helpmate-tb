@@ -230,6 +230,7 @@ mod tests {
     use super::*;
     use retroboard::shakmaty::{Bitboard, Board};
     use std::num::NonZeroU32;
+    use std::str::FromStr;
 
     #[test]
     fn test_inv_king_idx() {

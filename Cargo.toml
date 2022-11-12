@@ -1,49 +1,10 @@
-[package]
-name = "helpmate_tb"
-version = "0.0.1"
-edition = "2021"
+[workspace]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[features]
-dhat = ["dep:dhat"]
-trycmd-overwrite = [] # feature to allow snapshots tests to be updated via cargo alias
-
-[dependencies]
-clap = { version = "4.0", features = ["derive"] }
-retroboard = "0.2.6"
-arrayvec = { version = "0.7", features = ["serde"] }
-indicatif = "0.17.2"
-itertools = "0.10.3"
-env_logger = "0.9"
-log = "0.4"
-dhat = {version = "0.3",  optional = true }
-serde_json = "1"
-serde = { version = "1.0", features = ["derive"] }
-zstd = "0.11.2"
-deku = "0.14.1"
-positioned-io = "0.3"
-
-[dev-dependencies]
-paste = "1"
-trycmd = "0.14"
-
-[profile.release]
-overflow-checks = true # allow to easily spot bugs with the indexer
-debug-assertions = true # allow to easily spot bugs with the indexer
+members = [
+    "lib",
+    "cli"
+]
 
 [profile.dhat] # for profiling only # dhat
 inherits = "release"
 debug = 1
-
-[[bin]]
-name = "indexer-check"
-path = "src/bin/indexer_check.rs"
-
-[[bin]]
-name = "tb"
-path = "src/bin/tb.rs"
-
-[[bin]]
-name = "explore"
-path = "src/bin/explore.rs"

@@ -1,5 +1,5 @@
 use std::fmt;
-use std::{collections::HashMap, str::FromStr};
+use std::collections::HashMap;
 
 use positioned_io::RandomAccessFile;
 use retroboard::shakmaty::{ByColor, Chess, Color, Position};
@@ -17,9 +17,10 @@ pub struct FileHandler<T = DefaultIndexer> {
 
 impl<T: Indexer> FileHandler<T> {
     pub fn new(mat: &MaterialWinner) -> Self {
-        let raf = RandomAccessFile::open(format!("table/{mat:?}")).unwrap_or_else(|e| {
-            panic!("table not found {e:?}, run from the root directory of the project")
-        });
+        let raf = RandomAccessFile::open(format!("../table/{mat:?}")).unwrap();
+        // .unwrap_or_else(|e| {
+        //     panic!("table not found {e:?}, run from the root directory of the project")
+        // });
         let outcomes = EncoderDecoder::new(raf)
             .decompress_file()
             .expect("decompression failed");
@@ -126,6 +127,8 @@ mod tests {
         CastlingMode::Standard,
         Color::{Black, White},
     };
+
+    use std::str::FromStr;
 
     #[test]
     fn test_material_winner() {

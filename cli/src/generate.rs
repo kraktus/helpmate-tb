@@ -3,71 +3,35 @@ pub use helpmate_tb::{
     UNDEFINED_OUTCOME_BYCOLOR,
 };
 
-use env_logger::{Builder, Target};
-use log::{info, LevelFilter};
+use log::info;
 
 use retroboard::shakmaty::Color;
-use std::collections::HashMap;
 use std::fs::File;
+use std::{collections::HashMap, str::FromStr};
 
 use log::debug;
 
-use clap::{ArgAction, Parser};
+use clap::{ArgAction, Args};
 
-#[cfg(feature = "dhat")]
-#[global_allocator]
-static DHAT_ALLOCATOR: dhat::Alloc = dhat::Alloc;
-// 3 pieces before using index At t-gmax: 19,080,095 bytes (100%) in 47 blocks (100%), avg size 405,959.47 bytes
-// 4 pieces before using index At t-gmax: 610,457,858 bytes (100%) in 199 blocks (100%), avg size 3,067,627.43 bytes
-
-#[derive(Parser, Debug)]
-#[command(author, version, about)]
-struct Opt {
-    #[arg(short, long, help = "example \"KQvK\"")]
-    material: String,
+#[derive(Args, Debug)]
+pub struct Generate {
+    #[arg(short, long, value_parser = Material::from_str, help = "example \"KQvK\"")]
+    material: Material,
     #[arg(short, long, action = ArgAction::SetTrue)]
     recursive: bool,
-    #[arg(short, long, action = ArgAction::Count, default_value_t = 2)]
-    verbose: u8,
-    #[arg(
-        long,
-        help = "If set, logs will not include a timestamp",
-        action = ArgAction::SetTrue
-    )]
-    no_time: bool,
 }
 
-fn main() {
-    #[cfg(feature = "dhat")]
-    let _profiler = dhat::Profiler::new_heap();
-    let args = Opt::parse();
-    let mut builder = Builder::new();
-    builder
-        .filter(
-            None,
-            match args.verbose {
-                0 => LevelFilter::Error,
-                1 => LevelFilter::Info,
-                2 => LevelFilter::Debug,
-                _ => LevelFilter::Trace,
-            },
-        )
-        .default_format()
-        .target(Target::Stdout);
-
-    if args.no_time {
-        builder.format_timestamp(None);
-    }
-    builder.init();
-    let root_material = Material::from_str(&args.material).expect("Valid material config");
-    let mut materials = if args.recursive {
-        root_material.descendants_recursive(false)
-    } else {
-        vec![]
-    };
-    materials.push(root_material);
-    for mat in materials {
-        gen_one_material(mat)
+impl Generate {
+    pub fn run(self) {
+        let mut materials = if self.recursive {
+            self.material.descendants_recursive(false)
+        } else {
+            vec![]
+        };
+        materials.push(self.material);
+        for mat in materials {
+            gen_one_material(mat)
+        }
     }
 }
 
@@ -78,7 +42,7 @@ fn gen_one_material(mat: Material) {
         let common = TableBaseBuilder::build(mat.clone(), winner);
         let mut encoder = EncoderDecoder::new(
             File::create(format!(
-                "table/{:?}",
+                "../table/{:?}",
                 MaterialWinner::new(&common.material, common.winner)
             ))
             .unwrap(),

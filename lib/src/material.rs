@@ -17,6 +17,7 @@
 use std::{
     cmp::{Ord, Ordering, PartialOrd},
     fmt,
+    str::FromStr,
 };
 
 use std::ops::Deref;
@@ -291,23 +292,6 @@ impl Material {
         }
     }
 
-    #[allow(clippy::should_implement_trait)] // no idea how to rename, but don't want to have it return a result
-    #[must_use]
-    pub fn from_str(s: &str) -> Option<Self> {
-        if s.len() > 64 + 1 {
-            return None;
-        }
-
-        let (white, black) = s.split_once('v')?;
-        Some(Self {
-            by_color: ByColor {
-                white: MaterialSide::from_str_part(white)?,
-                black: MaterialSide::from_str_part(black)?,
-            }
-            .into(),
-        })
-    }
-
     #[must_use]
     pub fn count(&self) -> usize {
         self.by_color.iter().map(MaterialSide::count).sum()
@@ -463,6 +447,27 @@ impl FromIterator<Piece> for Material {
         Self {
             by_color: by_color.into(),
         }
+    }
+}
+
+impl FromStr for Material {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.len() > 64 + 1 {
+            return Err("string too long to be proper material");
+        }
+
+        let (white, black) = s
+            .split_once('v')
+            .ok_or("should contain 'v' to separate white pieces from black ones, eg \"KQvK\"")?;
+        Ok(Self {
+            by_color: ByColor {
+                white: MaterialSide::from_str_part(white).ok_or("invalid white pieces")?,
+                black: MaterialSide::from_str_part(black).ok_or("invalid black pieces")?,
+            }
+            .into(),
+        })
     }
 }
 

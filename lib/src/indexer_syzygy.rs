@@ -778,6 +778,7 @@ mod tests {
     use super::*;
     use paste::paste;
     use retroboard::shakmaty::{fen::Fen, CastlingMode, Chess};
+    use std::str::FromStr;
 
     #[test]
     fn test_bb() {
