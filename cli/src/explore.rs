@@ -1,37 +1,21 @@
+use env_logger::{Builder, Target};
 pub use helpmate_tb::{
     Common, EncoderDecoder, Material, MaterialWinner, Outcome, SideToMoveGetter, TableBaseBuilder,
     UNDEFINED_OUTCOME_BYCOLOR,
 };
 use helpmate_tb::{DeIndexer, FileHandler, IndexWithTurn, Outcomes};
-use log::{debug, info};
+use log::{debug, info, LevelFilter};
 use std::{collections::HashMap, path::Path, str::FromStr};
 
 use retroboard::shakmaty::Color;
 
-use clap::{ArgAction, Args};
+use clap::{ArgAction, Parser};
 
-#[derive(Debug, Clone)]
-enum MatOrAll {
-    Mat(Material),
-    All,
-}
-
-impl FromStr for MatOrAll {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s == "all" {
-            Ok(Self::All)
-        } else {
-            Material::from_str(s).map(Self::Mat)
-        }
-    }
-}
-
-#[derive(Args, Debug)]
-pub struct Explore {
-    #[arg(help = "example \"KQvK\", use special value 'all' to search across all positions", value_parser = MatOrAll::from_str)]
-    material: MatOrAll,
+#[derive(Parser, Debug)]
+#[command(author, version, about)]
+struct Explore {
+    #[arg(help = "example \"KQvK\", use special value 'all' to search across all positions")]
+    material: String,
     #[arg(short, long, help = "Color of the expected winner", default_value_t = Color::White)]
     winner: Color,
     #[arg(long,
@@ -39,39 +23,33 @@ pub struct Explore {
         help = "If draw is selected, only non-stalemate ones will be returned"
     )]
     outcome: Option<Outcome>,
+    #[arg(short, long, action = ArgAction::Count, default_value_t = 2)]
+    verbose: u8,
     #[arg(long, action = ArgAction::SetFalse, default_value_t = false)]
     exclude_summary: bool,
 }
 
 impl Explore {
-    pub fn run(&self) {
-        match self.material {
-            MatOrAll::All => {
-                let entries = Path::new("./table")
-                    .read_dir()
-                    .expect("read_dir call failed");
-                for entry_res in entries {
-                    let mut mat_str = entry_res.unwrap().file_name().into_string().unwrap();
-                    let winner = match mat_str.pop() {
-                        Some('b') => Color::Black,
-                        Some('w') => Color::White,
-                        _ => panic!("Only black and white can be winners"),
-                    };
-                    let mat = Material::from_str(&mat_str).expect("Valid material config");
-                    let mat_win = MaterialWinner::new(&mat, winner);
-                    self.stats_one_mat(mat_win);
-                }
-            }
-            MatOrAll::Mat(ref mat) => {
-                let mat_win = MaterialWinner::new(mat, self.winner);
+    fn run(&self) {
+        if self.material == "all" {
+            let entries = Path::new("./table")
+                .read_dir()
+                .expect("read_dir call failed");
+            for entry_res in entries {
+                let mat_win_str = entry_res.unwrap().file_name().into_string().unwrap();
+                let mat_win = MaterialWinner::from_str(&mat_win_str).expect("invalid file name");
                 self.stats_one_mat(mat_win);
             }
+        } else {
+            let mat = Material::from_str(&self.material).expect("Valid material config");
+            let mat_win = MaterialWinner::new(&mat, self.winner);
+            self.stats_one_mat(mat_win);
         }
     }
 
     fn stats_one_mat(&self, mat_win: MaterialWinner) {
         info!(
-            "Generating {:?} with winner: {}",
+            "Looking at {:?} with winner: {}",
             mat_win.material, mat_win.winner
         );
         let file_handler: FileHandler = FileHandler::new(&mat_win);
@@ -79,7 +57,7 @@ impl Explore {
             stats(
                 mat_win,
                 Some(&file_handler.indexer),
-                &file_handler.outcomes,
+                file_handler.outcomes,
                 self.outcome,
             )
         }
@@ -89,7 +67,7 @@ impl Explore {
 fn stats<T: DeIndexer>(
     mat_win: MaterialWinner,
     indexer: Option<&T>,
-    outcomes: &Outcomes,
+    outcomes: Outcomes,
     searched_outcome: Option<Outcome>,
 ) {
     let mut draw = 0;
@@ -103,12 +81,12 @@ fn stats<T: DeIndexer>(
         for turn in Color::ALL {
             let outcome = by_color_outcome.get_by_color(turn);
             if Some(outcome) == searched_outcome {
-                info!(
+                debug!(
                     "Macthing {outcome:?}, position {:?}",
                     indexer
-                        .expect("Not indexer given depsite specific outcome being searched")
+                        .expect("No deindexer provided depsite looking for specific outcome")
                         .restore(
-                            mat_win.material,
+                            &mat_win.material,
                             IndexWithTurn {
                                 idx: idx as u64,
                                 turn
