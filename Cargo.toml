@@ -8,3 +8,7 @@ members = [
 [profile.dhat] # for profiling only # dhat
 inherits = "release"
 debug = 1
+
+[profile.release]
+overflow-checks = true # allow to easily spot bugs with the indexer
+debug-assertions = true # allow to easily spot bugs with the indexer

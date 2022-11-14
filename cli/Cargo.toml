@@ -19,7 +19,3 @@ log = "0.4"
 
 [dev-dependencies]
 trycmd = "0.14"
-
-[profile.release]
-overflow-checks = true # allow to easily spot bugs with the indexer
-debug-assertions = true # allow to easily spot bugs with the indexer
