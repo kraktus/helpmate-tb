@@ -1,5 +1,6 @@
-use std::collections::HashMap;
+use std::borrow::Cow;
 use std::fmt;
+use std::{collections::HashMap, str::FromStr};
 
 use positioned_io::RandomAccessFile;
 use retroboard::shakmaty::{ByColor, Chess, Color, Position};
@@ -24,34 +25,51 @@ impl<T: Indexer> FileHandler<T> {
         let outcomes = EncoderDecoder::new(raf)
             .decompress_file()
             .expect("decompression failed");
-        let indexer = T::new(mat.material);
+        let indexer = T::new(&mat.material);
         Self { indexer, outcomes }
     }
 }
 
 #[derive(Eq, Hash, PartialEq)]
 pub struct MaterialWinner<'a> {
-    pub material: &'a Material,
+    pub material: Cow<'a, Material>,
     pub winner: Color,
 }
 
 impl<'a> MaterialWinner<'a> {
     #[must_use]
     pub fn new(material: &'a Material, winner: Color) -> Self {
-        Self { material, winner }
+        Self {
+            material: Cow::Borrowed(material),
+            winner,
+        }
     }
 }
+
+impl FromStr for MaterialWinner<'_> {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if !s.is_ascii() {
+            return Err("material should only contain ascii cases");
+        }
+        let full_string = s.to_string();
+        let (mat_str, color_str) = full_string.split_at(s.len() - 1);
+        let winner = char::from_str(color_str)
+            .ok()
+            .and_then(Color::from_char)
+            .ok_or("last char must be 'b' for black or 'w' for white")?;
+        let material = Material::from_str(mat_str).expect("Valid material config");
+        Ok(Self {
+            material: Cow::Owned(material),
+            winner,
+        })
+    }
+}
+
 impl fmt::Debug for MaterialWinner<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{:?}{}",
-            self.material,
-            match self.winner {
-                Color::Black => 'b',
-                Color::White => 'w',
-            }
-        )
+        write!(f, "{:?}{}", self.material, self.winner.char())
     }
 }
 
