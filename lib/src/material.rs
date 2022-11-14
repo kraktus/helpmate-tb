@@ -188,26 +188,79 @@ impl fmt::Debug for MaterialSide {
     }
 }
 
-/// Wrapper to ensure `Material` is always normalised
-/// There should be no way to mutate it, and only one way to create it:
-/// `From<ByColor<MaterialSide>>`
-#[allow(clippy::module_name_repetitions)]
-#[derive(Clone, Eq, PartialEq, Hash)]
-pub struct ByColorNormalisedMaterialSide(ByColor<MaterialSide>);
+mod protected {
+    use super::{ByColor, Deref, MaterialSide, ByRole, Material};
+    /// Wrapper to ensure `Material` is always normalised
+    /// There should be no way to mutate it, and only one way to create it:
+    /// `From<ByColor<MaterialSide>>`
+    #[allow(clippy::module_name_repetitions)]
+    #[derive(Clone, Eq, PartialEq, Hash)]
+    pub struct ByColorNormalisedMaterialSide(ByColor<MaterialSide>);
 
-impl From<ByColor<MaterialSide>> for ByColorNormalisedMaterialSide {
-    fn from(by_color: ByColor<MaterialSide>) -> Self {
-        Self(by_color.into_normalized())
+    impl From<ByColor<MaterialSide>> for ByColorNormalisedMaterialSide {
+        fn from(by_color: ByColor<MaterialSide>) -> Self {
+            Self(by_color.into_normalized())
+        }
     }
-}
 
-impl Deref for ByColorNormalisedMaterialSide {
-    type Target = ByColor<MaterialSide>;
+    impl Deref for ByColorNormalisedMaterialSide {
+        type Target = ByColor<MaterialSide>;
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
     }
+
+    pub const KB_K: Material = Material {
+        by_color: ByColorNormalisedMaterialSide(ByColor {
+            white: MaterialSide {
+                by_role: ByRole {
+                    king: 1,
+                    queen: 0,
+                    rook: 0,
+                    bishop: 1,
+                    knight: 0,
+                    pawn: 0,
+                },
+            },
+            black: MaterialSide {
+                by_role: ByRole {
+                    king: 1,
+                    queen: 0,
+                    rook: 0,
+                    bishop: 0,
+                    knight: 0,
+                    pawn: 0,
+                },
+            },
+        }),
+    };
+    pub const KN_K: Material = Material {
+        by_color: ByColorNormalisedMaterialSide(ByColor {
+            white: MaterialSide {
+                by_role: ByRole {
+                    king: 1,
+                    queen: 0,
+                    rook: 0,
+                    bishop: 0,
+                    knight: 1,
+                    pawn: 0,
+                },
+            },
+            black: MaterialSide {
+                by_role: ByRole {
+                    king: 1,
+                    queen: 0,
+                    rook: 0,
+                    bishop: 0,
+                    knight: 0,
+                    pawn: 0,
+                },
+            },
+        }),
+    };
 }
+pub use protected::{ByColorNormalisedMaterialSide, KB_K, KN_K};
 
 /// A material key.
 #[allow(clippy::module_name_repetitions)]
@@ -230,55 +283,6 @@ impl PartialOrd for Material {
         Some(self.cmp(other))
     }
 }
-
-pub const KB_K: Material = Material {
-    by_color: ByColorNormalisedMaterialSide(ByColor {
-        white: MaterialSide {
-            by_role: ByRole {
-                king: 1,
-                queen: 0,
-                rook: 0,
-                bishop: 1,
-                knight: 0,
-                pawn: 0,
-            },
-        },
-        black: MaterialSide {
-            by_role: ByRole {
-                king: 1,
-                queen: 0,
-                rook: 0,
-                bishop: 0,
-                knight: 0,
-                pawn: 0,
-            },
-        },
-    }),
-};
-pub const KN_K: Material = Material {
-    by_color: ByColorNormalisedMaterialSide(ByColor {
-        white: MaterialSide {
-            by_role: ByRole {
-                king: 1,
-                queen: 0,
-                rook: 0,
-                bishop: 0,
-                knight: 1,
-                pawn: 0,
-            },
-        },
-        black: MaterialSide {
-            by_role: ByRole {
-                king: 1,
-                queen: 0,
-                rook: 0,
-                bishop: 0,
-                knight: 0,
-                pawn: 0,
-            },
-        },
-    }),
-};
 
 impl Material {
     /// Get the material configuration for a [`Board`].
