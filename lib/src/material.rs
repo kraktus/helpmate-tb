@@ -189,7 +189,7 @@ impl fmt::Debug for MaterialSide {
 }
 
 mod protected {
-    use super::{ByColor, Deref, MaterialSide, ByRole, Material};
+    use super::{ByColor, ByRole, Deref, Material, MaterialSide};
     /// Wrapper to ensure `Material` is always normalised
     /// There should be no way to mutate it, and only one way to create it:
     /// `From<ByColor<MaterialSide>>`

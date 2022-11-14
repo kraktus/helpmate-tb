@@ -1,3 +1,4 @@
+mod explore;
 mod generate;
 
 pub use helpmate_tb::{
@@ -10,6 +11,7 @@ use log::LevelFilter;
 
 use clap::{ArgAction, Parser, Subcommand};
 
+use crate::explore::Explore;
 use crate::generate::Generate;
 
 #[cfg(feature = "dhat")]
@@ -35,13 +37,15 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Cmd {
-    Generate(crate::Generate),
+    Generate(Generate),
+    Explore(Explore),
 }
 
 impl Cmd {
     fn run(self) {
         match self {
             Self::Generate(gen) => gen.run(),
+            Self::Explore(expl) => expl.run(),
         }
     }
 }
