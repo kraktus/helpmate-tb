@@ -2,11 +2,11 @@ pub use helpmate_tb::{
     Common, EncoderDecoder, Material, MaterialWinner, Outcome, SideToMoveGetter, TableBaseBuilder,
     UNDEFINED_OUTCOME_BYCOLOR,
 };
-use helpmate_tb::{DeIndexer, FileHandler, IndexWithTurn, Outcomes};
+use helpmate_tb::{DeIndexer, DefaultIndexer, FileHandler, IndexWithTurn};
 use log::{debug, info};
 use std::{collections::HashMap, path::Path, str::FromStr};
 
-use retroboard::shakmaty::Color;
+use retroboard::shakmaty::{ByColor, Color};
 
 use clap::{ArgAction, Args};
 
@@ -51,14 +51,9 @@ impl Explore {
                     .read_dir()
                     .expect("read_dir call failed");
                 for entry_res in entries {
-                    let mut mat_str = entry_res.unwrap().file_name().into_string().unwrap();
-                    let winner = match mat_str.pop() {
-                        Some('b') => Color::Black,
-                        Some('w') => Color::White,
-                        _ => panic!("Only black and white can be winners"),
-                    };
-                    let mat = Material::from_str(&mat_str).expect("Valid material config");
-                    let mat_win = MaterialWinner::new(&mat, winner);
+                    let mat_win_str = entry_res.unwrap().file_name().into_string().unwrap();
+                    let mat_win =
+                        MaterialWinner::from_str(&mat_win_str).expect("invalid file name");
                     self.stats_one_mat(mat_win);
                 }
             }
@@ -71,7 +66,7 @@ impl Explore {
 
     fn stats_one_mat(&self, mat_win: MaterialWinner) {
         info!(
-            "Generating {:?} with winner: {}",
+            "Looking at {:?} with winner: {}",
             mat_win.material, mat_win.winner
         );
         let file_handler: FileHandler = FileHandler::new(&mat_win);
@@ -86,12 +81,14 @@ impl Explore {
     }
 }
 
-fn stats<T: DeIndexer>(
+pub fn stats<T>(
     mat_win: MaterialWinner,
-    indexer: Option<&T>,
-    outcomes: &Outcomes,
+    indexer: Option<&DefaultIndexer>,
+    outcomes: &Vec<ByColor<T>>,
     searched_outcome: Option<Outcome>,
-) {
+) where
+    ByColor<T>: SideToMoveGetter,
+{
     let mut draw = 0;
     let mut win = 0;
     let mut lose = 0;
@@ -101,14 +98,14 @@ fn stats<T: DeIndexer>(
 
     for (idx, by_color_outcome) in outcomes.iter().enumerate() {
         for turn in Color::ALL {
-            let outcome = by_color_outcome.get_by_color(turn);
+            let outcome = by_color_outcome.get_outcome_by_color(turn);
             if Some(outcome) == searched_outcome {
                 info!(
                     "Macthing {outcome:?}, position {:?}",
                     indexer
                         .expect("Not indexer given depsite specific outcome being searched")
                         .restore(
-                            mat_win.material,
+                            &mat_win.material,
                             IndexWithTurn {
                                 idx: idx as u64,
                                 turn

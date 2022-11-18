@@ -60,6 +60,7 @@ pub trait SideToMoveGetter {
     type T;
     // chose `get_by_color` and not `get` not to shadow the original methods
     fn get_by_color(&self, color: Color) -> Self::T;
+    fn get_outcome_by_color(&self, color: Color) -> Outcome;
     fn get_by_pos(&self, pos: &impl SideToMove) -> Self::T {
         self.get_by_color(pos.side_to_move())
     }
@@ -70,6 +71,10 @@ impl SideToMoveGetter for ByColor<ReportU8> {
     type T = Report;
     fn get_by_color(&self, color: Color) -> Self::T {
         self.get(color).into()
+    }
+
+    fn get_outcome_by_color(&self, color: Color) -> Outcome {
+        self.get_by_color(color).outcome()
     }
     fn set_to(&mut self, pos: &impl SideToMove, t: Self::T) {
         let x_mut = self.get_mut(pos.side_to_move());
@@ -82,6 +87,11 @@ impl SideToMoveGetter for ByColor<OutcomeU8> {
     fn get_by_color(&self, color: Color) -> Self::T {
         self.get(color).into()
     }
+
+    fn get_outcome_by_color(&self, color: Color) -> Outcome {
+        self.get_by_color(color)
+    }
+
     fn set_to(&mut self, pos: &impl SideToMove, t: Self::T) {
         let x_mut = self.get_mut(pos.side_to_move());
         *x_mut = t.into();
