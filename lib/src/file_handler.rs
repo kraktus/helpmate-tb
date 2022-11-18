@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::fmt;
+use std::path::Path;
 use std::{collections::HashMap, str::FromStr};
 
 use positioned_io::RandomAccessFile;
@@ -17,8 +18,8 @@ pub struct FileHandler<T = DefaultIndexer> {
 }
 
 impl<T: Indexer> FileHandler<T> {
-    pub fn new(mat: &MaterialWinner) -> Self {
-        let raf = RandomAccessFile::open(format!("../table/{mat:?}")).unwrap();
+    pub fn new(mat: &MaterialWinner, tablebase_dir: &Path) -> Self {
+        let raf = RandomAccessFile::open(tablebase_dir.join(format!("{mat:?}"))).unwrap();
         // .unwrap_or_else(|e| {
         //     panic!("table not found {e:?}, run from the root directory of the project")
         // });
@@ -78,7 +79,7 @@ pub struct Descendants<T = DefaultIndexer>(HashMap<Material, ByColor<FileHandler
 
 impl<T: Indexer> Descendants<T> {
     #[must_use]
-    pub fn new(mat: &Material) -> Self {
+    pub fn new(mat: &Material, tablebase_dir: &Path) -> Self {
         Self(
             mat.descendants_not_draw()
                 .map(|m| {
@@ -86,7 +87,7 @@ impl<T: Indexer> Descendants<T> {
                         m.clone(),
                         ByColor::new_with(|winner| {
                             let mat_winner = MaterialWinner::new(&m, winner);
-                            FileHandler::new(&mat_winner)
+                            FileHandler::new(&mat_winner, tablebase_dir)
                         }),
                     )
                 })
@@ -139,6 +140,8 @@ impl<T: Indexer> Descendants<T> {
 
 #[cfg(test)]
 mod tests {
+    use paste::paste;
+
     use super::*;
     use retroboard::shakmaty::{
         fen::Fen,
@@ -146,7 +149,9 @@ mod tests {
         Color::{Black, White},
     };
 
-    use std::str::FromStr;
+    use std::{path::PathBuf, str::FromStr};
+
+
 
     #[test]
     fn test_material_winner() {
@@ -159,83 +164,44 @@ mod tests {
         }
     }
 
-    #[cfg(not(miri))]
-    #[test]
-    fn test_outcome_from_captures_promotion_without_switching_color_white() {
-        let chess: Chess = Fen::from_ascii("1k6/1r6/1K6/8/4Q3/8/8/8 w - - 0 1".as_bytes())
+    fn tb_test_dir() -> PathBuf {
+        ["..", "table"].iter().collect()
+    }
+
+    fn check_pos(fen: &str, outcome: Outcome, winner: Color) {
+        let chess: Chess = Fen::from_ascii(fen.as_bytes())
             .unwrap()
             .into_position(Standard)
             .unwrap();
         let material = Material::from_board(chess.board());
-        let winner = White;
-        let descendants: Descendants = Descendants::new(&material);
+        let descendants: Descendants = Descendants::new(&material, &tb_test_dir());
         assert_eq!(
             descendants.outcome_from_captures_promotion(&chess, winner),
-            Some(Outcome::Win(1))
+            Some(outcome)
         );
     }
 
-    #[cfg(not(miri))]
-    #[test]
-    fn test_outcome_from_captures_promotion_with_switching_color_white() {
-        let chess: Chess = Fen::from_ascii("3K4/1r2Q3/8/8/8/8/8/3k4 b - - 0 1".as_bytes())
-            .unwrap()
-            .into_position(Standard)
-            .unwrap();
-        let material = Material::from_board(chess.board());
-        let winner = White;
-        let descendants: Descendants = Descendants::new(&material);
-        assert_eq!(
-            descendants.outcome_from_captures_promotion(&chess, winner),
-            Some(Outcome::Draw)
-        );
-    }
-
-    #[cfg(not(miri))]
-    #[test]
-    fn test_outcome_from_captures_promotion_without_switching_color_black() {
-        let chess: Chess = Fen::from_ascii("1Qk5/6Q1/8/8/8/8/8/3K4 b - - 0 1".as_bytes())
-            .unwrap()
-            .into_position(Standard)
-            .unwrap();
-        let material = Material::from_board(chess.board());
-        let winner = Black;
-        let descendants: Descendants = Descendants::new(&material);
-        assert_eq!(
-            descendants.outcome_from_captures_promotion(&chess, winner),
-            Some(Outcome::Draw)
-        );
-    }
-
-    #[cfg(not(miri))]
-    #[test]
-    fn test_outcome_from_captures_promotion_with_switching_color_black() {
-        let chess: Chess = Fen::from_ascii("8/8/8/8/8/1k6/3r4/1K1Q4 b - - 0 1".as_bytes())
-            .unwrap()
-            .into_position(Standard)
-            .unwrap();
-        let material = Material::from_board(chess.board());
-        let winner = Black;
-        let descendants: Descendants = Descendants::new(&material);
-        assert_eq!(
-            descendants.outcome_from_captures_promotion(&chess, winner),
-            Some(Outcome::Win(1))
-        );
-    }
-
-    #[test]
-    fn test_outcome_from_captures_special_case_only_2_kings_left() {
-        for winner in Color::ALL {
-            let chess: Chess = Fen::from_ascii("4k3/3Q4/8/8/8/8/8/3K4 b - - 0 1".as_bytes())
-                .unwrap()
-                .into_position(Standard)
-                .unwrap();
-            let material = Material::from_board(chess.board());
-            let descendants: Descendants = Descendants::new(&material);
-            assert_eq!(
-                descendants.outcome_from_captures_promotion(&chess, winner),
-                Some(Outcome::Draw)
-            );
+    // macro for generating tests
+    macro_rules! gen_tests_descendants {
+    ($($fn_name:ident, $fen:tt, $outcome:expr, $winner:tt,)+) => {
+        $(
+            paste! {
+            #[test]
+            fn [<tests_descendants_ $fn_name>]() {
+                check_pos($fen, $outcome, $winner);
+            }
         }
+        )+
     }
+}
+
+    gen_tests_descendants! {
+        from_captures_promotion_without_switching_color_white, "1k6/1r6/1K6/8/4Q3/8/8/8 w - - 0 1", Outcome::Win(1), White,
+        from_captures_promotion_with_switching_color_white, "3K4/1r2Q3/8/8/8/8/8/3k4 b - - 0 1", Outcome::Draw, White,
+        promotion_without_switching_color_black, "1Qk5/6Q1/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, Black,
+        promotion_with_switching_color_black,"8/8/8/8/8/1k6/3r4/1K1Q4 b - - 0 1",Outcome::Win(1), Black,
+        special_case_only_2_kings_left_w, "4k3/3Q4/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, White,
+        special_case_only_2_kings_left_b, "4k3/3Q4/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, Black,
+    }
+
 }

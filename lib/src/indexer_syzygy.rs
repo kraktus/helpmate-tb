@@ -799,11 +799,11 @@ mod tests {
 
     // macro for generating tests
     macro_rules! gen_tests_syzgy {
-    ($($fn_name:ident, $mat:tt, $fen:tt, $idx:tt,)+) => {
+    ($($fn_name:tt, $mat:tt, $fen:tt, $idx:tt,)+) => {
         $(
             paste! {
             #[test]
-            fn [<test_syzygy $fn_name>]() {
+            fn [<test_syzygy_ $fn_name>]() {
                 check_syzygy($mat, $fen, $idx);
             }
         }
@@ -812,8 +812,8 @@ mod tests {
 }
 
     gen_tests_syzgy! {
-       _1, "KBNvK", "8/8/8/8/8/8/8/KNBk4 w - - 0 1", 484_157,
-       _2, "KBNvK", "8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1", 1_907_795,
+       1, "KBNvK", "8/8/8/8/8/8/8/KNBk4 w - - 0 1", 484_157,
+       2, "KBNvK", "8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1", 1_907_795,
        non_recognised_symetry, "KBNvK", "8/8/2k5/8/4N3/2K2B2/8/8 w - - 0 1", 1_907_815, // should really be 1907795
        // ^ the patch for this position was reverted because it introduced other FPs
        recognised_symetry, "KBNvK", "8/8/8/8/8/8/N7/KBk5 b - - 0 1", 242_414,

@@ -4,7 +4,7 @@ pub use helpmate_tb::{
 };
 use helpmate_tb::{DeIndexer, DefaultIndexer, FileHandler, IndexWithTurn};
 use log::{debug, info};
-use std::{collections::HashMap, path::Path, str::FromStr};
+use std::{collections::HashMap, path::{Path, PathBuf}, str::FromStr};
 
 use retroboard::shakmaty::{ByColor, Color};
 
@@ -41,6 +41,8 @@ pub struct Explore {
     outcome: Option<Outcome>,
     #[arg(long, action = ArgAction::SetFalse, default_value_t = false)]
     exclude_summary: bool,
+    #[arg(short, long)]
+    tb_dir: PathBuf,
 }
 
 impl Explore {
@@ -69,7 +71,7 @@ impl Explore {
             "Looking at {:?} with winner: {}",
             mat_win.material, mat_win.winner
         );
-        let file_handler: FileHandler = FileHandler::new(&mat_win);
+        let file_handler: FileHandler = FileHandler::new(&mat_win, &self.tb_dir);
         if !self.exclude_summary {
             stats(
                 mat_win,

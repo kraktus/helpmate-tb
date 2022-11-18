@@ -1,12 +1,10 @@
-pub use helpmate_tb::{
-    Common, EncoderDecoder, Material, MaterialWinner, TableBaseBuilder,
-};
+pub use helpmate_tb::{Common, EncoderDecoder, Material, MaterialWinner, TableBaseBuilder};
 
 use log::info;
 
 use retroboard::shakmaty::Color;
-use std::fs::File;
 use std::str::FromStr;
+use std::{fs::File, path::PathBuf};
 
 use clap::{ArgAction, Args};
 
@@ -18,6 +16,8 @@ pub struct Generate {
     material: Material,
     #[arg(short, long, action = ArgAction::SetTrue)]
     recursive: bool,
+    #[arg(short, long)]
+    tb_dir: PathBuf,
 }
 
 impl Generate {
@@ -27,24 +27,24 @@ impl Generate {
         } else {
             vec![]
         };
-        materials.push(self.material);
+        materials.push(self.material.clone());
         for mat in materials {
-            gen_one_material(mat)
+            self.gen_one_material(mat)
         }
     }
-}
 
-fn gen_one_material(mat: Material) {
-    for winner in Color::ALL {
-        info!("Generating {mat:?} with winner: {winner}");
-        // white first, most interesting
-        let common = TableBaseBuilder::build(mat.clone(), winner);
-        let mat_win = MaterialWinner::new(&common.material, common.winner);
-        let mut encoder =
-            EncoderDecoder::new(File::create(format!("../table/{mat_win:?}")).unwrap());
-        encoder
-            .compress(&common.all_pos)
-            .expect("Compression failed for mat {mat:?}");
-        stats(mat_win, None, &common.all_pos, None)
+    fn gen_one_material(&self, mat: Material) {
+        for winner in Color::ALL {
+            info!("Generating {mat:?} with winner: {winner}");
+            // white first, most interesting
+            let common = TableBaseBuilder::build(mat.clone(), winner, &self.tb_dir);
+            let mat_win = MaterialWinner::new(&common.material, common.winner);
+            let mut encoder =
+                EncoderDecoder::new(File::create(format!("../table/{mat_win:?}")).unwrap());
+            encoder
+                .compress(&common.all_pos)
+                .expect("Compression failed for mat {mat:?}");
+            stats(mat_win, None, &common.all_pos, None)
+        }
     }
 }

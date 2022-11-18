@@ -12,7 +12,7 @@ use retroboard::shakmaty::{
     FromSetup, Outcome as ChessOutcome, Piece, Position, PositionError, Setup, Square,
 };
 use retroboard::RetroBoard;
-use std::{collections::VecDeque, ops::Deref};
+use std::{collections::VecDeque, ops::Deref, path::Path};
 
 use indicatif::ProgressBar;
 
@@ -210,17 +210,17 @@ pub struct Generator<T> {
 
 impl Generator<DefaultGeneratorHandler> {
     #[must_use]
-    pub fn new(common: Common) -> Self {
-        Self::new_with_pos_handler(DefaultGeneratorHandler, common)
+    pub fn new(common: Common, tablebase_path: &Path) -> Self {
+        Self::new_with_pos_handler(DefaultGeneratorHandler, common, tablebase_path)
     }
 }
 
 impl<T: PosHandler> Generator<T> {
-    pub fn new_with_pos_handler(pos_handler: T, common: Common) -> Self {
+    pub fn new_with_pos_handler(pos_handler: T, common: Common, tablebase_dir: &Path) -> Self {
         let pb = common.get_progress_bar();
         Self {
             pb,
-            tablebase: Descendants::new(&common.material),
+            tablebase: Descendants::new(&common.material, tablebase_dir),
             common,
             queue: Queue::default(),
             pos_handler,
@@ -452,9 +452,9 @@ pub struct TableBaseBuilder;
 
 impl TableBaseBuilder {
     #[must_use]
-    pub fn build(material: Material, winner: Color) -> Common {
+    pub fn build(material: Material, winner: Color, tablebase_dir: &Path) -> Common {
         let common = Common::new(material, winner);
-        let mut generator = Generator::new(common);
+        let mut generator = Generator::new(common, tablebase_dir);
         generator.generate_positions();
         let (mut queue, common, _): (Queue, Common, DefaultGeneratorHandler) =
             generator.get_result();
