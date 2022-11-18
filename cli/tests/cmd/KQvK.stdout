@@ -5,23 +5,23 @@
 [DEBUG helpmate_tb::generation] counter 62664
 [DEBUG helpmate_tb::generation] nb White mate 46
 [DEBUG helpmate_tb::generation] nb Black mates 0
-[DEBUG helpmate_tb_cli::generate] From White perspective, win: 45723, draw: 414, lost: 0, unkown: 0
-[DEBUG helpmate_tb_cli::generate] Index density = 78%
-[DEBUG helpmate_tb_cli::generate] Win(0), 46
-[DEBUG helpmate_tb_cli::generate] Win(1), 306
-[DEBUG helpmate_tb_cli::generate] Win(2), 580
-[DEBUG helpmate_tb_cli::generate] Win(3), 1751
-[DEBUG helpmate_tb_cli::generate] Win(4), 4336
-[DEBUG helpmate_tb_cli::generate] Win(5), 5851
-[DEBUG helpmate_tb_cli::generate] Win(6), 11208
-[DEBUG helpmate_tb_cli::generate] Win(7), 7267
-[DEBUG helpmate_tb_cli::generate] Win(8), 9197
-[DEBUG helpmate_tb_cli::generate] Win(9), 2551
-[DEBUG helpmate_tb_cli::generate] Win(10), 1987
-[DEBUG helpmate_tb_cli::generate] Win(11), 353
-[DEBUG helpmate_tb_cli::generate] Win(12), 284
-[DEBUG helpmate_tb_cli::generate] Win(13), 2
-[DEBUG helpmate_tb_cli::generate] Win(14), 4
+[DEBUG helpmate_tb_cli::explore] From White perspective, win: 45723, draw: 414, lost: 0, unkown: 0
+[DEBUG helpmate_tb_cli::explore] Index density = 78%
+[DEBUG helpmate_tb_cli::explore] Win(0), 46
+[DEBUG helpmate_tb_cli::explore] Win(1), 306
+[DEBUG helpmate_tb_cli::explore] Win(2), 580
+[DEBUG helpmate_tb_cli::explore] Win(3), 1751
+[DEBUG helpmate_tb_cli::explore] Win(4), 4336
+[DEBUG helpmate_tb_cli::explore] Win(5), 5851
+[DEBUG helpmate_tb_cli::explore] Win(6), 11208
+[DEBUG helpmate_tb_cli::explore] Win(7), 7267
+[DEBUG helpmate_tb_cli::explore] Win(8), 9197
+[DEBUG helpmate_tb_cli::explore] Win(9), 2551
+[DEBUG helpmate_tb_cli::explore] Win(10), 1987
+[DEBUG helpmate_tb_cli::explore] Win(11), 353
+[DEBUG helpmate_tb_cli::explore] Win(12), 284
+[DEBUG helpmate_tb_cli::explore] Win(13), 2
+[DEBUG helpmate_tb_cli::explore] Win(14), 4
 [INFO  helpmate_tb_cli::generate] Generating KQvK with winner: black
 [DEBUG helpmate_tb::generation] all_pos_vec capacity: 70308
 [DEBUG helpmate_tb::generation] all_pos_vec capacity: 29560 after shrinking
@@ -29,6 +29,6 @@
 [DEBUG helpmate_tb::generation] counter 62664
 [DEBUG helpmate_tb::generation] nb Black stalemate/capture resulting in draw 109
 [DEBUG helpmate_tb::generation] nb White mates 46
-[DEBUG helpmate_tb_cli::generate] From Black perspective, win: 0, draw: 46091, lost: 46, unkown: 0
-[DEBUG helpmate_tb_cli::generate] Index density = 78%
-[DEBUG helpmate_tb_cli::generate] Lose(0), 46
+[DEBUG helpmate_tb_cli::explore] From Black perspective, win: 0, draw: 46091, lost: 46, unkown: 0
+[DEBUG helpmate_tb_cli::explore] Index density = 78%
+[DEBUG helpmate_tb_cli::explore] Lose(0), 46
