@@ -230,6 +230,6 @@ mod tests {
     #[test]
     fn test_gen_all_pawnless_mat_up_to() {
         assert_eq!(gen_all_pawnless_mat_up_to(3).len(), 4);
-        assert_eq!(dbg!(gen_all_pawnless_mat_up_to(4)).len(), 24); // 20 4 pieces + 4 3pieces
+        assert_eq!(gen_all_pawnless_mat_up_to(4).len(), 24); // 20 4 pieces + 4 3pieces
     }
 }

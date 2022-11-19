@@ -69,7 +69,7 @@ impl<T: Indexer> TablebaseProber<T> {
                     let mut pos_after_move = pos.clone();
                     pos_after_move.play_unchecked(chess_move);
                     self.retrieve_outcome(&pos_after_move, winner)
-                        .map(|outcome| dbg!((chess_move, outcome)))
+                        .map(|outcome| (chess_move, outcome))
                 }),
                 |iter| {
                     iter.max_by_key(|(_, outcome)| *outcome)

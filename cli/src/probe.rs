@@ -5,7 +5,8 @@ pub use helpmate_tb::{
 
 use log::info;
 use retroboard::shakmaty::fen::Fen;
-use retroboard::shakmaty::{Chess, Color, Position};
+use retroboard::shakmaty::uci::Uci;
+use retroboard::shakmaty::{Chess, Color, Move, Position};
 use retroboard::RetroBoard;
 
 use std::path::PathBuf;
@@ -35,10 +36,15 @@ impl Probe {
         let material = Material::from_board(self.fen.board());
         let tb_prober: TablebaseProber = TablebaseProber::new(&material, &self.tb_dir);
         let outcome = tb_prober.retrieve_outcome(&self.fen, self.winner).unwrap();
-        let move_list = tb_prober.probe(&self.fen, self.winner).unwrap();
+        let move_list: Vec<String> = tb_prober
+            .probe(&self.fen, self.winner)
+            .unwrap()
+            .into_iter()
+            .map(|m| m.to_uci(retroboard::shakmaty::CastlingMode::Standard).to_string())
+            .collect();
         info!(
             "For {:?}`\nOutcome is {outcome:?}, Moves: {move_list:?}",
-            RetroBoard::from(self.fen)
+            RetroBoard::from(self.fen),
         )
     }
 }
