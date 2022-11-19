@@ -28,10 +28,10 @@ impl<T: Indexer> LazyFileHandler<T> {
     }
 
     #[must_use]
-    pub fn outcome_of(&self, board_and_turn: &impl SideToMove) -> io::Result<Outcome> {
+    pub fn outcome_of(&self, board_and_turn: &impl SideToMove, flip: bool) -> io::Result<Outcome> {
         self.inner
             .outcome_of(self.indexer.encode_board(board_and_turn.board()))
-            .map(|bc| bc.get(board_and_turn.side_to_move()).clone())
+            .map(|bc| bc.get(board_and_turn.side_to_move() ^ flip).clone())
             .map(Outcome::from)
     }
 }
@@ -66,19 +66,31 @@ impl<T: Indexer> TablebaseProber<T> {
         loop {
             let moves = pos.legal_moves();
             println!("{:?}", pos.board());
+            // GOOD CODE
             let (chess_move, best_outcome) = process_results(
                 moves.iter().map(|chess_move| {
-                    println!("{chess_move:?}");
                     let mut pos_after_move = pos.clone();
                     pos_after_move.play_unchecked(chess_move);
                     self.retrieve_outcome(&pos_after_move, winner)
                         .map(|outcome| dbg!((chess_move, outcome)))
                 }),
                 |iter| {
-                    iter.max_by_key(|(_, outcome)| *outcome)
+                    dbg!(iter)
+                        .max_by_key(|(_, outcome)| *outcome)
                         .expect("No outcomes found")
                 },
             )?;
+
+            // BAD CODE but easier to debug
+            // let foo: Vec<_> = moves.iter().map(|chess_move| {
+            //         let mut pos_after_move = pos.clone();
+            //         pos_after_move.play_unchecked(chess_move);
+            //         let outcome = self.retrieve_outcome(&pos_after_move, winner).unwrap();
+            //         (chess_move, outcome)
+            //     }).collect();
+            // dbg!(&foo);
+            // let (chess_move, best_outcome) = foo.into_iter().max_by_key(|(_, outcome)| *outcome).unwrap();
+
             move_list.push(chess_move.clone());
             pos.play_unchecked(chess_move);
 
@@ -101,7 +113,7 @@ impl<T: Indexer> RetrieveOutcome for TablebaseProber<T> {
         flip: bool,
     ) -> std::io::Result<Outcome> {
         let lazy_file = self.0.get(&mat).expect("material config not included");
-        lazy_file.get(winner ^ flip).outcome_of(pos)
+        lazy_file.get(winner ^ flip).outcome_of(pos, flip)
     }
 }
 
@@ -113,7 +125,6 @@ mod tests {
         fen::Fen,
         CastlingMode, Chess,
         Color::{self, *},
-        Position,
     };
 
     use paste::paste;
@@ -123,7 +134,7 @@ mod tests {
         ["..", "table"].iter().collect()
     }
 
-    fn check_pos_probe(fen: &str, outcome: Outcome, winner: Color) {
+    fn check_retrieving_outcome(fen: &str, outcome: Outcome, winner: Color) {
         let chess: Chess = Fen::from_ascii(fen.as_bytes())
             .unwrap()
             .into_position(CastlingMode::Standard)
@@ -133,14 +144,36 @@ mod tests {
         assert_eq!(tb_prober.retrieve_outcome(&chess, winner).unwrap(), outcome);
     }
 
+    fn check_probe(fen: &str, _: Outcome, winner: Color) {
+        let chess: Chess = Fen::from_ascii(fen.as_bytes())
+            .unwrap()
+            .into_position(CastlingMode::Standard)
+            .unwrap();
+        let material = Material::from_board(chess.board());
+        let tb_prober: TablebaseProber = TablebaseProber::new(&material, &tb_test_dir());
+        let outcome = tb_prober.retrieve_outcome(&chess, winner).unwrap();
+        let mainline_len = match outcome {
+            Outcome::Win(x) | Outcome::Lose(x) => x as usize,
+            _ => 1,
+        };
+        // calling `probe` by construction ensures the line is legal
+        assert_eq!(tb_prober.probe(&chess, winner).unwrap().len(), mainline_len);
+    }
+
     // macro for generating tests
     macro_rules! gen_tests_probe {
     ($($fn_name:ident, $fen:tt, $outcome:expr, $winner:tt,)+) => {
         $(
         paste! {
             #[test]
+            fn [<tests_probe_retrieve_outcome $fn_name>]() {
+                check_retrieving_outcome($fen, $outcome, $winner);
+            }
+
+            #[ignore = "too slow to be enabled by default"]
+            #[test]
             fn [<tests_probe_ $fn_name>]() {
-                check_pos_probe($fen, $outcome, $winner);
+                check_probe($fen, $outcome, $winner);
             }
         }
         )+

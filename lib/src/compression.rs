@@ -270,6 +270,13 @@ mod tests {
         gen_reports(DUMMY_NUMBER)
     }
 
+    fn into_outcomes(reports: Reports) -> Outcomes {
+        reports
+            .into_iter()
+            .map(|bc| bc.map(|x| OutcomeU8::from(Report::from(x).outcome())))
+            .collect()
+    }
+
     #[test]
     fn test_block_header_size() {
         let test = BlockHeader {
@@ -304,10 +311,7 @@ mod tests {
         let block = Block::new(&reports, 0).unwrap();
         assert_eq!(
             block.decompress_outcomes().unwrap(),
-            reports
-                .into_iter()
-                .map(|bc| bc.map(|x| OutcomeU8::from(Report::from(x).outcome())))
-                .collect::<Outcomes>()
+            into_outcomes(reports)
         );
     }
 
@@ -337,21 +341,19 @@ mod tests {
             .decompress_outcomes()
             .expect("decompression failed");
         assert_eq!(
-            reports
-                .into_iter()
-                .map(|bc| bc.map(|x| OutcomeU8::from(Report::from(x).outcome())))
-                .collect::<Outcomes>(),
+            into_outcomes(reports),
             decompressed
         )
     }
 
-    // deku is too slow with debug information to run
+    // Too slow even in release mode! With debug information 
+    // #[ignore = "too slow to be enabled by default"]
     // #[test]
     // fn test_file_compression_soundness() {
-    //     let outcomes = gen_outcomes(BLOCK_ELEMENTS * 2 + BLOCK_ELEMENTS / 2);
+    //     let reports = gen_reports(BLOCK_ELEMENTS * 2 + BLOCK_ELEMENTS / 2);
     //     let mut encoder = EncoderDecoder::new(Vec::<u8>::new());
-    //     encoder.compress(&outcomes).expect("compression failed");
+    //     encoder.compress(&reports).expect("compression failed");
     //     let decompressed = encoder.decompress_file().unwrap();
-    //     assert_eq!(outcomes, decompressed)
+    //     assert_eq!(into_outcomes(reports), decompressed)
     // }
 }
