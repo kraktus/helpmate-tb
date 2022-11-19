@@ -1,5 +1,6 @@
 mod explore;
 mod generate;
+mod probe;
 
 pub use helpmate_tb::{
     Common, EncoderDecoder, Material, MaterialWinner, Outcome, SideToMoveGetter, TableBaseBuilder,
@@ -10,6 +11,7 @@ use env_logger::{Builder, Target};
 use log::LevelFilter;
 
 use clap::{ArgAction, Parser, Subcommand};
+use probe::Probe;
 
 use crate::explore::Explore;
 use crate::generate::Generate;
@@ -39,6 +41,7 @@ struct Cli {
 enum Cmd {
     Generate(Generate),
     Explore(Explore),
+    Probe(Probe),
 }
 
 impl Cmd {
@@ -46,6 +49,7 @@ impl Cmd {
         match self {
             Self::Generate(gen) => gen.run(),
             Self::Explore(expl) => expl.run(),
+            Self::Probe(probe) => probe.run(),
         }
     }
 }
