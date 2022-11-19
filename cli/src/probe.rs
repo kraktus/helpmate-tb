@@ -3,16 +3,12 @@ pub use helpmate_tb::{
 };
 use helpmate_tb::{Outcome, RetrieveOutcome};
 
-
-
 use retroboard::shakmaty::fen::Fen;
 use retroboard::shakmaty::{Chess, Color, Position};
 
-use std::{path::PathBuf};
+use std::path::PathBuf;
 
-use clap::{Args};
-
-
+use clap::Args;
 
 fn from_fen(fen: &str) -> Result<Chess, &'static str> {
     Fen::from_ascii(fen.as_bytes())
