@@ -15,6 +15,7 @@ mod indexer;
 mod indexer_syzygy;
 mod material;
 mod outcome;
+mod probe;
 
 pub use crate::common::Common;
 pub use crate::file_handler::{Descendants, FileHandler, MaterialWinner};

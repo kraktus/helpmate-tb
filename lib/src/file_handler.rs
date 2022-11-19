@@ -13,16 +13,13 @@ use crate::{
 
 #[derive(Debug)]
 pub struct FileHandler<T = DefaultIndexer> {
-    pub indexer: T,
+    pub indexer: T, // needed in case we want to re-extract the position from the index if reversible
     pub outcomes: Outcomes,
 }
 
 impl<T: Indexer> FileHandler<T> {
     pub fn new(mat: &MaterialWinner, tablebase_dir: &Path) -> Self {
         let raf = RandomAccessFile::open(tablebase_dir.join(format!("{mat:?}"))).unwrap();
-        // .unwrap_or_else(|e| {
-        //     panic!("table not found {e:?}, run from the root directory of the project")
-        // });
         let outcomes = EncoderDecoder::new(raf)
             .decompress_file()
             .expect("decompression failed");
@@ -101,23 +98,6 @@ impl<T: Indexer> Descendants<T> {
         Self(HashMap::new())
     }
 
-    /// Returns the distance to helpmate in the descendant table, or panics
-    fn retrieve_outcome(&self, pos: &Chess, winner: Color) -> Outcome {
-        let flip = is_black_stronger(pos.board());
-        let mat = Material::from_board(pos.board());
-        // special case for material config known to be draw in every position
-        if mat.count() == 2 || mat == KB_K || mat == KN_K {
-            return Outcome::Draw;
-        }
-        let table_file = self
-            .0
-            .get(&mat)
-            .expect("Position to be among descendants")
-            .get(winner ^ flip);
-        let idx = table_file.indexer.encode(pos).usize();
-        table_file.outcomes[idx].get_by_color(pos.turn() ^ flip)
-    }
-
     /// For the given position, compute all moves that are either captures and/or promotion,
     /// and return the best result
     /// Example:
@@ -132,9 +112,49 @@ impl<T: Indexer> Descendants<T> {
                 let mut pos_after_move = pos.clone();
                 pos_after_move.play_unchecked(chess_move);
                 self.retrieve_outcome(&pos_after_move, winner)
+                    .expect("No IO operation involved here")
             })
             .max()
             .map(|o| o + 1) // we are one move further from the max
+    }
+}
+
+pub trait RetrieveOutcome {
+    fn raw_access_outcome(
+        &self,
+        mat: Material,
+        pos: &Chess,
+        winner: Color,
+        flip: bool,
+    ) -> std::io::Result<Outcome>;
+
+    /// Returns the distance to helpmate in the descendant table, or panics
+    fn retrieve_outcome(&self, pos: &Chess, winner: Color) -> std::io::Result<Outcome> {
+        let flip = is_black_stronger(pos.board());
+        let mat = Material::from_board(pos.board());
+        // special case for material config known to be draw in every position
+        if mat.count() == 2 || mat == KB_K || mat == KN_K {
+            return Ok(Outcome::Draw);
+        }
+        self.raw_access_outcome(mat, pos, winner, flip)
+    }
+}
+
+impl<T: Indexer> RetrieveOutcome for Descendants<T> {
+    fn raw_access_outcome(
+        &self,
+        mat: Material,
+        pos: &Chess,
+        winner: Color,
+        flip: bool,
+    ) -> std::io::Result<Outcome> {
+        let table_file = self
+            .0
+            .get(&mat)
+            .expect("Position to be among descendants")
+            .get(winner ^ flip);
+        let idx = table_file.indexer.encode(pos).usize();
+        Ok(table_file.outcomes[idx].get_by_color(pos.turn() ^ flip))
     }
 }
 
@@ -193,6 +213,7 @@ mod tests {
     }
 }
 
+    // should be kept in sync with `probe.rs` tests
     gen_tests_descendants! {
         from_captures_promotion_without_switching_color_white, "1k6/1r6/1K6/8/4Q3/8/8/8 w - - 0 1", Outcome::Win(1), White,
         from_captures_promotion_with_switching_color_white, "3K4/1r2Q3/8/8/8/8/8/3k4 b - - 0 1", Outcome::Draw, White,
