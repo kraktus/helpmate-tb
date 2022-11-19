@@ -504,6 +504,7 @@ impl Table {
     /// the corresponding subtable.
     #[allow(clippy::similar_names)] // changing names would make comparison with upstream more difficult
     #[allow(clippy::too_many_lines)] // same for refactoring
+    #[allow(clippy::bool_to_int_with_if)] // same for refactoring
     pub fn encode_checked(&self, pos: &impl SideToMove) -> Option<u64> {
         let material = Material::from_board(pos.board());
 

@@ -197,7 +197,7 @@ impl Block {
     pub fn get_outcome(&self, idx: u64) -> io::Result<ByColor<OutcomeU8>> {
         debug_assert!(self.header.idx_is_in_block(idx));
         let block_idx = (idx.checked_sub(self.header.index_from))
-            .ok_or(io::Error::new(
+            .ok_or_else(|| io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "Min index of the block superior to index input",
             ))
@@ -206,7 +206,7 @@ impl Block {
         self.decompress_outcomes().and_then(|outcomes| {
             outcomes
                 .get(block_idx)
-                .ok_or(io::Error::new(
+                .ok_or_else(|| io::Error::new(
                     io::ErrorKind::InvalidInput,
                     "Index not found in the block",
                 ))

@@ -482,6 +482,7 @@ impl TableBaseBuilder {
     }
 }
 
+#[allow(clippy::result_large_err)]
 pub fn to_chess_with_illegal_checks(setup: Setup) -> Result<Chess, PositionError<Chess>> {
     Chess::from_setup(setup, CastlingMode::Standard).or_else(PositionError::ignore_impossible_check)
 }

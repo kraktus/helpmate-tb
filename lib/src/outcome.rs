@@ -123,14 +123,14 @@ impl FromStr for Outcome {
             Ok(Self::Draw)
         } else if s == "undefined" {
             Ok(Self::Undefined)
-        } else if s.starts_with("win") {
+        } else if let Some(win_in) = s.strip_prefix("win") {
             // we have checked the string only contain ascii before
-            u8::from_str(&s[3..])
+            u8::from_str(win_in)
                 .map(Self::Win)
                 .map_err(|_| "invalid win value, must be of the form winXXX e.g win12")
-        } else if s.starts_with("lose") {
+        } else if let Some(lose_in) = s.strip_prefix("lose") {
             // we have checked the string only contain ascii before
-            u8::from_str(&s[4..])
+            u8::from_str(lose_in)
                 .map(Self::Lose)
                 .map_err(|_| "invalid lose value, must be of the form loseXXX e.g lose12")
         } else {

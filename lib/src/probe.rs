@@ -27,7 +27,6 @@ impl<T: Indexer> LazyFileHandler<T> {
         Self { indexer, inner }
     }
 
-    #[must_use]
     pub fn outcome_of(&self, board_and_turn: &impl SideToMove, flip: bool) -> io::Result<Outcome> {
         self.inner
             .outcome_of(self.indexer.encode_board(board_and_turn.board()))
