@@ -4,7 +4,11 @@ pub use helpmate_tb::{
 };
 use helpmate_tb::{DeIndexer, DefaultIndexer, FileHandler, IndexWithTurn};
 use log::{debug, info};
-use std::{collections::HashMap, path::{Path, PathBuf}, str::FromStr};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use retroboard::shakmaty::{ByColor, Color};
 

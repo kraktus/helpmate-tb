@@ -95,16 +95,39 @@ impl<T: ReadAt> EncoderDecoder<T> {
         from_bytes_exact::<Block>(&block_buf)
     }
 
+    pub fn outcome_of(&self, idx: u64) -> io::Result<ByColor<OutcomeU8>> {
+        let mut byte_offset = 0;
+        loop {
+            match self.decompress_block_header(byte_offset) {
+                Ok(block_header) if block_header.idx_is_in_block(idx) => {
+                    return self
+                        .decompress_block(byte_offset)
+                        .and_then(|block| block.get_outcome(idx))
+                }
+                Ok(block_header) => {
+                    byte_offset += to_u64(block_header.size_including_headers());
+                }
+                // we have reached the end of the table
+                Err(ref err) if err.kind() == io::ErrorKind::UnexpectedEof => break,
+                Err(err) => return Err(err),
+            }
+        }
+        Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            "index not found in table",
+        ))
+    }
+
     pub fn decompress_file(&self) -> io::Result<Outcomes> {
         let mut outcomes = Outcomes::new();
         let mut byte_offset = 0;
         loop {
             match self.decompress_block(byte_offset) {
                 Ok(block) => {
-                    byte_offset += block.header.size_including_headers() as u64;
+                    byte_offset += to_u64(block.header.size_including_headers());
                     outcomes.extend(block.decompress_outcomes()?);
                 }
-                // we have reached the end of the file
+                // we have reached the end of the table
                 Err(ref err) if err.kind() == io::ErrorKind::UnexpectedEof => break,
                 Err(err) => return Err(err),
             }
@@ -121,10 +144,15 @@ struct BlockHeader {
 }
 
 impl BlockHeader {
-    const BYTE_SIZE: usize = 8 * 3;
+    // TODO replace by BitSize::of::<BlockHeader>() which is now const
+    const BYTE_SIZE: usize = 8 * 3; // const instead of using BitSize::of::<BlockHeader>() for speed I guess
 
     pub fn size_including_headers(&self) -> usize {
         Self::BYTE_SIZE + self.block_size as usize
+    }
+
+    pub fn idx_is_in_block(&self, idx: u64) -> bool {
+        self.index_from <= idx && idx < self.index_to
     }
 
     pub const fn nb_elements(&self) -> usize {
@@ -163,6 +191,26 @@ impl Block {
                 },
                 compressed_outcomes,
             }
+        })
+    }
+
+    pub fn get_outcome(&self, idx: u64) -> io::Result<ByColor<OutcomeU8>> {
+        debug_assert!(self.header.idx_is_in_block(idx));
+        let block_idx = (idx.checked_sub(self.header.index_from))
+            .ok_or(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Min index of the block superior to index input",
+            ))
+            .map(|idx_u64| idx_u64 as usize)?;
+
+        self.decompress_outcomes().and_then(|outcomes| {
+            outcomes
+                .get(block_idx)
+                .ok_or(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Index not found in the block",
+                ))
+                .copied()
         })
     }
 
@@ -261,6 +309,20 @@ mod tests {
                 .map(|bc| bc.map(|x| OutcomeU8::from(Report::from(x).outcome())))
                 .collect::<Outcomes>()
         );
+    }
+
+    #[cfg(not(miri))]
+    #[test]
+    fn test_outcome_partial_decompression() {
+        let reports = gen_reports(200);
+        let offset = 100;
+        let block = Block::new(&reports, offset).unwrap();
+        for (i, report) in reports.into_iter().enumerate() {
+            assert_eq!(
+                block.get_outcome((i + offset) as u64).unwrap(),
+                report.map(|x| OutcomeU8::from(Report::from(x).outcome()))
+            );
+        }
     }
 
     #[cfg(not(miri))]

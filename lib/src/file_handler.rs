@@ -151,8 +151,6 @@ mod tests {
 
     use std::{path::PathBuf, str::FromStr};
 
-
-
     #[test]
     fn test_material_winner() {
         for ((m, c), expected_file_name) in [
@@ -203,5 +201,4 @@ mod tests {
         special_case_only_2_kings_left_w, "4k3/3Q4/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, White,
         special_case_only_2_kings_left_b, "4k3/3Q4/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, Black,
     }
-
 }
