@@ -24,14 +24,14 @@ impl<T: Indexer> LazyFileHandler<T> {
             RandomAccessFile::open(&path).unwrap_or_else(|_| panic!("Path {path:?} not found"));
         let inner = EncoderDecoder::new(raf);
         let indexer = T::new(&mat.material);
-        Self { inner, indexer }
+        Self { indexer, inner }
     }
 
     #[must_use]
     pub fn outcome_of(&self, board_and_turn: &impl SideToMove, flip: bool) -> io::Result<Outcome> {
         self.inner
             .outcome_of(self.indexer.encode_board(board_and_turn.board()))
-            .map(|bc| bc.get(board_and_turn.side_to_move() ^ flip).clone())
+            .map(|bc| *bc.get(board_and_turn.side_to_move() ^ flip))
             .map(Outcome::from)
     }
 }
@@ -111,7 +111,7 @@ mod tests {
     use retroboard::shakmaty::{
         fen::Fen,
         CastlingMode, Chess,
-        Color::{self, *},
+        Color::{self, Black, White},
     };
 
     use paste::paste;

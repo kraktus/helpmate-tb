@@ -292,7 +292,7 @@ mod tests {
         for fen in ["5R1k/7R/8/8/8/8/8/K7", "6Rk/8/7R/8/8/8/8/K7"] {
             let r = Board::from_ascii_board_fen(fen.as_bytes()).unwrap();
             let idx = NaiveIndexer.encode_board(&r);
-            assert_eq!(idx, 1830397);
+            assert_eq!(idx, 1_830_397);
         }
     }
 
@@ -301,7 +301,7 @@ mod tests {
         for fen in ["5R1k/7R/8/8/8/8/8/K7", "6Rk/8/7R/8/8/8/8/K7"] {
             let r = Board::from_ascii_board_fen(fen.as_bytes()).unwrap();
             let idx = NaiveIndexer.encode_board(&r);
-            assert_eq!(idx, 1830397);
+            assert_eq!(idx, 1_830_397);
         }
     }
 
@@ -310,7 +310,7 @@ mod tests {
         for fen in ["5RRk/7R/8/8/8/8/8/K7", "6Rk/7R/7R/8/8/8/8/K7"] {
             let r = Board::from_ascii_board_fen(fen.as_bytes()).unwrap();
             let idx = NaiveIndexer.encode_board(&r);
-            assert_eq!(idx, 117112318);
+            assert_eq!(idx, 117_112_318);
         }
     }
 

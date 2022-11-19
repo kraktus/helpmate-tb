@@ -18,6 +18,7 @@ pub struct FileHandler<T = DefaultIndexer> {
 }
 
 impl<T: Indexer> FileHandler<T> {
+    #[must_use]
     pub fn new(mat: &MaterialWinner, tablebase_dir: &Path) -> Self {
         let raf = RandomAccessFile::open(tablebase_dir.join(format!("{mat:?}"))).unwrap();
         let outcomes = EncoderDecoder::new(raf)
