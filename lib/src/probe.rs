@@ -30,7 +30,7 @@ impl<T: Indexer> LazyFileHandler<T> {
     #[must_use]
     pub fn outcome_of(&self, board_and_turn: &impl SideToMove) -> io::Result<Outcome> {
         self.inner
-            .outcome_of(dbg!(self.indexer.encode_board(board_and_turn.board())))
+            .outcome_of(self.indexer.encode_board(board_and_turn.board()))
             .map(|bc| bc.get(board_and_turn.side_to_move()).clone())
             .map(Outcome::from)
     }
@@ -100,7 +100,6 @@ impl<T: Indexer> RetrieveOutcome for TablebaseProber<T> {
         winner: Color,
         flip: bool,
     ) -> std::io::Result<Outcome> {
-        dbg!(&mat);
         let lazy_file = self.0.get(&mat).expect("material config not included");
         lazy_file.get(winner ^ flip).outcome_of(pos)
     }
