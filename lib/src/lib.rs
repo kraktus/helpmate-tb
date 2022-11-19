@@ -18,12 +18,13 @@ mod outcome;
 mod probe;
 
 pub use crate::common::Common;
-pub use crate::file_handler::{Descendants, FileHandler, MaterialWinner};
+pub use crate::file_handler::{Descendants, FileHandler, MaterialWinner, RetrieveOutcome};
 pub use crate::indexer::{DeIndexer, Indexer};
 pub use crate::outcome::{
     Outcome, OutcomeU8, Outcomes, OutcomesSlice, Report, ReportU8, Reports, ReportsSlice,
     UNDEFINED_OUTCOME_BYCOLOR,
 };
+pub use crate::probe::TablebaseProber;
 pub use compression::EncoderDecoder;
 pub use encoding::get_info_table;
 pub use generation::{

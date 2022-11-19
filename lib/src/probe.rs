@@ -1,7 +1,7 @@
 use std::{collections::HashMap, path::Path};
 
 use itertools::process_results;
-use positioned_io::{RandomAccessFile, ReadAt};
+use positioned_io::RandomAccessFile;
 use retroboard::shakmaty::{ByColor, Chess, Color, MoveList, Position};
 
 use crate::{
@@ -75,6 +75,8 @@ impl<T: Indexer> TablebaseProber<T> {
                         .expect("No outcomes found")
                 },
             )?;
+            move_list.push(chess_move.clone());
+            pos.play_unchecked(chess_move);
 
             if best_outcome == Outcome::Win(0)
                 || best_outcome == Outcome::Lose(0)
@@ -96,5 +98,57 @@ impl<T: Indexer> RetrieveOutcome for TablebaseProber<T> {
     ) -> std::io::Result<Outcome> {
         let lazy_file = self.0.get(&mat).expect("material config not included");
         lazy_file.get(winner ^ flip).outcome_of(pos)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use retroboard::shakmaty::{
+        fen::Fen,
+        CastlingMode, Chess,
+        Color::{self, *},
+        Position,
+    };
+
+    use paste::paste;
+    use std::path::PathBuf;
+
+    fn tb_test_dir() -> PathBuf {
+        ["..", "table"].iter().collect()
+    }
+
+    fn check_pos_probe(fen: &str, outcome: Outcome, winner: Color) {
+        let chess: Chess = Fen::from_ascii(fen.as_bytes())
+            .unwrap()
+            .into_position(CastlingMode::Standard)
+            .unwrap();
+        let material = Material::from_board(chess.board());
+        let tb_prober: TablebaseProber = TablebaseProber::new(&material, &tb_test_dir());
+        assert_eq!(tb_prober.retrieve_outcome(&chess, winner).unwrap(), outcome);
+    }
+
+    // macro for generating tests
+    macro_rules! gen_tests_probe {
+    ($($fn_name:ident, $fen:tt, $outcome:expr, $winner:tt,)+) => {
+        $(
+        paste! {
+            #[test]
+            fn [<tests_probe_ $fn_name>]() {
+                check_pos_probe($fen, $outcome, $winner);
+            }
+        }
+        )+
+    }
+}
+
+    gen_tests_probe! {
+        from_captures_promotion_without_switching_color_white, "1k6/1r6/1K6/8/4Q3/8/8/8 w - - 0 1", Outcome::Win(1), White,
+        from_captures_promotion_with_switching_color_white, "3K4/1r2Q3/8/8/8/8/8/3k4 b - - 0 1", Outcome::Draw, White,
+        promotion_without_switching_color_black, "1Qk5/6Q1/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, Black,
+        promotion_with_switching_color_black,"8/8/8/8/8/1k6/3r4/1K1Q4 b - - 0 1",Outcome::Win(1), Black,
+        special_case_only_2_kings_left_w, "4k3/3Q4/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, White,
+        special_case_only_2_kings_left_b, "4k3/3Q4/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, Black,
     }
 }
