@@ -1,10 +1,12 @@
+use helpmate_tb::RetrieveOutcome;
 pub use helpmate_tb::{
     to_chess_with_illegal_checks, Common, EncoderDecoder, Material, MaterialWinner, TablebaseProber,
 };
-use helpmate_tb::{Outcome, RetrieveOutcome};
 
+use log::info;
 use retroboard::shakmaty::fen::Fen;
 use retroboard::shakmaty::{Chess, Color, Position};
+use retroboard::RetroBoard;
 
 use std::path::PathBuf;
 
@@ -29,18 +31,14 @@ pub struct Probe {
 }
 
 impl Probe {
-    pub fn run(&self) {
+    pub fn run(self) {
         let material = Material::from_board(self.fen.board());
         let tb_prober: TablebaseProber = TablebaseProber::new(&material, &self.tb_dir);
         let outcome = tb_prober.retrieve_outcome(&self.fen, self.winner).unwrap();
-        let mainline_len = match outcome {
-            Outcome::Win(x) | Outcome::Lose(x) => x as usize,
-            _ => 1,
-        };
-        // calling `probe` by construction ensures the line is legal
-        assert_eq!(
-            tb_prober.probe(&self.fen, self.winner).unwrap().len(),
-            mainline_len
-        );
+        let move_list = tb_prober.probe(&self.fen, self.winner).unwrap();
+        info!(
+            "For {:?}`\nOutcome is {outcome:?}, Moves: {move_list:?}",
+            RetroBoard::from(self.fen)
+        )
     }
 }
