@@ -73,7 +73,8 @@ impl<T: Indexer> TablebaseProber<T> {
                         .map(|outcome| dbg!((chess_move, outcome)))
                 }),
                 |iter| {
-                    iter.max_by_key(|(_, outcome)| *outcome).expect("No outcomes found")
+                    iter.max_by_key(|(_, outcome)| *outcome)
+                        .expect("No outcomes found")
                 },
             )?;
 

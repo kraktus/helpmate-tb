@@ -309,10 +309,7 @@ mod tests {
     fn test_outcome_decompression() {
         let reports = dummy_reports();
         let block = Block::new(&reports, 0).unwrap();
-        assert_eq!(
-            block.decompress_outcomes().unwrap(),
-            into_outcomes(reports)
-        );
+        assert_eq!(block.decompress_outcomes().unwrap(), into_outcomes(reports));
     }
 
     #[cfg(not(miri))]
@@ -340,13 +337,10 @@ mod tests {
             .expect("block retrieval failed")
             .decompress_outcomes()
             .expect("decompression failed");
-        assert_eq!(
-            into_outcomes(reports),
-            decompressed
-        )
+        assert_eq!(into_outcomes(reports), decompressed)
     }
 
-    // Too slow even in release mode! With debug information 
+    // Too slow even in release mode! With debug information
     // #[ignore = "too slow to be enabled by default"]
     // #[test]
     // fn test_file_compression_soundness() {
