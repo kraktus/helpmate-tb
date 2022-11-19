@@ -30,7 +30,7 @@ impl<T: Indexer> LazyFileHandler<T> {
     #[must_use]
     pub fn outcome_of(&self, board_and_turn: &impl SideToMove) -> io::Result<Outcome> {
         self.inner
-            .outcome_of(self.indexer.encode_board(board_and_turn.board()))
+            .outcome_of(dbg!(self.indexer.encode_board(board_and_turn.board())))
             .map(|bc| bc.get(board_and_turn.side_to_move()).clone())
             .map(Outcome::from)
     }
@@ -63,7 +63,6 @@ impl<T: Indexer> TablebaseProber<T> {
     pub fn probe(&self, root_pos: &Chess, winner: Color) -> io::Result<MoveList> {
         let mut pos = root_pos.clone();
         let mut move_list = MoveList::new();
-        println!("FOO");
         loop {
             let moves = pos.legal_moves();
             println!("{:?}", pos.board());
@@ -101,8 +100,8 @@ impl<T: Indexer> RetrieveOutcome for TablebaseProber<T> {
         winner: Color,
         flip: bool,
     ) -> std::io::Result<Outcome> {
+        dbg!(&mat);
         let lazy_file = self.0.get(&mat).expect("material config not included");
-        dbg!(winner, flip, winner ^ flip);
         lazy_file.get(winner ^ flip).outcome_of(pos)
     }
 }
@@ -151,8 +150,8 @@ mod tests {
 
     gen_tests_probe! {
         without_switching_color_white, "1k6/1r6/1K6/8/4Q3/8/8/8 w - - 0 1", Outcome::Win(1), White,
-        with_switching_color_white, "3K4/1r2Q3/8/8/8/8/8/3k4 b - - 0 1", Outcome::Draw, White,
-        without_switching_color_black, "1Qk5/6Q1/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, Black,
+        with_switching_if_capturing_color_white, "3K4/1r2Q3/8/8/8/8/8/3k4 b - - 0 1", Outcome::Win(8), White,
+        without_if_capturing_switching_color_black, "1Qk5/6Q1/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, Black,
         with_switching_color_black,"8/8/8/8/8/1k6/3r4/1K1Q4 b - - 0 1",Outcome::Win(1), Black,
         qkvk_white_winner, "4k3/3Q4/8/8/8/8/8/3K4 b - - 0 1", Outcome::Win(10), White,
         qkvk_black_winner, "4k3/3Q4/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, Black,

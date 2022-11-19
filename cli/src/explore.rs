@@ -125,11 +125,11 @@ pub fn stats<T>(
 
     let searched_idx = query.and_then(|q| {
         if let Query::Pos(pos) = q {
-            Some(
-                indexer
-                    .expect("Not indexer given despite specific position being searched")
-                    .encode(pos),
-            )
+            let s_idx = indexer
+                .expect("Not indexer given despite specific position being searched")
+                .encode(pos);
+            debug!("Searched idx is {s_idx:?}");
+            Some(s_idx)
         } else {
             None
         }
