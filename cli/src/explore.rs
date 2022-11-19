@@ -2,7 +2,7 @@ pub use helpmate_tb::{
     Common, EncoderDecoder, Material, MaterialWinner, Outcome, SideToMoveGetter, TableBaseBuilder,
     UNDEFINED_OUTCOME_BYCOLOR,
 };
-use helpmate_tb::{DeIndexer, DefaultIndexer, FileHandler, IndexWithTurn};
+use helpmate_tb::{DeIndexer, DefaultIndexer, FileHandler, IndexWithTurn, Indexer};
 use log::{debug, info};
 use std::{
     collections::HashMap,
@@ -10,7 +10,10 @@ use std::{
     str::FromStr,
 };
 
-use retroboard::shakmaty::{ByColor, Color};
+use retroboard::{
+    shakmaty::{ByColor, Color},
+    RetroBoard,
+};
 
 use clap::{ArgAction, Args};
 
@@ -32,6 +35,24 @@ impl FromStr for MatOrAll {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum Query {
+    Outcome(Outcome),
+    Pos(RetroBoard),
+}
+
+impl FromStr for Query {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Outcome::from_str(s).map(Self::Outcome).or_else(|_| {
+            RetroBoard::new_no_pockets(s)
+                .map(Self::Pos)
+                .map_err(|_| "invalid fen")
+        })
+    }
+}
+
 #[derive(Args, Debug)]
 pub struct Explore {
     #[arg(help = "example \"KQvK\", use special value 'all' to search across all positions", value_parser = MatOrAll::from_str)]
@@ -39,13 +60,13 @@ pub struct Explore {
     #[arg(short, long, help = "Color of the expected winner", default_value_t = Color::White)]
     winner: Color,
     #[arg(long,
-        value_parser = Outcome::from_str,
-        help = "If draw is selected, only non-stalemate ones will be returned"
+        value_parser = Query::from_str,
+        help = "Either a fen or an outcome."
     )]
-    outcome: Option<Outcome>,
+    query: Option<Query>,
     #[arg(long, action = ArgAction::SetFalse, default_value_t = false)]
     exclude_summary: bool,
-    #[arg(short, long)]
+    #[arg(long)]
     tb_dir: PathBuf,
 }
 
@@ -81,7 +102,7 @@ impl Explore {
                 mat_win,
                 Some(&file_handler.indexer),
                 &file_handler.outcomes,
-                self.outcome,
+                self.query.as_ref(),
             )
         }
     }
@@ -91,7 +112,7 @@ pub fn stats<T>(
     mat_win: MaterialWinner,
     indexer: Option<&DefaultIndexer>,
     outcomes: &Vec<ByColor<T>>,
-    searched_outcome: Option<Outcome>,
+    query: Option<&Query>,
 ) where
     ByColor<T>: SideToMoveGetter,
 {
@@ -102,22 +123,48 @@ pub fn stats<T>(
     let mut distrib: HashMap<Outcome, u64> = HashMap::new();
     let mut undefined_outcome: usize = 0;
 
+    let searched_idx = query.and_then(|q| {
+        if let Query::Pos(pos) = q {
+            Some(
+                indexer
+                    .expect("Not indexer given despite specific position being searched")
+                    .encode(pos),
+            )
+        } else {
+            None
+        }
+    });
+
     for (idx, by_color_outcome) in outcomes.iter().enumerate() {
         for turn in Color::ALL {
             let outcome = by_color_outcome.get_outcome_by_color(turn);
-            if Some(outcome) == searched_outcome {
-                info!(
-                    "Macthing {outcome:?}, position {:?}",
-                    indexer
-                        .expect("Not indexer given depsite specific outcome being searched")
-                        .restore(
-                            &mat_win.material,
-                            IndexWithTurn {
+            match query {
+                Some(Query::Outcome(searched_outcome)) if &outcome == searched_outcome => {
+                    info!(
+                        "Macthing {outcome:?}, position {:?}",
+                        indexer
+                            .expect("Not indexer given despite specific outcome being searched")
+                            .restore(
+                                &mat_win.material,
+                                IndexWithTurn {
+                                    idx: idx as u64,
+                                    turn
+                                }
+                            )
+                    )
+                }
+                Some(Query::Pos(pos))
+                    if {
+                        searched_idx
+                            == Some(IndexWithTurn {
                                 idx: idx as u64,
-                                turn
-                            }
-                        )
-                )
+                                turn,
+                            })
+                    } =>
+                {
+                    info!("Macthing {pos:?}, outcome {outcome:?}",)
+                }
+                _ => (),
             }
             distrib.insert(outcome, *distrib.get(&outcome).unwrap_or(&0) + 1);
             match outcome {
