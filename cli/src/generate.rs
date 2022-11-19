@@ -39,8 +39,9 @@ impl Generate {
             // white first, most interesting
             let common = TableBaseBuilder::build(mat.clone(), winner, &self.tb_dir);
             let mat_win = MaterialWinner::new(&common.material, common.winner);
-            let mut encoder =
-                EncoderDecoder::new(File::create(self.tb_dir.join(format!("{mat:?}"))).unwrap());
+            let mut encoder = EncoderDecoder::new(
+                File::create(self.tb_dir.join(format!("{mat_win:?}"))).unwrap(),
+            );
             encoder
                 .compress(&common.all_pos)
                 .expect("Compression failed for mat {mat:?}");

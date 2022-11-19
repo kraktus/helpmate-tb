@@ -19,7 +19,9 @@ pub struct LazyFileHandler<T = DefaultIndexer> {
 impl<T: Indexer> LazyFileHandler<T> {
     #[must_use]
     pub fn new(mat: &MaterialWinner, tablebase_dir: &Path) -> Self {
-        let raf = RandomAccessFile::open(tablebase_dir.join(format!("{mat:?}"))).unwrap();
+        let path = tablebase_dir.join(format!("{mat:?}"));
+        let raf =
+            RandomAccessFile::open(&path).unwrap_or_else(|_| panic!("Path {path:?} not found"));
         let inner = EncoderDecoder::new(raf);
         let indexer = T::new(&mat.material);
         Self { inner, indexer }
@@ -61,14 +63,17 @@ impl<T: Indexer> TablebaseProber<T> {
     pub fn probe(&self, root_pos: &Chess, winner: Color) -> io::Result<MoveList> {
         let mut pos = root_pos.clone();
         let mut move_list = MoveList::new();
+        println!("FOO");
         loop {
             let moves = pos.legal_moves();
+            println!("{:?}", pos.board());
             let (chess_move, best_outcome) = process_results(
                 moves.iter().map(|chess_move| {
+                    println!("{chess_move:?}");
                     let mut pos_after_move = pos.clone();
                     pos_after_move.play_unchecked(chess_move);
                     self.retrieve_outcome(&pos_after_move, winner)
-                        .map(|outcome| (chess_move, outcome))
+                        .map(|outcome| dbg!((chess_move, outcome)))
                 }),
                 |iter| {
                     iter.max_by_key(|(_, outcome)| *outcome)
@@ -97,6 +102,7 @@ impl<T: Indexer> RetrieveOutcome for TablebaseProber<T> {
         flip: bool,
     ) -> std::io::Result<Outcome> {
         let lazy_file = self.0.get(&mat).expect("material config not included");
+        dbg!(winner, flip, winner ^ flip);
         lazy_file.get(winner ^ flip).outcome_of(pos)
     }
 }
@@ -144,11 +150,11 @@ mod tests {
 }
 
     gen_tests_probe! {
-        from_captures_promotion_without_switching_color_white, "1k6/1r6/1K6/8/4Q3/8/8/8 w - - 0 1", Outcome::Win(1), White,
-        from_captures_promotion_with_switching_color_white, "3K4/1r2Q3/8/8/8/8/8/3k4 b - - 0 1", Outcome::Draw, White,
-        promotion_without_switching_color_black, "1Qk5/6Q1/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, Black,
-        promotion_with_switching_color_black,"8/8/8/8/8/1k6/3r4/1K1Q4 b - - 0 1",Outcome::Win(1), Black,
-        special_case_only_2_kings_left_w, "4k3/3Q4/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, White,
-        special_case_only_2_kings_left_b, "4k3/3Q4/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, Black,
+        without_switching_color_white, "1k6/1r6/1K6/8/4Q3/8/8/8 w - - 0 1", Outcome::Win(1), White,
+        with_switching_color_white, "3K4/1r2Q3/8/8/8/8/8/3k4 b - - 0 1", Outcome::Draw, White,
+        without_switching_color_black, "1Qk5/6Q1/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, Black,
+        with_switching_color_black,"8/8/8/8/8/1k6/3r4/1K1Q4 b - - 0 1",Outcome::Win(1), Black,
+        qkvk_white_winner, "4k3/3Q4/8/8/8/8/8/3K4 b - - 0 1", Outcome::Win(10), White,
+        qkvk_black_winner, "4k3/3Q4/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, Black,
     }
 }
