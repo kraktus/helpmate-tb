@@ -11,7 +11,7 @@ use retroboard::RetroBoard;
 
 use std::path::PathBuf;
 
-use clap::Args;
+use clap::{ArgAction, Args};
 
 fn from_fen(fen: &str) -> Result<Chess, &'static str> {
     Fen::from_ascii(fen.as_bytes())
@@ -27,8 +27,10 @@ pub struct Probe {
     fen: Chess, // `fen` name to improve CLI usability. better would be to have the CLI still show `fen` but use `chess` internally
     #[arg(short, long)]
     winner: Color,
-    #[arg(long)]
+    #[arg(long, default_value = "table/")]
     tb_dir: PathBuf,
+    #[arg(long, action = ArgAction::SetTrue)]
+    expanded: bool,
 }
 
 impl Probe {
@@ -36,15 +38,24 @@ impl Probe {
         let material = Material::from_board(self.fen.board());
         let tb_prober: TablebaseProber = TablebaseProber::new(&material, &self.tb_dir);
         let outcome = tb_prober.retrieve_outcome(&self.fen, self.winner).unwrap();
-        let move_list: Vec<String> = tb_prober
-            .probe(&self.fen, self.winner)
-            .unwrap()
+        let (move_list, pos_list) = tb_prober.probe(&self.fen, self.winner).unwrap();
+        let uci_movelist: Vec<String> = move_list
             .into_iter()
-            .map(|m| m.to_uci(retroboard::shakmaty::CastlingMode::Standard).to_string())
+            .map(|m| {
+                m.to_uci(retroboard::shakmaty::CastlingMode::Standard)
+                    .to_string()
+            })
             .collect();
         info!(
-            "For {:?}`\nOutcome is {outcome:?}, Moves: {move_list:?}",
+            "For {:?}`\nOutcome is {outcome:?}, Moves: {uci_movelist:?}",
             RetroBoard::from(self.fen),
-        )
+        );
+        if self.expanded {
+            let rboards_fmt: Vec<String> = pos_list
+                .into_iter()
+                .map(|p| format!("{:?}", RetroBoard::from(p)))
+                .collect();
+            info!("{}", rboards_fmt.join("\n"));
+        }
     }
 }

@@ -16,7 +16,7 @@ pub struct Generate {
     material: Material,
     #[arg(short, long, action = ArgAction::SetTrue)]
     recursive: bool,
-    #[arg(long)]
+    #[arg(long, default_value = "table/")]
     tb_dir: PathBuf,
 }
 

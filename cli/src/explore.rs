@@ -66,7 +66,7 @@ pub struct Explore {
     query: Option<Query>,
     #[arg(long, action = ArgAction::SetFalse, default_value_t = false)]
     exclude_summary: bool,
-    #[arg(long)]
+    #[arg(long, default_value = "table/")]
     tb_dir: PathBuf,
 }
 

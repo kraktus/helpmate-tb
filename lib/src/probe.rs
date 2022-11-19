@@ -59,32 +59,34 @@ impl<T: Indexer> TablebaseProber<T> {
     }
 
     /// Returns one of the best possible line until mate or drawn position
-    pub fn probe(&self, root_pos: &Chess, winner: Color) -> io::Result<MoveList> {
+    pub fn probe(&self, root_pos: &Chess, winner: Color) -> io::Result<(MoveList, Vec<Chess>)> {
         let mut pos = root_pos.clone();
         let mut move_list = MoveList::new();
+        let mut pos_list = Vec::new();
         loop {
             let moves = pos.legal_moves();
-            let (chess_move, best_outcome) = process_results(
+            let (chess_move, best_outcome, pos_after_move) = process_results(
                 moves.iter().map(|chess_move| {
                     let mut pos_after_move = pos.clone();
                     pos_after_move.play_unchecked(chess_move);
                     self.retrieve_outcome(&pos_after_move, winner)
-                        .map(|outcome| (chess_move, outcome))
+                        .map(|outcome| (chess_move, outcome, pos_after_move))
                 }),
                 |iter| {
-                    iter.max_by_key(|(_, outcome)| *outcome)
+                    iter.max_by_key(|(_, outcome, _)| *outcome)
                         .expect("No outcomes found")
                 },
             )?;
 
             move_list.push(chess_move.clone());
+            pos_list.push(pos_after_move);
             pos.play_unchecked(chess_move);
 
             if best_outcome == Outcome::Win(0)
                 || best_outcome == Outcome::Lose(0)
                 || best_outcome == Outcome::Draw
             {
-                break Ok(move_list);
+                break Ok((move_list, pos_list));
             }
         }
     }
