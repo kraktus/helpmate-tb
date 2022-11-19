@@ -65,8 +65,6 @@ impl<T: Indexer> TablebaseProber<T> {
         let mut move_list = MoveList::new();
         loop {
             let moves = pos.legal_moves();
-            println!("{:?}", pos.board());
-            // GOOD CODE
             let (chess_move, best_outcome) = process_results(
                 moves.iter().map(|chess_move| {
                     let mut pos_after_move = pos.clone();
@@ -75,21 +73,9 @@ impl<T: Indexer> TablebaseProber<T> {
                         .map(|outcome| dbg!((chess_move, outcome)))
                 }),
                 |iter| {
-                    dbg!(iter)
-                        .max_by_key(|(_, outcome)| *outcome)
-                        .expect("No outcomes found")
+                    iter.max_by_key(|(_, outcome)| *outcome).expect("No outcomes found")
                 },
             )?;
-
-            // BAD CODE but easier to debug
-            // let foo: Vec<_> = moves.iter().map(|chess_move| {
-            //         let mut pos_after_move = pos.clone();
-            //         pos_after_move.play_unchecked(chess_move);
-            //         let outcome = self.retrieve_outcome(&pos_after_move, winner).unwrap();
-            //         (chess_move, outcome)
-            //     }).collect();
-            // dbg!(&foo);
-            // let (chess_move, best_outcome) = foo.into_iter().max_by_key(|(_, outcome)| *outcome).unwrap();
 
             move_list.push(chess_move.clone());
             pos.play_unchecked(chess_move);
