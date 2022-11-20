@@ -5,8 +5,8 @@ pub use helpmate_tb::{
 
 use log::info;
 use retroboard::shakmaty::fen::Fen;
-use retroboard::shakmaty::uci::Uci;
-use retroboard::shakmaty::{Chess, Color, Move, Position};
+
+use retroboard::shakmaty::{Chess, Color, Position};
 use retroboard::RetroBoard;
 
 use std::path::PathBuf;
