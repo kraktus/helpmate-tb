@@ -145,7 +145,8 @@ mod tests {
             _ => 1,
         };
         // calling `probe` by construction ensures the line is legal
-        assert_eq!(tb_prober.probe(&chess, winner).unwrap().len(), mainline_len);
+        let (moves, _) = tb_prober.probe(&chess, winner).unwrap();
+        assert_eq!(moves.len(), mainline_len);
     }
 
     // macro for generating tests
