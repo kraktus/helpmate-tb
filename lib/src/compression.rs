@@ -6,16 +6,27 @@ use log::trace;
 use positioned_io::ReadAt;
 use retroboard::shakmaty::ByColor;
 use zstd::stream::{decode_all, encode_all};
+#[cfg(feature = "cached")]
+use cached::proc_macro::cached;
 
 use crate::{OutcomeU8, Outcomes, Report, ReportU8, Reports, ReportsSlice};
 
-// in byte, the size of the uncompressed block we want
+// in bytes, the size of the uncompressed block we want
 const BLOCK_SIZE: usize = 500 * 1_000_000;
 
 // number of elements we take from `outcomes`
 // We want the uncompressed size of a block to be ~500Mb (arbitrary size)
 // considering each elements takes 2byte
 const BLOCK_ELEMENTS: usize = BLOCK_SIZE / 2;
+
+// in bytes, the size of the cache in RAM when probing
+// ideally should be set by the user, but for now good as is
+#[cfg(feature = "cached")]
+const CACHE_SIZE: usize = 4 * 1_000_000_000;
+
+// max number of elements we can set in the cache for it not to exceed `CACHE_SIZE`
+#[cfg(feature = "cached")]
+const CACHE_ELEMENTS: usize = CACHE_SIZE / BLOCK_SIZE;
 
 /// Deku compatible struct
 #[derive(Debug, Copy, Clone, PartialEq, DekuRead, DekuWrite, Eq)]
@@ -136,7 +147,7 @@ impl<T: ReadAt> EncoderDecoder<T> {
     }
 }
 
-#[derive(Debug, PartialEq, DekuRead, DekuWrite, Eq)]
+#[derive(Debug, PartialEq, DekuRead, DekuWrite, Eq, Hash)]
 struct BlockHeader {
     pub index_from: u64, // inclusive
     pub index_to: u64,   // exclusive
@@ -164,11 +175,25 @@ impl BlockHeader {
 #[derive(Debug, PartialEq, DekuWrite, Eq)]
 struct RawOutcomes(pub Vec<RawOutcome>);
 
-#[derive(Debug, PartialEq, DekuRead, DekuWrite, Eq)]
+#[derive(Debug, PartialEq, DekuRead, DekuWrite, Eq, Hash)]
 struct Block {
     header: BlockHeader,
     #[deku(count = "header.block_size")]
     pub compressed_outcomes: Vec<u8>, // compressed bytes of `Outcomes`
+}
+
+/// WARNING
+/// Imperfect cache key because to reduce its size
+/// We compare the hash of compressed outcomes
+/// will return WRONG result if:
+/// - Block A and Block B have same hash
+/// - BlockCacheKey A and BlockCacheKey B have same hash
+/// - BlockCacheKey A and BlockCacheKey B are equals (which means their compressed outcomes hash are the same)
+/// - BUT their compressed outcomes are different
+#[derive(Debug, PartialEq, Eq, Hash)]
+struct BlockCacheKey {
+    header: BlockHeader,
+    hash_compressed_outcomes: u64
 }
 
 impl Block {
@@ -231,6 +256,12 @@ impl Block {
             })
         })
     }
+}
+
+#[cfg(feature = "cached")]
+#[cached(result = true, convert = r#"(material, block.header)"#)]
+fn decompress_outcomes_cached(material: Material, block: &Block) -> io::Result<Outcomes> {
+    block.decompress_outcomes()
 }
 
 fn from_bytes_exact<'a, T: deku::DekuContainerRead<'a>>(buf: &'a [u8]) -> io::Result<T> {

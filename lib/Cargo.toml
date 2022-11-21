@@ -5,9 +5,14 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = ["cached"]
+cached = ["dep:cached"]
+
 [dependencies]
 retroboard = "0.2.6"
 arrayvec = { version = "0.7", features = ["serde"] }
+cached = {version = "0.40", features = ["proc_macro"], optional = true}
 indicatif = "0.17.2"
 itertools = "0.10.3"
 log = "0.4"
