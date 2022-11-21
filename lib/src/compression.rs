@@ -1,15 +1,15 @@
 use std::io::{self, ErrorKind::InvalidData, Write};
 
+#[cfg(feature = "cached")]
+use cached::proc_macro::cached;
 use deku::bitvec::BitView;
 use deku::{ctx::Limit, prelude::*};
 use log::trace;
 use positioned_io::ReadAt;
 use retroboard::shakmaty::ByColor;
 use zstd::stream::{decode_all, encode_all};
-#[cfg(feature = "cached")]
-use cached::proc_macro::cached;
 
-use crate::{OutcomeU8, Outcomes, Report, ReportU8, Reports, ReportsSlice};
+use crate::{MaterialWinner, OutcomeU8, Outcomes, Report, ReportU8, Reports, ReportsSlice};
 
 // in bytes, the size of the uncompressed block we want
 const BLOCK_SIZE: usize = 500 * 1_000_000;
@@ -107,13 +107,34 @@ impl<T: ReadAt> EncoderDecoder<T> {
     }
 
     pub fn outcome_of(&self, idx: u64) -> io::Result<ByColor<OutcomeU8>> {
+        self.internal_outcome_of(None, idx)
+    }
+
+    #[cfg(feature = "cached")]
+    pub fn outcome_of_cached(
+        &self,
+        mat_win: MaterialWinner,
+        idx: u64,
+    ) -> io::Result<ByColor<OutcomeU8>> {
+        self.internal_outcome_of(Some(mat_win), idx)
+    }
+
+    pub fn internal_outcome_of(
+        &self,
+        _mat_win: Option<MaterialWinner>,
+        idx: u64,
+    ) -> io::Result<ByColor<OutcomeU8>> {
         let mut byte_offset = 0;
         loop {
             match self.decompress_block_header(byte_offset) {
                 Ok(block_header) if block_header.idx_is_in_block(idx) => {
-                    return self
-                        .decompress_block(byte_offset)
-                        .and_then(|block| block.get_outcome(idx))
+                    return self.decompress_block(byte_offset).and_then(|block| {
+                        #[cfg(feature = "cached")]
+                        let outcome = block.get_outcome_cached(_mat_win.expect("internal_outcome_of: mat_win necessary to create cache key"), idx);
+                        #[cfg(not(feature = "cached"))]
+                        let outcome = block.get_outcome(idx);
+                        outcome
+                    })
                 }
                 Ok(block_header) => {
                     byte_offset += to_u64(block_header.size_including_headers());
@@ -147,7 +168,7 @@ impl<T: ReadAt> EncoderDecoder<T> {
     }
 }
 
-#[derive(Debug, PartialEq, DekuRead, DekuWrite, Eq, Hash)]
+#[derive(Debug, PartialEq, DekuRead, DekuWrite, Eq, Hash, Clone, Copy)]
 struct BlockHeader {
     pub index_from: u64, // inclusive
     pub index_to: u64,   // exclusive
@@ -182,20 +203,6 @@ struct Block {
     pub compressed_outcomes: Vec<u8>, // compressed bytes of `Outcomes`
 }
 
-/// WARNING
-/// Imperfect cache key because to reduce its size
-/// We compare the hash of compressed outcomes
-/// will return WRONG result if:
-/// - Block A and Block B have same hash
-/// - BlockCacheKey A and BlockCacheKey B have same hash
-/// - BlockCacheKey A and BlockCacheKey B are equals (which means their compressed outcomes hash are the same)
-/// - BUT their compressed outcomes are different
-#[derive(Debug, PartialEq, Eq, Hash)]
-struct BlockCacheKey {
-    header: BlockHeader,
-    hash_compressed_outcomes: u64
-}
-
 impl Block {
     pub fn new(outcomes: ReportsSlice, index_from_usize: usize) -> io::Result<Self> {
         let index_from = to_u64(index_from_usize);
@@ -219,7 +226,25 @@ impl Block {
         })
     }
 
-    pub fn get_outcome(&self, idx: u64) -> io::Result<ByColor<OutcomeU8>> {
+    #[cfg(not(feature = "cached"))]
+    fn get_outcome(&self, idx: u64) -> io::Result<ByColor<OutcomeU8>> {
+        self.internal_get_outcome(None, idx)
+    }
+
+    #[cfg(feature = "cached")]
+    pub fn get_outcome_cached(
+        &self,
+        mat_win: MaterialWinner,
+        idx: u64,
+    ) -> io::Result<ByColor<OutcomeU8>> {
+        self.internal_get_outcome(Some(mat_win), idx)
+    }
+
+    fn internal_get_outcome(
+        &self,
+        _mat_win: Option<MaterialWinner>,
+        idx: u64,
+    ) -> io::Result<ByColor<OutcomeU8>> {
         debug_assert!(self.header.idx_is_in_block(idx));
         let block_idx = (idx.checked_sub(self.header.index_from))
             .ok_or_else(|| {
@@ -230,7 +255,14 @@ impl Block {
             })
             .map(|idx_u64| idx_u64 as usize)?;
 
-        self.decompress_outcomes().and_then(|outcomes| {
+        #[cfg(feature = "cached")]
+        let decompressed_outcomes = decompress_outcomes_cached(
+            _mat_win.expect("not material winner to set cache key"),
+            &self,
+        );
+        #[cfg(not(feature = "cached"))]
+        let decompressed_outcomes = self.decompress_outcomes();
+        decompressed_outcomes.and_then(|outcomes| {
             outcomes
                 .get(block_idx)
                 .ok_or_else(|| {
@@ -259,8 +291,12 @@ impl Block {
 }
 
 #[cfg(feature = "cached")]
-#[cached(result = true, convert = r#"(material, block.header)"#)]
-fn decompress_outcomes_cached(material: Material, block: &Block) -> io::Result<Outcomes> {
+#[cached(result = true,
+    // A block header is unique to a block given a material configuration and a winner
+    type = "cached::SizedCache<(MaterialWinner, BlockHeader), Outcomes>",
+    create = "{ cached::SizedCache::with_size(CACHE_ELEMENTS) }",
+    convert = "{ (_mat_win.clone(), block.header) }")]
+fn decompress_outcomes_cached(_mat_win: MaterialWinner, block: &Block) -> io::Result<Outcomes> {
     block.decompress_outcomes()
 }
 
@@ -345,6 +381,7 @@ mod tests {
     }
 
     #[cfg(not(miri))]
+    #[cfg(not(feature = "cached"))]
     #[test]
     fn test_outcome_partial_decompression() {
         let reports = gen_reports(200);

@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::fmt;
 use std::path::Path;
 use std::{collections::HashMap, str::FromStr};
@@ -29,23 +28,23 @@ impl<T: Indexer> FileHandler<T> {
     }
 }
 
-#[derive(Eq, Hash, PartialEq)]
-pub struct MaterialWinner<'a> {
-    pub material: Cow<'a, Material>,
+#[derive(Eq, Hash, PartialEq, Clone)]
+pub struct MaterialWinner {
+    pub material: Material,
     pub winner: Color,
 }
 
-impl<'a> MaterialWinner<'a> {
+impl MaterialWinner {
     #[must_use]
-    pub fn new(material: &'a Material, winner: Color) -> Self {
+    pub fn new(material: &Material, winner: Color) -> Self {
         Self {
-            material: Cow::Borrowed(material),
+            material: material.clone(),
             winner,
         }
     }
 }
 
-impl FromStr for MaterialWinner<'_> {
+impl FromStr for MaterialWinner {
     type Err = &'static str;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -59,14 +58,11 @@ impl FromStr for MaterialWinner<'_> {
             .and_then(Color::from_char)
             .ok_or("last char must be 'b' for black or 'w' for white")?;
         let material = Material::from_str(mat_str).expect("Valid material config");
-        Ok(Self {
-            material: Cow::Owned(material),
-            winner,
-        })
+        Ok(Self { material, winner })
     }
 }
 
-impl fmt::Debug for MaterialWinner<'_> {
+impl fmt::Debug for MaterialWinner {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}{}", self.material, self.winner.char())
     }
