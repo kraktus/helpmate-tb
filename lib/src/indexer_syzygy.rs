@@ -451,9 +451,9 @@ impl GroupData {
     }
 }
 
-impl Indexer for Table {
-    fn new(material: &Material) -> Self {
-        let material_info = get_info_table(material).unwrap();
+impl From<Material> for Table {
+    fn from(material: Material) -> Self {
+        let material_info = get_info_table(&material).unwrap();
         let files: ArrayVec<ArrayVec<GroupData, 2>, 4> = material_info
             .iter()
             .enumerate()
@@ -472,7 +472,9 @@ impl Indexer for Table {
             files,
         }
     }
+}
 
+impl Indexer for Table {
     fn encode_board_unchecked(&self, _: &retroboard::shakmaty::Board) -> u64 {
         unimplemented!("`Table` always take symetry into account")
     }

@@ -86,7 +86,6 @@ const WHITE_KING_SQUARES_TO_TRANSFO: [u64; 64] = [
 ];
 
 pub trait Indexer {
-    fn new(mat: &Material) -> Self;
     fn encode_board_unchecked(&self, b: &Board) -> u64;
     fn encode_board(&self, b: &Board) -> u64;
     fn encode(&self, b: &impl SideToMove) -> IndexWithTurn {
@@ -118,11 +117,13 @@ pub trait DeIndexer {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct NaiveIndexer;
 
-impl Indexer for NaiveIndexer {
-    fn new(_: &Material) -> Self {
+impl From<Material> for NaiveIndexer {
+    fn from(_: Material) -> Self {
         Self
     }
+}
 
+impl Indexer for NaiveIndexer {
     fn encode_board(&self, b: &Board) -> u64 {
         let mut board_check = b.clone();
         if is_black_stronger(b.board()) {

@@ -14,9 +14,9 @@ use log::LevelFilter;
 use clap::{ArgAction, Parser, Subcommand};
 use probe::Probe;
 
+use crate::check_indexer::CheckIndexer;
 use crate::explore::Explore;
 use crate::generate::Generate;
-use crate::check_indexer::CheckIndexer;
 
 #[cfg(feature = "dhat")]
 #[global_allocator]

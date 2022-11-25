@@ -135,10 +135,10 @@ pub const A1_H1_H8: Bitboard = Bitboard(0x80c0_e0f0_f8fc_feff);
 
 // type PosHandler = fn(&mut Common, &mut Queue, &Descendants, &Chess, u64, usize);
 
-pub trait PosHandler {
+pub trait PosHandler<I> {
     fn handle_position(
         &mut self,
-        common: &mut Common,
+        common: &mut Common<I>,
         queue: &mut Queue,
         tablebase: &Descendants,
         chess: &Chess,
@@ -151,10 +151,10 @@ pub trait PosHandler {
 /// another handler can be found in `syzygy_check.rs`
 struct DefaultGeneratorHandler;
 
-impl PosHandler for DefaultGeneratorHandler {
+impl<I> PosHandler<I> for DefaultGeneratorHandler {
     fn handle_position(
         &mut self,
-        common: &mut Common,
+        common: &mut Common<I>,
         queue: &mut Queue,
         tablebase: &Descendants,
         chess: &Chess,
@@ -200,23 +200,23 @@ impl PosHandler for DefaultGeneratorHandler {
 
 /// Struct that only handle the generation phase of the tablebase building process
 /// See `Tagger` for the backward algorithm part.
-pub struct Generator<T> {
-    common: Common,
+pub struct Generator<T, I> {
+    common: Common<I>,
     tablebase: Descendants, // access to the DTM of descendants (different material config, following a capture/promotion)
     pb: ProgressBar,
     queue: Queue,
     pos_handler: T,
 }
 
-impl Generator<DefaultGeneratorHandler> {
+impl<I: Indexer> Generator<DefaultGeneratorHandler, I> {
     #[must_use]
-    pub fn new(common: Common, tablebase_path: &Path) -> Self {
+    pub fn new(common: Common<I>, tablebase_path: &Path) -> Self {
         Self::new_with_pos_handler(DefaultGeneratorHandler, common, tablebase_path)
     }
 }
 
-impl<T: PosHandler> Generator<T> {
-    pub fn new_with_pos_handler(pos_handler: T, common: Common, tablebase_dir: &Path) -> Self {
+impl<T: PosHandler<I>, I: Indexer> Generator<T, I> {
+    pub fn new_with_pos_handler(pos_handler: T, common: Common<I>, tablebase_dir: &Path) -> Self {
         let pb = common.get_progress_bar();
         Self {
             pb,
@@ -227,7 +227,7 @@ impl<T: PosHandler> Generator<T> {
         }
     }
 
-    pub fn get_result(self) -> (Queue, Common, T) {
+    pub fn get_result(self) -> (Queue, Common<I>, T) {
         (self.queue, self.common, self.pos_handler)
     }
 
@@ -364,16 +364,18 @@ struct Tagger<T = DefaultIndexer> {
     reversible_indexer: T,
 }
 
-impl<T: Indexer + DeIndexer> Tagger<T> {
+impl<T: From<Material>> Tagger<T> {
     pub fn new(common: Common) -> Self {
         let pb = common.get_progress_bar();
         Self {
-            reversible_indexer: T::new(&common.material),
+            reversible_indexer: T::from(common.material.clone()),
             common,
             pb,
         }
     }
+}
 
+impl<T: Indexer + DeIndexer> Tagger<T> {
     pub fn process_positions(&mut self, queue: &mut Queue) {
         // need to process FIRST winning positions, then losing ones.
         self.process_one_queue(&mut queue.desired_outcome_pos_to_process);

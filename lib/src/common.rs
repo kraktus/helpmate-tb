@@ -13,19 +13,21 @@ pub struct Common<T = DefaultIndexer> {
     indexer: T,
 }
 
-impl<T: Indexer> Common<T> {
+impl<T: From<Material>> Common<T> {
     #[must_use]
     pub fn new(material: Material, winner: Color) -> Self {
         Self {
-            indexer: T::new(&material),
             all_pos: vec![UNDEFINED_OUTCOME_BYCOLOR; get_nb_pos(&material) as usize / 10 * 9], // heuristic, less than 90% of pos are legals. Takes x2 (because each stored element is in fact 1 position, but with black and white to turn) more than number of legal positions
             winner,
             counter: 0,
             can_mate: material.can_mate(winner),
+            indexer: T::from(material.clone()),
             material,
         }
     }
+}
 
+impl<T> Common<T> {
     #[must_use]
     pub fn get_progress_bar(&self) -> ProgressBar {
         let pb = ProgressBar::new(get_nb_pos(&self.material));

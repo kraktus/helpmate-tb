@@ -19,6 +19,7 @@ helpmate_tb = { path = "../lib", default-features = false }
 env_logger = "0.9"
 log = "0.4"
 itertools = "0.10.3"
+paste = "1"
 
 [dev-dependencies]
 trycmd = "0.14"

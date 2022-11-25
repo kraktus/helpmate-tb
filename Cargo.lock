@@ -591,6 +591,7 @@ dependencies = [
  "helpmate_tb",
  "itertools",
  "log",
+ "paste",
  "retroboard",
  "trycmd",
 ]

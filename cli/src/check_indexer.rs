@@ -9,7 +9,7 @@ use std::{
     path::PathBuf,
 };
 
-use clap::{Parser};
+use clap::Parser;
 
 use itertools::Itertools;
 use log::{debug, info, warn};
@@ -22,7 +22,7 @@ use std::str::FromStr;
 
 use helpmate_tb::{
     to_chess_with_illegal_checks, Common, Descendants, Generator, IndexWithTurn, Indexer, Material,
-    PosHandler, Queue,
+    NaiveIndexer, PosHandler, Queue, Table,
 };
 
 type Transfo = (
@@ -59,17 +59,17 @@ const ALL_TRANSFO: [Transfo; 7] = [
 ];
 
 #[derive(Debug, Clone, Default)]
-struct SyzygyCheck {
+struct CheckIndexerPosHandler {
     // key is the canonical index, and the `Vec` contain all
     // key is only added when at least one duplicate is found
     duplicate_indexes: HashMap<usize, HashSet<usize>>,
     max_index: usize,
 }
 
-impl PosHandler for SyzygyCheck {
+impl<I: Indexer> PosHandler<I> for CheckIndexerPosHandler {
     fn handle_position(
         &mut self,
-        common: &mut Common,
+        common: &mut Common<I>,
         _: &mut Queue,
         _: &Descendants,
         chess: &Chess,
@@ -131,7 +131,7 @@ impl FromStr for MatOrNbPieces {
 pub struct CheckIndexer {
     #[arg(
         value_parser = MatOrNbPieces::from_str,
-        help = "maximum number of pieces on the board, will check all pawnless material config up to this number included"
+        help = "maximum number of pieces on the board, will check all pawnless material config up to this number included.\nOr just a particular material configuration"
     )]
     mat_or_nb_pieces: MatOrNbPieces,
 
@@ -139,6 +139,8 @@ pub struct CheckIndexer {
     verbose: u8,
     #[arg(long, default_value = "table/")]
     tb_dir: PathBuf,
+    #[arg(long, default_value = "NaiveIndexer")]
+    indexer: String,
 }
 
 fn gen_all_pawnless_mat_up_to(nb_pieces: usize) -> HashSet<Material> {
@@ -163,29 +165,46 @@ fn gen_all_pawnless_mat_up_to(nb_pieces: usize) -> HashSet<Material> {
         .collect()
 }
 
+macro_rules! check_index {
+    ($indexer:ty, $suffix:tt) => {
+        paste::paste! {
+        fn [<check_mat_ $suffix>](&self, mat: Material) {
+            info!("looking at {mat:?}");
+            let common: Common<$indexer> = Common::new(mat.clone(), Color::White);
+            let mut gen: Generator<CheckIndexerPosHandler, $indexer> = Generator::new_with_pos_handler(
+                CheckIndexerPosHandler::default(),
+                common,
+                &self.tb_dir,
+            );
+            gen.generate_positions();
+            let (_, _, syzygy_res) = gen.get_result();
+            if !syzygy_res.duplicate_indexes.is_empty() {
+                warn!(
+                    "For {:?}, Found {:?} duplicates",
+                    mat,
+                    syzygy_res.duplicate_indexes.len()
+                );
+            }
+            info!("Max index is {:?}", syzygy_res.max_index);
+        }
+        }
+    };
+}
+
 impl CheckIndexer {
     pub fn run(&self) {
         let all_mats_config = HashSet::from(self.mat_or_nb_pieces.clone());
         all_mats_config
             .into_iter()
-            .for_each(|mat| self.check_mat(mat));
+            .for_each(|mat| match self.indexer.as_str() {
+                "naive" => self.check_mat_naive(mat),
+                "syzygy" => self.check_mat_syzygy(mat),
+                _ => panic!("only 'syzygy' and 'naive' supported"),
+            })
     }
 
-    fn check_mat(&self, mat: Material) {
-        info!("looking at {mat:?}");
-        let common = Common::new(mat.clone(), Color::White);
-        let mut gen = Generator::new_with_pos_handler(SyzygyCheck::default(), common, &self.tb_dir);
-        gen.generate_positions();
-        let (_, _, syzygy_res) = gen.get_result();
-        if !syzygy_res.duplicate_indexes.is_empty() {
-            warn!(
-                "For {:?}, Found {:?} duplicates",
-                mat,
-                syzygy_res.duplicate_indexes.len()
-            );
-        }
-        info!("Max index is {:?}", syzygy_res.max_index);
-    }
+    check_index! {NaiveIndexer, "naive"}
+    check_index! {Table, "syzygy"}
 }
 
 fn transformed_chess(chess: &Chess, transfo: Transfo) -> Chess {
@@ -212,7 +231,7 @@ mod tests {
 
     // #[test]
     // fn test_known_syzygy_index_duplicate() {
-    //     let mut syzygy_check = SyzygyCheck::default();
+    //     let mut syzygy_check = CheckIndexerPosHandler::default();
     //     let chess: Chess = Fen::from_ascii(b"8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1")
     //         .unwrap()
     //         .into_position(CastlingMode::Chess960)

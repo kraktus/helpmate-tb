@@ -16,17 +16,19 @@ pub struct LazyFileHandler<T = DefaultIndexer> {
     inner: EncoderDecoder<RandomAccessFile>,
 }
 
-impl<T: Indexer> LazyFileHandler<T> {
+impl<T: From<Material>> LazyFileHandler<T> {
     #[must_use]
     pub fn new(mat: &MaterialWinner, tablebase_dir: &Path) -> Self {
         let path = tablebase_dir.join(format!("{mat:?}"));
         let raf =
             RandomAccessFile::open(&path).unwrap_or_else(|_| panic!("Path {path:?} not found"));
         let inner = EncoderDecoder::new(raf);
-        let indexer = T::new(&mat.material);
+        let indexer = T::from(mat.material.clone());
         Self { indexer, inner }
     }
+}
 
+impl<T: Indexer> LazyFileHandler<T> {
     pub fn outcome_of(
         &self,
         _mat_winner: MaterialWinner,
@@ -51,7 +53,7 @@ impl<T: Indexer> LazyFileHandler<T> {
 #[derive(Debug)]
 pub struct TablebaseProber<T = DefaultIndexer>(HashMap<Material, ByColor<LazyFileHandler<T>>>);
 
-impl<T: Indexer> TablebaseProber<T> {
+impl<T: Indexer + From<Material>> TablebaseProber<T> {
     #[must_use]
     pub fn new(mat: &Material, tablebase_dir: &Path) -> Self {
         let mut mats = mat.descendants_recursive(false);

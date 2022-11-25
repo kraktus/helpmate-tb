@@ -16,14 +16,14 @@ pub struct FileHandler<T = DefaultIndexer> {
     pub outcomes: Outcomes,
 }
 
-impl<T: Indexer> FileHandler<T> {
+impl<T: From<Material>> FileHandler<T> {
     #[must_use]
     pub fn new(mat: &MaterialWinner, tablebase_dir: &Path) -> Self {
         let raf = RandomAccessFile::open(tablebase_dir.join(format!("{mat:?}"))).unwrap();
         let outcomes = EncoderDecoder::new(raf)
             .decompress_file()
             .expect("decompression failed");
-        let indexer = T::new(&mat.material);
+        let indexer = T::from(mat.material.clone());
         Self { indexer, outcomes }
     }
 }
@@ -71,7 +71,7 @@ impl fmt::Debug for MaterialWinner {
 #[derive(Debug)]
 pub struct Descendants<T = DefaultIndexer>(HashMap<Material, ByColor<FileHandler<T>>>);
 
-impl<T: Indexer> Descendants<T> {
+impl<T: Indexer + From<Material>> Descendants<T> {
     #[must_use]
     pub fn new(mat: &Material, tablebase_dir: &Path) -> Self {
         Self(

@@ -31,7 +31,7 @@ pub use generation::{
     to_chess_with_illegal_checks, Generator, IndexWithTurn, PosHandler, Queue, SideToMove,
     SideToMoveGetter, TableBaseBuilder,
 };
-use indexer::NaiveIndexer;
+pub use indexer::NaiveIndexer;
 pub use indexer_syzygy::{Pieces, Table, A1_H8_DIAG, A8_H1_DIAG};
 pub use material::{is_black_stronger, Material, KB_K, KN_K};
 
