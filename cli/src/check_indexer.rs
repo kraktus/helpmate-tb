@@ -9,10 +9,10 @@ use std::{
     path::PathBuf,
 };
 
-use clap::{Args, Parser, Subcommand};
-use env_logger::{Builder, Target};
+use clap::{Parser};
+
 use itertools::Itertools;
-use log::{debug, info, warn, LevelFilter};
+use log::{debug, info, warn};
 use retroboard::{
     shakmaty::{Bitboard, Board, Chess, Color, Color::*, Position, Setup, Square},
     RetroBoard,
