@@ -790,8 +790,7 @@ mod tests {
     }
 
     fn check_syzygy(mat: &str, fen: &str, canonical_idx: u64) {
-        let material = Material::from_str(mat).unwrap();
-        let table = Table::new(&material);
+        let table: Table = Material::from_str(mat).unwrap().into();
         let chess: Chess = Fen::from_ascii(fen.as_bytes())
             .unwrap()
             .into_position(CastlingMode::Chess960)

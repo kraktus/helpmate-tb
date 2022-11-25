@@ -139,7 +139,7 @@ pub struct CheckIndexer {
     verbose: u8,
     #[arg(long, default_value = "table/")]
     tb_dir: PathBuf,
-    #[arg(long, default_value = "NaiveIndexer")]
+    #[arg(short, long, default_value = "naive")]
     indexer: String,
 }
 
