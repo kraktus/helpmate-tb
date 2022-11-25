@@ -1,5 +1,6 @@
 mod explore;
 mod generate;
+mod indexer_check;
 mod probe;
 
 pub use helpmate_tb::{
@@ -15,6 +16,7 @@ use probe::Probe;
 
 use crate::explore::Explore;
 use crate::generate::Generate;
+use crate::indexer_check::CheckIndex;
 
 #[cfg(feature = "dhat")]
 #[global_allocator]
@@ -42,6 +44,7 @@ enum Cmd {
     Generate(Generate),
     Explore(Explore),
     Probe(Probe),
+    CheckIndex(CheckIndex),
 }
 
 impl Cmd {
@@ -50,6 +53,7 @@ impl Cmd {
             Self::Generate(gen) => gen.run(),
             Self::Explore(expl) => expl.run(),
             Self::Probe(probe) => probe.run(),
+            Self::CheckIndex(check_index) => check_index.run(),
         }
     }
 }

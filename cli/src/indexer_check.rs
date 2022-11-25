@@ -4,9 +4,12 @@
 //! - All the positions which are the same modulo symetry, but yield different indexes
 //! Run with `cargo run syzygy-check`
 
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+};
 
-use clap::Parser;
+use clap::{Args, Parser, Subcommand};
 use env_logger::{Builder, Target};
 use itertools::Itertools;
 use log::{debug, info, warn, LevelFilter};
@@ -97,40 +100,45 @@ impl PosHandler for SyzygyCheck {
     }
 }
 
-fn check_mat(mat: Material) {
-    info!("looking at {mat:?}");
-    let common = Common::new(mat.clone(), Color::White);
-    let mut gen = Generator::new_with_pos_handler(SyzygyCheck::default(), common);
-    gen.generate_positions();
-    let (_, _, syzygy_res) = gen.get_result();
-    if !syzygy_res.duplicate_indexes.is_empty() {
-        warn!(
-            "For {:?}, Found {:?} duplicates",
-            mat,
-            syzygy_res.duplicate_indexes.len()
-        );
+#[derive(Debug, Clone)]
+enum MatOrNbPieces {
+    Mat(Material),
+    UpTo(usize),
+}
+
+impl From<MatOrNbPieces> for HashSet<Material> {
+    fn from(mat_or_nb_pieces: MatOrNbPieces) -> Self {
+        match mat_or_nb_pieces {
+            MatOrNbPieces::Mat(mat) => [mat].into(),
+            MatOrNbPieces::UpTo(up_to) => gen_all_pawnless_mat_up_to(up_to),
+        }
     }
-    info!("Max index is {:?}", syzygy_res.max_index);
+}
+
+impl FromStr for MatOrNbPieces {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        usize::from_str(s)
+            .map(Self::UpTo)
+            .map_err(|_| "failed to parse as usize")
+            .or_else(|_| Material::from_str(s).map(Self::Mat))
+    }
 }
 
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
-struct Opt {
+pub struct CheckIndex {
     #[arg(
-        short,
-        long,
+        value_parser = MatOrNbPieces::from_str,
         help = "maximum number of pieces on the board, will check all pawnless material config up to this number included"
     )]
-    nb_pieces: usize,
+    mat_or_nb_pieces: MatOrNbPieces,
 
-    #[arg(
-        short,
-        long,
-        help = "example \"KQvK\". If specified only this material configuration will be looked after"
-    )]
-    material: Option<String>,
     #[arg(short, long, action = clap::ArgAction::Count, default_value_t = 3)]
     verbose: u8,
+    #[arg(long, default_value = "table/")]
+    tb_dir: PathBuf,
 }
 
 fn gen_all_pawnless_mat_up_to(nb_pieces: usize) -> HashSet<Material> {
@@ -155,27 +163,29 @@ fn gen_all_pawnless_mat_up_to(nb_pieces: usize) -> HashSet<Material> {
         .collect()
 }
 
-fn main() {
-    let args = Opt::parse();
-    let mut builder = Builder::new();
-    builder
-        .filter(
-            None,
-            match args.verbose {
-                1 => LevelFilter::Warn,
-                2 => LevelFilter::Info,
-                3 => LevelFilter::Debug,
-                _ => LevelFilter::Trace,
-            },
-        )
-        .default_format()
-        .target(Target::Stdout)
-        .init();
-    let all_mats_config = args
-        .material
-        .map(|x| [Material::from_str(&x).expect("invalid material")].into())
-        .unwrap_or_else(|| gen_all_pawnless_mat_up_to(args.nb_pieces));
-    all_mats_config.into_iter().for_each(check_mat);
+impl CheckIndex {
+    pub fn run(&self) {
+        let all_mats_config = HashSet::from(self.mat_or_nb_pieces.clone());
+        all_mats_config
+            .into_iter()
+            .for_each(|mat| self.check_mat(mat));
+    }
+
+    fn check_mat(&self, mat: Material) {
+        info!("looking at {mat:?}");
+        let common = Common::new(mat.clone(), Color::White);
+        let mut gen = Generator::new_with_pos_handler(SyzygyCheck::default(), common, &self.tb_dir);
+        gen.generate_positions();
+        let (_, _, syzygy_res) = gen.get_result();
+        if !syzygy_res.duplicate_indexes.is_empty() {
+            warn!(
+                "For {:?}, Found {:?} duplicates",
+                mat,
+                syzygy_res.duplicate_indexes.len()
+            );
+        }
+        info!("Max index is {:?}", syzygy_res.max_index);
+    }
 }
 
 fn transformed_chess(chess: &Chess, transfo: Transfo) -> Chess {

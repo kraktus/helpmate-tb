@@ -589,6 +589,7 @@ dependencies = [
  "dhat",
  "env_logger",
  "helpmate_tb",
+ "itertools",
  "log",
  "retroboard",
  "trycmd",

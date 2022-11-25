@@ -130,7 +130,12 @@ impl<T: ReadAt> EncoderDecoder<T> {
                 Ok(block_header) if block_header.idx_is_in_block(idx) => {
                     return self.decompress_block(byte_offset).and_then(|block| {
                         #[cfg(feature = "cached")]
-                        let outcome = block.get_outcome_cached(_mat_win.expect("internal_outcome_of: mat_win necessary to create cache key"), idx);
+                        let outcome = block.get_outcome_cached(
+                            _mat_win.expect(
+                                "internal_outcome_of: mat_win necessary to create cache key",
+                            ),
+                            idx,
+                        );
                         #[cfg(not(feature = "cached"))]
                         let outcome = block.get_outcome(idx);
                         outcome
