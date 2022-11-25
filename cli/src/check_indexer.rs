@@ -128,7 +128,7 @@ impl FromStr for MatOrNbPieces {
 
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
-pub struct CheckIndex {
+pub struct CheckIndexer {
     #[arg(
         value_parser = MatOrNbPieces::from_str,
         help = "maximum number of pieces on the board, will check all pawnless material config up to this number included"
@@ -163,7 +163,7 @@ fn gen_all_pawnless_mat_up_to(nb_pieces: usize) -> HashSet<Material> {
         .collect()
 }
 
-impl CheckIndex {
+impl CheckIndexer {
     pub fn run(&self) {
         let all_mats_config = HashSet::from(self.mat_or_nb_pieces.clone());
         all_mats_config
