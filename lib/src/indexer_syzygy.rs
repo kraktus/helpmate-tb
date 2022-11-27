@@ -2,7 +2,11 @@ use arrayvec::ArrayVec;
 use itertools::Itertools as _;
 use retroboard::shakmaty::{Bitboard, File, Piece, Rank, Role, Square};
 
-use crate::{get_info_table, indexer::Indexer, is_black_stronger, Material, SideToMove};
+use crate::{
+    get_info_table,
+    indexer::{Indexer, PIECES_ORDER},
+    is_black_stronger, Material, SideToMove,
+};
 
 const fn binomial(mut n: u64, k: u64) -> u64 {
     if k > n {
@@ -483,7 +487,26 @@ impl Indexer for Table {
         unimplemented!("`Table` always need the side to play")
     }
 
+    // copied from `naive indexer`
     fn encode(&self, pos: &impl SideToMove) -> crate::IndexWithTurn {
+        let mut board_check = pos.board().clone();
+        // the `PIECES_ORDER` is in theory arbitrary
+        // and could be replaced by `Pieces::ALL`
+        for piece in PIECES_ORDER {
+            // we check if flipping would result in a "lower" bitboard
+            // dictionary order for all their square.
+            // This is a better way to check if there is a symetry on the A1_H8 diagonal
+            if board_check.by_piece(piece).flip_diagonal() < board_check.by_piece(piece) {
+                board_check.flip_diagonal();
+                break;
+            } else if !A1_H8_DIAG.is_superset(board_check.by_piece(piece)) {
+                break;
+            }
+        }
+        self.encode_unchecked(&(board_check, pos.side_to_move()))
+    }
+
+    fn encode_unchecked(&self, pos: &impl SideToMove) -> crate::IndexWithTurn {
         crate::IndexWithTurn {
             idx: self.encode_checked(pos).unwrap_or_else(|| {
                 panic!(
@@ -494,10 +517,6 @@ impl Indexer for Table {
             }),
             turn: pos.side_to_move(),
         }
-    }
-
-    fn encode_unchecked(&self, _: &impl SideToMove) -> crate::IndexWithTurn {
-        unimplemented!("`Table` always take symetry into account")
     }
 }
 
@@ -816,13 +835,14 @@ mod tests {
     gen_tests_syzgy! {
        1, "KBNvK", "8/8/8/8/8/8/8/KNBk4 w - - 0 1", 484_157,
        2, "KBNvK", "8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1", 1_907_795,
-       non_recognised_symetry, "KBNvK", "8/8/2k5/8/4N3/2K2B2/8/8 w - - 0 1", 1_907_815, // should really be 1907795
-       // ^ the patch for this position was reverted because it introduced other FPs
+       previously_not_recognised_symetry, "KBNvK", "8/8/2k5/8/4N3/2K2B2/8/8 w - - 0 1", 1_907_795,
        recognised_symetry, "KBNvK", "8/8/8/8/8/8/N7/KBk5 b - - 0 1", 242_414,
        recognised_symetry_2, "KBNvK", "8/8/8/8/8/k7/B7/KN6 b - - 0 1", 242_414,
-       recognised_symetry_3, "KRRvK", "1R6/8/8/3K4/8/8/2R5/7k w - - 0 1", 544_235,
-       // same position as in _3, but flipped on the vertical axis
-       recognised_symetry_3bis, "KRRvK", "7k/2R5/8/8/3K4/8/8/1R6 w - - 0 1", 544_235,
+       recognised_symetry_3, "KRRvK", "1R6/8/8/3K4/8/8/2R5/7k w - - 0 1", 110_879,
+       recognised_symetry_3bis, "KRRvK", "7k/2R5/8/8/3K4/8/8/1R6 w - - 0 1", 110_879,
+       // ^ same position as in _3, but flipped on the vertical axis
+       not_recognised_symetry_part_1, "KQQvK", "5Q2/8/8/Q7/8/2k5/8/K7 b - -", 459_218,
+       not_recognised_symetry_part_2, "KQQvK", "2Q5/8/8/7Q/8/5k2/8/7K b - -", 804_794, // should be 459_218
        // check that inverting the position of the knight and bishop yields different indexes
        switch_bishop_and_knight_part1, "KBNvK", "8/8/2N5/3B4/8/2K2k2/8/8 b - - 0 1", 1_907_429,
        switch_bishop_and_knight_part2, "KBNvK", "8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1", 1_907_795,

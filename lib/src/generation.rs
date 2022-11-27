@@ -38,6 +38,12 @@ impl WithBoard for RetroBoard {
     }
 }
 
+impl WithBoard for (Board, Color) {
+    fn board(&self) -> &Board {
+        &self.0
+    }
+}
+
 // Allow to use both `Chess` and `RetroBoard`
 pub trait SideToMove: WithBoard {
     // side to **move**, so opposite of side to unmove
@@ -53,6 +59,12 @@ impl SideToMove for Chess {
 impl SideToMove for RetroBoard {
     fn side_to_move(&self) -> Color {
         !self.retro_turn()
+    }
+}
+
+impl SideToMove for (Board, Color) {
+    fn side_to_move(&self) -> Color {
+        self.1
     }
 }
 
