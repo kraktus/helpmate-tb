@@ -20,6 +20,7 @@ env_logger = "0.9"
 log = "0.4"
 itertools = "0.10.3"
 paste = "1"
+from-str-sequential = "0.1.0"
 
 [dev-dependencies]
 trycmd = "0.14"

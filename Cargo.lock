@@ -473,6 +473,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
+name = "from-str-sequential"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d7f68544f0035d9aaf4c5d176006e9405c867fe1d664fc9715c6692c669899c9"
+dependencies = [
+ "from-str-sequential-derive",
+]
+
+[[package]]
+name = "from-str-sequential-derive"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fea72f14e91d5eb19eefb701335ee5300a0762dd60a018071c612df1dff0a3e5"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "funty"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -588,6 +608,7 @@ dependencies = [
  "clap",
  "dhat",
  "env_logger",
+ "from-str-sequential",
  "helpmate_tb",
  "itertools",
  "log",

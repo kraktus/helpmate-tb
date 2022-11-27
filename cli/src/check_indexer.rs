@@ -11,14 +11,13 @@ use std::{
 
 use clap::Parser;
 
+use from_str_sequential::FromStrSequential;
 use itertools::Itertools;
 use log::{debug, info, warn};
 use retroboard::{
     shakmaty::{Bitboard, Board, Chess, Color, Color::*, Position, Setup, Square},
     RetroBoard,
 };
-
-use std::str::FromStr;
 
 use helpmate_tb::{
     to_chess_with_illegal_checks, Common, Descendants, Generator, IndexWithTurn, Indexer, Material,
@@ -100,7 +99,7 @@ impl<I: Indexer> PosHandler<I> for CheckIndexerPosHandler {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, FromStrSequential)]
 enum MatOrNbPieces {
     Mat(Material),
     UpTo(usize),
@@ -115,22 +114,17 @@ impl From<MatOrNbPieces> for HashSet<Material> {
     }
 }
 
-impl FromStr for MatOrNbPieces {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        usize::from_str(s)
-            .map(Self::UpTo)
-            .map_err(|_| "failed to parse as usize")
-            .or_else(|_| Material::from_str(s).map(Self::Mat))
-    }
+#[derive(Debug, Clone, FromStrSequential)]
+enum CliIndexer {
+    Naive,
+    Syzygy,
 }
 
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
 pub struct CheckIndexer {
     #[arg(
-        value_parser = MatOrNbPieces::from_str,
+        value_parser = MatOrNbPieces::from_str_sequential,
         help = "maximum number of pieces on the board, will check all pawnless material config up to this number included.\nOr just a particular material configuration"
     )]
     mat_or_nb_pieces: MatOrNbPieces,
@@ -139,8 +133,8 @@ pub struct CheckIndexer {
     verbose: u8,
     #[arg(long, default_value = "table/")]
     tb_dir: PathBuf,
-    #[arg(short, long, default_value = "naive")]
-    indexer: String,
+    #[arg(short, long, default_value = "naive", value_parser = CliIndexer::from_str_sequential)]
+    indexer: CliIndexer,
 }
 
 fn gen_all_pawnless_mat_up_to(nb_pieces: usize) -> HashSet<Material> {
@@ -196,10 +190,9 @@ impl CheckIndexer {
         let all_mats_config = HashSet::from(self.mat_or_nb_pieces.clone());
         all_mats_config
             .into_iter()
-            .for_each(|mat| match self.indexer.as_str() {
-                "naive" => self.check_mat_naive(mat),
-                "syzygy" => self.check_mat_syzygy(mat),
-                _ => panic!("only 'syzygy' and 'naive' supported"),
+            .for_each(|mat| match self.indexer {
+                CliIndexer::Naive => self.check_mat_naive(mat),
+                CliIndexer::Syzygy => self.check_mat_syzygy(mat),
             })
     }
 

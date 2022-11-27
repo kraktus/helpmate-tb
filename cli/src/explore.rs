@@ -1,3 +1,4 @@
+use from_str_sequential::FromStrSequential;
 pub use helpmate_tb::{
     Common, EncoderDecoder, Material, MaterialWinner, Outcome, SideToMoveGetter, TableBaseBuilder,
     UNDEFINED_OUTCOME_BYCOLOR,
@@ -17,22 +18,10 @@ use retroboard::{
 
 use clap::{ArgAction, Args};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, FromStrSequential)]
 enum MatOrAll {
     Mat(Material),
     All,
-}
-
-impl FromStr for MatOrAll {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s == "all" {
-            Ok(Self::All)
-        } else {
-            Material::from_str(s).map(Self::Mat)
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -55,7 +44,7 @@ impl FromStr for Query {
 
 #[derive(Args, Debug)]
 pub struct Explore {
-    #[arg(help = "example \"KQvK\", use special value 'all' to search across all positions", value_parser = MatOrAll::from_str)]
+    #[arg(help = "example \"KQvK\", use special value 'all' to search across all positions", value_parser = MatOrAll::from_str_sequential)]
     material: MatOrAll,
     #[arg(short, long, help = "Color of the expected winner", default_value_t = Color::White)]
     winner: Color,
