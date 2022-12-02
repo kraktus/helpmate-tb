@@ -4,7 +4,7 @@ use retroboard::shakmaty::{Bitboard, File, Piece, Rank, Role, Square};
 
 use crate::{
     get_info_table,
-    indexer::{Indexer, PIECES_ORDER},
+    indexer::{handle_symetry, Indexer, PIECES_ORDER},
     is_black_stronger, Material, SideToMove,
 };
 
@@ -489,21 +489,8 @@ impl Indexer for Table {
 
     // copied from `naive indexer`
     fn encode(&self, pos: &impl SideToMove) -> crate::IndexWithTurn {
-        let mut board_check = pos.board().clone();
-        // the `PIECES_ORDER` is in theory arbitrary
-        // and could be replaced by `Pieces::ALL`
-        for piece in PIECES_ORDER {
-            // we check if flipping would result in a "lower" bitboard
-            // dictionary order for all their square.
-            // This is a better way to check if there is a symetry on the A1_H8 diagonal
-            if board_check.by_piece(piece).flip_diagonal() < board_check.by_piece(piece) {
-                board_check.flip_diagonal();
-                break;
-            } else if !A1_H8_DIAG.is_superset(board_check.by_piece(piece)) {
-                break;
-            }
-        }
-        self.encode_unchecked(&(board_check, pos.side_to_move()))
+        let (board_check, is_black_stronger) = handle_symetry(pos.board());
+        self.encode_unchecked(&(board_check, pos.side_to_move() ^ is_black_stronger))
     }
 
     fn encode_unchecked(&self, pos: &impl SideToMove) -> crate::IndexWithTurn {
@@ -842,7 +829,7 @@ mod tests {
        recognised_symetry_3bis, "KRRvK", "7k/2R5/8/8/3K4/8/8/1R6 w - - 0 1", 110_879,
        // ^ same position as in _3, but flipped on the vertical axis
        not_recognised_symetry_part_1, "KQQvK", "5Q2/8/8/Q7/8/2k5/8/K7 b - -", 459_218,
-       not_recognised_symetry_part_2, "KQQvK", "2Q5/8/8/7Q/8/5k2/8/7K b - -", 804_794, // should be 459_218
+       not_recognised_symetry_part_2, "KQQvK", "2Q5/8/8/7Q/8/5k2/8/7K b - -", 459_218,
        // check that inverting the position of the knight and bishop yields different indexes
        switch_bishop_and_knight_part1, "KBNvK", "8/8/2N5/3B4/8/2K2k2/8/8 b - - 0 1", 1_907_429,
        switch_bishop_and_knight_part2, "KBNvK", "8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1", 1_907_795,

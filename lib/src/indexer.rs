@@ -123,38 +123,46 @@ impl From<Material> for NaiveIndexer {
     }
 }
 
+// should take any board and return the canonical version of it, along with a boolean
+// whose truthness is equal to the fact that black were stronger in the original board
+pub fn handle_symetry(b: &Board) -> (Board, bool) {
+    let mut board_check = b.clone();
+    let is_black_stronger = is_black_stronger(b.board());
+    if is_black_stronger {
+        board_check = swap_color_board(board_check)
+    }
+    let white_king_sq = board_check.king_of(White).expect("white king");
+    let board_transfo_needed = WHITE_KING_SQUARES_TO_TRANSFO[white_king_sq as usize];
+
+    match board_transfo_needed {
+        0 => (),
+        1 => board_check.flip_diagonal(),
+        2 => board_check.flip_horizontal(),
+        3 => board_check.rotate_90(),
+        4 => board_check.rotate_270(),
+        5 => board_check.flip_vertical(),
+        6 => board_check.rotate_180(),
+        7 => board_check.flip_anti_diagonal(),
+        _ => unreachable!("Only 7 transformations expected"),
+    };
+
+    for piece in PIECES_ORDER {
+        // we check if flipping would result in a "lower" bitboard
+        // dictionary order for all their square.
+        // This is a better way to check if there is a symetry on the A1_H8 diagonal
+        if board_check.by_piece(piece).flip_diagonal() < board_check.by_piece(piece) {
+            board_check.flip_diagonal();
+            break;
+        } else if !A1_H8_DIAG.is_superset(board_check.by_piece(piece)) {
+            break;
+        }
+    }
+    (board_check, is_black_stronger)
+}
+
 impl Indexer for NaiveIndexer {
     fn encode_board(&self, b: &Board) -> u64 {
-        let mut board_check = b.clone();
-        if is_black_stronger(b.board()) {
-            board_check = swap_color_board(board_check)
-        }
-        let white_king_sq = board_check.king_of(White).expect("white king");
-        let board_transfo_needed = WHITE_KING_SQUARES_TO_TRANSFO[white_king_sq as usize];
-
-        match board_transfo_needed {
-            0 => (),
-            1 => board_check.flip_diagonal(),
-            2 => board_check.flip_horizontal(),
-            3 => board_check.rotate_90(),
-            4 => board_check.rotate_270(),
-            5 => board_check.flip_vertical(),
-            6 => board_check.rotate_180(),
-            7 => board_check.flip_anti_diagonal(),
-            _ => unreachable!("Only 7 transformations expected"),
-        };
-
-        for piece in PIECES_ORDER {
-            // we check if flipping would result in a "lower" bitboard
-            // dictionary order for all their square.
-            // This is a better way to check if there is a symetry on the A1_H8 diagonal
-            if board_check.by_piece(piece).flip_diagonal() < board_check.by_piece(piece) {
-                board_check.flip_diagonal();
-                break;
-            } else if !A1_H8_DIAG.is_superset(board_check.by_piece(piece)) {
-                break;
-            }
-        }
+        let (board_check, _) = handle_symetry(b);
         self.encode_board_unchecked(&board_check)
     }
 
