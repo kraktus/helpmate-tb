@@ -4,7 +4,7 @@ use retroboard::shakmaty::{Bitboard, File, Piece, Rank, Role, Square};
 
 use crate::{
     get_info_table,
-    indexer::{handle_symetry, Indexer, PIECES_ORDER},
+    indexer::{handle_symetry, Indexer},
     is_black_stronger, Material, SideToMove,
 };
 
