@@ -172,7 +172,7 @@ mod tests {
         $(
         paste! {
             #[test]
-            fn [<tests_probe_retrieve_outcome $fn_name>]() {
+            fn [<tests_probe_retrieve_outcome_ $fn_name>]() {
                 check_retrieving_outcome($fen, $outcome, $winner);
             }
 
