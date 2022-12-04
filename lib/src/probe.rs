@@ -149,7 +149,7 @@ mod tests {
         assert_eq!(tb_prober.retrieve_outcome(&chess, winner).unwrap(), outcome);
     }
 
-    fn check_probe(fen: &str, _: Outcome, winner: Color) {
+    fn check_probe(fen: &str, winner: Color) {
         let chess: Chess = Fen::from_ascii(fen.as_bytes())
             .unwrap()
             .into_position(CastlingMode::Standard)
@@ -168,9 +168,13 @@ mod tests {
 
     // macro for generating tests
     macro_rules! gen_tests_probe {
-    ($($fn_name:ident, $fen:tt, $outcome:expr, $winner:tt,)+) => {
+    ($(
+        $(#[$meta:meta])?
+        $fn_name:ident, $fen:tt, $outcome:expr, $winner:tt,
+        )+) => {
         $(
         paste! {
+            #[ignore = "too slow to be enabled by default"]
             #[test]
             fn [<tests_probe_retrieve_outcome_ $fn_name>]() {
                 check_retrieving_outcome($fen, $outcome, $winner);
@@ -179,7 +183,7 @@ mod tests {
             #[ignore = "too slow to be enabled by default"]
             #[test]
             fn [<tests_probe_ $fn_name>]() {
-                check_probe($fen, $outcome, $winner);
+                check_probe($fen, $winner);
             }
         }
         )+
