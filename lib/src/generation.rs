@@ -1,7 +1,7 @@
 use crate::{
     indexer::{DeIndexer, Indexer, A1_D1_D4},
-    Common, DefaultIndexer, Descendants, Material, Outcome, OutcomeU8, Report, ReportU8,
-    A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
+    Common, DefaultIndexer, DefaultReversibleIndexer, Descendants, Material, Outcome, OutcomeU8,
+    Report, ReportU8, A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
 };
 use log::debug;
 use retroboard::shakmaty::{
@@ -26,6 +26,12 @@ impl WithBoard for Board {
     }
 }
 
+impl<'a> WithBoard for &'a Board {
+    fn board(&self) -> &Board {
+        self
+    }
+}
+
 impl WithBoard for Chess {
     fn board(&self) -> &Board {
         Position::board(self)
@@ -39,6 +45,12 @@ impl WithBoard for RetroBoard {
 }
 
 impl WithBoard for (Board, Color) {
+    fn board(&self) -> &Board {
+        &self.0
+    }
+}
+
+impl<'a> WithBoard for (&'a Board, Color) {
     fn board(&self) -> &Board {
         &self.0
     }
@@ -63,6 +75,12 @@ impl SideToMove for RetroBoard {
 }
 
 impl SideToMove for (Board, Color) {
+    fn side_to_move(&self) -> Color {
+        self.1
+    }
+}
+
+impl<'a> SideToMove for (&'a Board, Color) {
     fn side_to_move(&self) -> Color {
         self.1
     }
@@ -127,7 +145,7 @@ impl IndexWithTurn {
 
 // the index is independant of the turn, so must be stored separately
 #[derive(Debug, Clone, Default)]
-pub struct Queue<T = DefaultIndexer> {
+pub struct Queue<T = DefaultReversibleIndexer> {
     // depending on the material configuration can be either won or drawn position
     pub desired_outcome_pos_to_process: VecDeque<IndexWithTurn>,
     pub losing_pos_to_process: VecDeque<IndexWithTurn>,
@@ -370,7 +388,7 @@ impl<T: PosHandler<I>, I: Indexer> Generator<T, I> {
 /// When all legal positions have already been generated, start backward algo from all mates positions
 /// and tag them (ie associates an Outcome)
 #[derive(Debug)]
-struct Tagger<T = DefaultIndexer> {
+struct Tagger<T = DefaultReversibleIndexer> {
     common: Common,
     pb: ProgressBar,
     reversible_indexer: T,

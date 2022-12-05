@@ -37,3 +37,4 @@ pub use material::{is_black_stronger, Material, KB_K, KN_K};
 
 // type alias to allow to change all default type indexer from one position
 pub type DefaultIndexer = NaiveIndexer;
+pub type DefaultReversibleIndexer = NaiveIndexer;
