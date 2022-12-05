@@ -16,7 +16,7 @@ retroboard = "0.2.6"
 clap = { version = "4.0", features = ["derive"] }
 dhat = {version = "0.3",  optional = true }
 helpmate_tb = { path = "../lib", default-features = false }
-env_logger = "0.9"
+env_logger = "0.10"
 log = "0.4"
 itertools = "0.10.3"
 paste = "1"
