@@ -4,11 +4,15 @@ fn check_checksum() {
         .read_dir()
         .expect("read_dir call failed");
 
-    let checksum_bytes = std::fs::read("../checksum.txt").unwrap();
+    let checksum_bytes = std::fs::read("../checksum.txt").expect("no checksum file found");
     let checksum = String::from_utf8_lossy(&checksum_bytes);
 
     for entry_res in entries {
-        let table_name = entry_res.unwrap().file_name().into_string().unwrap();
+        let table_name = entry_res
+            .expect("dir not readable")
+            .file_name()
+            .into_string()
+            .expect("filename conversion failed");
         let cmd_output = std::process::Command::new("md5")
             .arg(format!("table/{table_name}"))
             .output()
