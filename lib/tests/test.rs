@@ -4,7 +4,10 @@ fn check_checksum() {
         .read_dir()
         .expect("read_dir call failed");
 
-    let checksum_bytes = std::fs::read("../checksum.txt").expect("no checksum file found");
+    let checksum_bytes = std::fs::read("../checksum.txt")
+        .or_else(|_| std::fs::read("./checksum.txt"))
+        .or_else(|_| std::fs::read("../../checksum.txt"))
+        .expect("no checksum file found");
     let checksum = String::from_utf8_lossy(&checksum_bytes);
 
     for entry_res in entries {
