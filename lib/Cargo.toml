@@ -24,3 +24,7 @@ positioned-io = "0.3"
 
 [dev-dependencies]
 paste = "1"
+
+[[bin]]
+name = "checksum"
+path = "src/bin/checksum.rs"
