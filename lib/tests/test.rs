@@ -4,10 +4,7 @@ fn check_checksum() {
         .read_dir()
         .expect("read_dir call failed");
 
-    let checksum_bytes = std::fs::read("../checksum.txt")
-        .or_else(|_| std::fs::read("./checksum.txt"))
-        .or_else(|_| std::fs::read("../../checksum.txt"))
-        .expect("no checksum file found");
+    let checksum_bytes = std::fs::read("../checksum.txt").expect("no checksum file found");
     let checksum = String::from_utf8_lossy(&checksum_bytes);
 
     for entry_res in entries {
@@ -17,10 +14,11 @@ fn check_checksum() {
             .into_string()
             .expect("filename conversion failed");
         let cmd_output = std::process::Command::new("md5")
-            .arg(format!("table/{table_name}"))
+            .arg(format!("../table/{table_name}"))
             .output()
-            .expect("failed to execute process");
-        let one_checksum = String::from_utf8_lossy(&cmd_output.stdout).to_string();
+            .expect("failed to execute md5");
+        let checksum_line = String::from_utf8_lossy(&cmd_output.stdout).to_string();
+        let one_checksum = checksum_line.rsplit_once(" ").unwrap().1;
         assert!(checksum.contains(&one_checksum))
     }
 }
