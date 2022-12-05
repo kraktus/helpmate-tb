@@ -20,6 +20,8 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.toolchain }}
           default: true
+      - name: Install md5
+          run: sudo apt-get install -y coreutils
       - name: cargo generate-lockfile
         if: hashFiles('Cargo.lock') == ''
         uses: actions-rs/cargo@v1
