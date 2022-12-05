@@ -1,3 +1,5 @@
+use std::process::Command;
+
 #[test]
 fn check_checksum() {
     let entries = std::path::Path::new("../table")
@@ -13,7 +15,9 @@ fn check_checksum() {
             .file_name()
             .into_string()
             .expect("filename conversion failed");
-        let cmd_output = std::process::Command::new("md5")
+
+        println!("{:?}", Command::new("which").arg("md5").output());
+        let cmd_output = Command::new("md5")
             .arg(format!("../table/{table_name}"))
             .output()
             .expect("failed to execute md5");
