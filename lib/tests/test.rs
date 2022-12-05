@@ -16,7 +16,10 @@ fn check_checksum() {
             .into_string()
             .expect("filename conversion failed");
 
-        println!("{:?}", Command::new("which").arg("md5").output());
+        println!(
+            "table: {table_name} which md5: {:?}",
+            Command::new("which").arg("md5").output().unwrap()
+        );
         let cmd_output = Command::new("md5")
             .arg(format!("../table/{table_name}"))
             .output()
