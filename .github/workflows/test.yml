@@ -30,7 +30,25 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --locked --all-features --all-targets -- --include-ignored
+          args: --locked --all-features --all-targets
+  slow:
+    runs-on: ubuntu-latest
+    name: ubuntu / stable / slow-test
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install ${{ matrix.toolchain }}
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          default: true
+      # definition of cargo alias in .cargo/config.toml
+      - name: cargo slow-test
+        uses: actions-rs/cargo@v1
+        with:
+          command: slow-test
   coverage:
     runs-on: ubuntu-latest
     name: ubuntu / stable / coverage
