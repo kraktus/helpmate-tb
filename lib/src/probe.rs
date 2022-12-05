@@ -33,20 +33,15 @@ impl<T: Indexer> LazyFileHandler<T> {
         &self,
         _mat_winner: MaterialWinner,
         board_and_turn: &impl SideToMove,
-        flip: bool,
     ) -> io::Result<Outcome> {
         #[cfg(feature = "cached")]
-        let outcome_bc = self.inner.outcome_of_cached(
-            _mat_winner,
-            self.indexer.encode_board(board_and_turn.board()),
-        );
-        #[cfg(not(feature = "cached"))]
         let outcome_bc = self
             .inner
-            .outcome_of(self.indexer.encode_board(board_and_turn.board()));
+            .outcome_of_cached(_mat_winner, self.indexer.encode(board_and_turn));
+        #[cfg(not(feature = "cached"))]
+        let outcome_bc = self.inner.outcome_of(self.indexer.encode(board_and_turn));
+
         outcome_bc
-            .map(|bc| *bc.get(board_and_turn.side_to_move() ^ flip))
-            .map(Outcome::from)
     }
 }
 
@@ -116,9 +111,10 @@ impl<T: Indexer> RetrieveOutcome for TablebaseProber<T> {
         flip: bool,
     ) -> std::io::Result<Outcome> {
         let lazy_file = self.0.get(&mat).expect("material config not included");
-        lazy_file
-            .get(winner ^ flip)
-            .outcome_of(MaterialWinner::new(&mat, winner), pos, flip)
+        lazy_file.get(winner ^ flip).outcome_of(
+            MaterialWinner::new(&mat, winner),
+            &(pos.board(), pos.turn() ^ flip),
+        )
     }
 }
 

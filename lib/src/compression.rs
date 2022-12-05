@@ -9,6 +9,7 @@ use positioned_io::ReadAt;
 use retroboard::shakmaty::ByColor;
 use zstd::stream::{decode_all, encode_all};
 
+use crate::{IndexWithTurn, Outcome};
 use crate::{MaterialWinner, OutcomeU8, Outcomes, Report, ReportU8, Reports, ReportsSlice};
 
 // in bytes, the size of the uncompressed block we want
@@ -106,40 +107,44 @@ impl<T: ReadAt> EncoderDecoder<T> {
         from_bytes_exact::<Block>(&block_buf)
     }
 
-    pub fn outcome_of(&self, idx: u64) -> io::Result<ByColor<OutcomeU8>> {
-        self.internal_outcome_of(None, idx)
+    pub fn outcome_of(&self, idx_with_turn: IndexWithTurn) -> io::Result<Outcome> {
+        self.internal_outcome_of(None, idx_with_turn)
     }
 
     #[cfg(feature = "cached")]
     pub fn outcome_of_cached(
         &self,
         mat_win: MaterialWinner,
-        idx: u64,
-    ) -> io::Result<ByColor<OutcomeU8>> {
-        self.internal_outcome_of(Some(mat_win), idx)
+        idx_with_turn: IndexWithTurn,
+    ) -> io::Result<Outcome> {
+        self.internal_outcome_of(Some(mat_win), idx_with_turn)
     }
 
     pub fn internal_outcome_of(
         &self,
         _mat_win: Option<MaterialWinner>,
-        idx: u64,
-    ) -> io::Result<ByColor<OutcomeU8>> {
+        idx_with_turn: IndexWithTurn,
+    ) -> io::Result<Outcome> {
         let mut byte_offset = 0;
         loop {
             match self.decompress_block_header(byte_offset) {
-                Ok(block_header) if block_header.idx_is_in_block(idx) => {
-                    return self.decompress_block(byte_offset).and_then(|block| {
-                        #[cfg(feature = "cached")]
-                        let outcome = block.get_outcome_cached(
-                            _mat_win.expect(
-                                "internal_outcome_of: mat_win necessary to create cache key",
-                            ),
-                            idx,
-                        );
-                        #[cfg(not(feature = "cached"))]
-                        let outcome = block.get_outcome(idx);
-                        outcome
-                    })
+                Ok(block_header) if block_header.idx_is_in_block(idx_with_turn.idx) => {
+                    return self
+                        .decompress_block(byte_offset)
+                        .and_then(|block| {
+                            #[cfg(feature = "cached")]
+                            let outcome = block.get_outcome_cached(
+                                _mat_win.expect(
+                                    "internal_outcome_of: mat_win necessary to create cache key",
+                                ),
+                                idx_with_turn.idx,
+                            );
+                            #[cfg(not(feature = "cached"))]
+                            let outcome = block.get_outcome(idx_with_turn.idx);
+                            outcome
+                        })
+                        .map(|bc| *bc.get(idx_with_turn.turn))
+                        .map(Outcome::from)
                 }
                 Ok(block_header) => {
                     byte_offset += to_u64(block_header.size_including_headers());
