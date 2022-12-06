@@ -11,7 +11,7 @@ jobs:
         with:
           submodules: true
       - name: Install md5
-          run: sudo apt-get install -y coreutils
+        run: sudo apt-get install -y coreutils
       - name: Install nightly
         uses: actions-rs/toolchain@v1
         with:

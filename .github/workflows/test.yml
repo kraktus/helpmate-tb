@@ -21,7 +21,7 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           default: true
       - name: Install md5
-          run: sudo apt-get install -y coreutils
+        run: sudo apt-get install -y coreutils
       - name: cargo generate-lockfile
         if: hashFiles('Cargo.lock') == ''
         uses: actions-rs/cargo@v1
@@ -47,7 +47,7 @@ jobs:
           toolchain: stable
           default: true
       - name: Install md5
-          run: sudo apt-get install -y coreutils
+        run: sudo apt-get install -y coreutils
       # definition of cargo alias in .cargo/config.toml
       - name: cargo slow-test
         uses: actions-rs/cargo@v1
@@ -74,6 +74,6 @@ jobs:
         with:
           command: generate-lockfile
       - name: Install md5
-          run: sudo apt-get install -y coreutils
+        run: sudo apt-get install -y coreutils
       - name: cargo llvm-cov
         run: cargo llvm-cov --locked --all-features --text

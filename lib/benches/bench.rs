@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use helpmate_tb::{Indexer, Material, NaiveIndexer, Table};
+use helpmate_tb::{handle_symetry, Indexer, Material, NaiveIndexer, SideToMove, Table};
 use retroboard::RetroBoard;
 
 pub fn bench_indexers(c: &mut Criterion) {
@@ -27,15 +27,44 @@ pub fn bench_indexers(c: &mut Criterion) {
         let mat = Material::from_board(rboard.board());
         (rboard, Table::from(mat))
     });
-    let mut group = c.benchmark_group("Indexer");
-    for (i, (rboard, syzygy)) in rboards_and_syzygy.into_iter().enumerate() {
-        group.bench_with_input(BenchmarkId::new("Naive", i), &rboard, |b, rboard_ref| {
-            b.iter(|| NaiveIndexer.encode(rboard_ref))
-        });
-        group.bench_with_input(BenchmarkId::new("Syzygy", i), &rboard, |b, rboard_ref| {
-            b.iter(|| syzygy.encode(rboard_ref))
-        });
+    {
+        let mut group = c.benchmark_group("CheckedIndexer");
+        for (i, (rboard, syzygy)) in rboards_and_syzygy.into_iter().enumerate() {
+            group.bench_with_input(BenchmarkId::new("Naive", i), &rboard, |b, rboard_ref| {
+                b.iter(|| NaiveIndexer.encode(rboard_ref))
+            });
+            group.bench_with_input(BenchmarkId::new("Syzygy", i), &rboard, |b, rboard_ref| {
+                b.iter(|| syzygy.encode(rboard_ref))
+            });
+        }
+        group.finish()
     }
+
+    let checked_boards_and_syzygy = fens.map(|fen| {
+        let rboard = RetroBoard::new_no_pockets(fen).unwrap();
+        let mat = Material::from_board(rboard.board());
+        let (board_check, is_black_stronger) = handle_symetry(rboard.board());
+        (
+            (board_check, rboard.side_to_move() ^ is_black_stronger),
+            Table::from(mat),
+        )
+    });
+
+    let mut group = c.benchmark_group("UncheckedIndexer");
+
+    for (i, (side_to_move, syzygy)) in checked_boards_and_syzygy.into_iter().enumerate() {
+        group.bench_with_input(
+            BenchmarkId::new("Naive", i),
+            &side_to_move,
+            |b, side_to_move_ref| b.iter(|| NaiveIndexer.encode_unchecked(side_to_move_ref)),
+        );
+        group.bench_with_input(
+            BenchmarkId::new("Syzygy", i),
+            &side_to_move,
+            |b, side_to_move_ref| b.iter(|| syzygy.encode_unchecked(side_to_move_ref)),
+        );
+    }
+    group.finish()
 }
 
 criterion_group!(benches, bench_indexers);
