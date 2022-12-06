@@ -20,12 +20,12 @@ fn check_checksum() {
             "table: {table_name} which md5: {:?}",
             Command::new("which").arg("md5").output().unwrap()
         );
-        let cmd_output = Command::new("md5")
+        let cmd_output = Command::new("md5sum")
             .arg(format!("../table/{table_name}"))
             .output()
             .expect("failed to execute md5");
         let checksum_line = String::from_utf8_lossy(&cmd_output.stdout).to_string();
-        let one_checksum = checksum_line.rsplit_once(" ").unwrap().1;
+        let one_checksum = checksum_line.split_once(" ").unwrap().0;
         assert!(checksum.contains(&one_checksum))
     }
 }
