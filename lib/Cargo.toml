@@ -24,7 +24,12 @@ positioned-io = "0.3"
 
 [dev-dependencies]
 paste = "1"
+criterion = { version = "0.4", features = ["html_reports"] }
 
 [[bin]]
 name = "checksum"
 path = "src/bin/checksum.rs"
+
+[[bench]]
+name = "bench"
+harness = false
