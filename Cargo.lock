@@ -744,6 +744,7 @@ dependencies = [
  "log",
  "paste",
  "retroboard",
+ "rustc-hash",
  "trycmd",
 ]
 

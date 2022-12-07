@@ -10,6 +10,7 @@ default = ["cached"]
 cached = ["helpmate_tb/cached"]
 dhat = ["dep:dhat"]
 trycmd-overwrite = [] # feature to allow snapshots tests to be updated via cargo alias
+syzygy = ["helpmate_tb/syzygy"]
 
 [dependencies]
 retroboard = "0.2.6"
@@ -21,6 +22,7 @@ log = "0.4"
 itertools = "0.10.3"
 paste = "1"
 from-str-sequential = "0.1.0"
+rustc-hash = "1.1.0"
 
 [dev-dependencies]
 trycmd = "0.14"

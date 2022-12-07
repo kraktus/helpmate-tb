@@ -46,8 +46,9 @@ pub type InfoTable = ArrayVec<ArrayVec<GroupDataInfo, 2>, 4>;
 
 pub fn get_info_table(m: &Material) -> Result<InfoTable, Box<dyn Error>> {
     // hackfix to allow calling the info table from multiple paths
-    let data =
-        fs::read_to_string("lib/encoding.json").or_else(|_| fs::read_to_string("encoding.json"))?;
+    let data = fs::read_to_string("lib/encoding.json")
+        .or_else(|_| fs::read_to_string("encoding.json"))
+        .or_else(|_| fs::read_to_string("../lib/encoding.json"))?;
     let map: HashMap<Material, InfoTable> = serde_json::from_str(&data)?;
     Ok(map
         .get(m)

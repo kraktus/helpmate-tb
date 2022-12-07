@@ -211,7 +211,8 @@ mod tests {
     }
 }
 
-    // should be kept in sync with `probe.rs` tests
+    // the tests are tested against files generated with the naive indexer
+    #[cfg(not(feature = "syzygy"))]
     gen_tests_descendants! {
         from_captures_promotion_without_switching_color_white, "1k6/1r6/1K6/8/4Q3/8/8/8 w - - 0 1", Outcome::Win(1), White,
         from_captures_promotion_with_switching_color_white, "3K4/1r2Q3/8/8/8/8/8/3k4 b - - 0 1", Outcome::Draw, White,

@@ -131,7 +131,7 @@ pub struct CheckIndexer {
 
     #[arg(short, long, action = clap::ArgAction::Count, default_value_t = 3)]
     verbose: u8,
-    #[arg(long, default_value = "table/")]
+    #[arg(long, default_value = if cfg!(feature = "syzygy") {"syzygy_table/"} else {"table/"})]
     tb_dir: PathBuf,
     #[arg(short, long, default_value = "naive", value_parser = CliIndexer::from_str_sequential)]
     indexer: CliIndexer,

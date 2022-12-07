@@ -27,7 +27,7 @@ pub struct Probe {
     fen: Chess, // `fen` name to improve CLI usability. better would be to have the CLI still show `fen` but use `chess` internally
     #[arg(short, long)]
     winner: Color,
-    #[arg(long, default_value = "table/")]
+    #[arg(long, default_value = if cfg!(feature = "syzygy") {"syzygy_table/"} else {"table/"})]
     tb_dir: PathBuf,
     #[arg(long, action = ArgAction::SetTrue)]
     expanded: bool,

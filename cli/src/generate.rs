@@ -16,7 +16,7 @@ pub struct Generate {
     material: Material,
     #[arg(short, long, action = ArgAction::SetTrue)]
     recursive: bool,
-    #[arg(long, default_value = "table/")]
+    #[arg(long, default_value = if cfg!(feature = "syzygy") {"syzygy_table/"} else {"table/"})]
     tb_dir: PathBuf,
 }
 

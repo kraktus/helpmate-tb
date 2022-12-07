@@ -5,8 +5,8 @@ pub use helpmate_tb::{
 };
 use helpmate_tb::{DeIndexer, DefaultIndexer, FileHandler, IndexWithTurn, Indexer};
 use log::{debug, info};
+use rustc_hash::FxHashMap;
 use std::{
-    collections::HashMap,
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -46,8 +46,12 @@ impl FromStr for Query {
 pub struct Explore {
     #[arg(help = "example \"KQvK\", use special value 'all' to search across all positions", value_parser = MatOrAll::from_str_sequential)]
     material: MatOrAll,
-    #[arg(short, long, help = "Color of the expected winner", default_value_t = Color::White)]
-    winner: Color,
+    #[arg(
+        short,
+        long,
+        help = "Color of the expected winner. If no color is provided, will search for both"
+    )]
+    winner: Option<Color>,
     #[arg(long,
         value_parser = Query::from_str,
         help = "Either a fen or an outcome."
@@ -55,7 +59,7 @@ pub struct Explore {
     query: Option<Query>,
     #[arg(long, action = ArgAction::SetFalse, default_value_t = false)]
     exclude_summary: bool,
-    #[arg(long, default_value = "table/")]
+    #[arg(long, default_value = if cfg!(feature = "syzygy") {"syzygy_table/"} else {"table/"})]
     tb_dir: PathBuf,
 }
 
@@ -74,8 +78,10 @@ impl Explore {
                 }
             }
             MatOrAll::Mat(ref mat) => {
-                let mat_win = MaterialWinner::new(mat, self.winner);
-                self.stats_one_mat(mat_win);
+                for winner in self.winner.map(|w| vec![w]).unwrap_or(Color::ALL.into()) {
+                    let mat_win = MaterialWinner::new(mat, winner);
+                    self.stats_one_mat(mat_win);
+                }
             }
         }
     }
@@ -109,7 +115,7 @@ pub fn stats<T>(
     let mut win = 0;
     let mut lose = 0;
     let mut unkown = 0;
-    let mut distrib: HashMap<Outcome, u64> = HashMap::new();
+    let mut distrib: FxHashMap<Outcome, u64> = FxHashMap::default();
     let mut undefined_outcome: usize = 0;
 
     let searched_idx = query.and_then(|q| {
@@ -129,18 +135,19 @@ pub fn stats<T>(
             let outcome = by_color_outcome.get_outcome_by_color(turn);
             match query {
                 Some(Query::Outcome(searched_outcome)) if &outcome == searched_outcome => {
-                    info!(
-                        "Macthing {outcome:?}, position {:?}",
-                        indexer
-                            .expect("Not indexer given despite specific outcome being searched")
-                            .restore(
-                                &mat_win.material,
-                                IndexWithTurn {
-                                    idx: idx as u64,
-                                    turn
-                                }
-                            )
-                    )
+                    #[cfg(not(feature = "syzygy"))]
+                    let pos = indexer
+                        .expect("Not indexer given despite specific outcome being searched")
+                        .restore(
+                            &mat_win.material,
+                            IndexWithTurn {
+                                idx: idx as u64,
+                                turn,
+                            },
+                        );
+                    #[cfg(feature = "syzygy")]
+                    let pos = unreachable!("Syzygy indexer is not reversible");
+                    info!("Macthing {outcome:?}, position {:?}", pos)
                 }
                 Some(Query::Pos(pos))
                     if {
