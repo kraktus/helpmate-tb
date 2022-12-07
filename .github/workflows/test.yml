@@ -30,7 +30,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --locked --all-features --all-targets
+          args: --locked --all-targets
   slow:
     runs-on: ubuntu-latest
     name: ubuntu / stable / slow-test
@@ -70,4 +70,4 @@ jobs:
         with:
           command: generate-lockfile
       - name: cargo llvm-cov
-        run: cargo llvm-cov --locked --all-features --text
+        run: cargo llvm-cov --locked --text
