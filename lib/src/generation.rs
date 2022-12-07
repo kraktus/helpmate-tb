@@ -326,7 +326,7 @@ impl<T: PosHandler<I>, I: Indexer> Generator<T, I> {
             if let Ok(chess) = to_chess_with_illegal_checks(valid_setup.clone()) {
                 let rboard = RetroBoard::from_setup(valid_setup, Standard)
                     .expect("if chess is valid then rboard should be too");
-                let idx = self.queue.encode_unchecked(&rboard); // by construction positions generated have white king in the a1-d1-d4 corner
+                let idx = self.queue.encode(&rboard); // The position by construction is unfortunately not always canonical, so best to re-check when encoding
                 let all_pos_idx = self.common.indexer().encode(&chess).usize();
                 // if format!("{}", rboard.board().board_fen(Bitboard::EMPTY))
                 //     == "7k/2R5/8/8/3K4/8/8/1R6"
