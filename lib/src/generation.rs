@@ -247,7 +247,7 @@ impl<I: Indexer> Generator<DefaultGeneratorHandler, I> {
 
 impl<T: PosHandler<I>, I: Indexer> Generator<T, I> {
     pub fn new_with_pos_handler(pos_handler: T, common: Common<I>, tablebase_dir: &Path) -> Self {
-        let pb = common.get_progress_bar();
+        let pb = common.get_progress_bar().with_message("Gen pos");
         Self {
             pb,
             tablebase: Descendants::new(&common.material, tablebase_dir),
@@ -396,7 +396,7 @@ struct Tagger<T = DefaultReversibleIndexer> {
 
 impl<T: From<Material>> Tagger<T> {
     pub fn new(common: Common) -> Self {
-        let pb = common.get_progress_bar();
+        let pb = common.get_progress_bar().with_message("Tagging pos");
         Self {
             reversible_indexer: T::from(common.material.clone()),
             common,

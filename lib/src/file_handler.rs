@@ -19,7 +19,8 @@ pub struct FileHandler<T = DefaultIndexer> {
 impl<T: From<Material>> FileHandler<T> {
     #[must_use]
     pub fn new(mat: &MaterialWinner, tablebase_dir: &Path) -> Self {
-        let raf = RandomAccessFile::open(tablebase_dir.join(format!("{mat:?}"))).unwrap();
+        let table_path = tablebase_dir.join(format!("{mat:?}"));
+        let raf = RandomAccessFile::open(&table_path).unwrap_or_else(|e| panic!("{e}, Most probably {table_path:?} not found, use `--recursive` option to regenerate descendants"));
         let outcomes = EncoderDecoder::new(raf)
             .decompress_file()
             .expect("decompression failed");
