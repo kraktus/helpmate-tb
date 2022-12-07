@@ -8,6 +8,7 @@ edition = "2021"
 [features]
 default = ["cached"]
 cached = ["dep:cached"]
+syzygy = []
 
 [dependencies]
 retroboard = "0.2.6"
