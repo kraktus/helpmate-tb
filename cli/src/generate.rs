@@ -35,7 +35,7 @@ impl Generate {
 
     fn gen_one_material(&self, mat: Material) {
         for winner in Color::ALL {
-            info!("Generating {mat:?} with winner: {winner}");
+            info!("Building {mat:?} with winner: {winner}");
             // white first, most interesting
             let common = TableBaseBuilder::build(mat.clone(), winner, &self.tb_dir);
             let mat_win = MaterialWinner::new(&common.material, common.winner);
