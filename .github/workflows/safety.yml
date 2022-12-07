@@ -10,8 +10,6 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - name: Install md5
-        run: sudo apt-get install -y coreutils
       - name: Install nightly
         uses: actions-rs/toolchain@v1
         with:
