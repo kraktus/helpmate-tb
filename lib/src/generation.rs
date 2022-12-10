@@ -1,5 +1,6 @@
 use crate::{
     indexer::{DeIndexer, Indexer, A1_D1_D4},
+    queue::Queue,
     Common, DefaultReversibleIndexer, Descendants, Material, Outcome, OutcomeU8, Report, ReportU8,
     A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
 };
@@ -140,23 +141,6 @@ impl IndexWithTurn {
         self.idx
             .try_into()
             .expect("Only 64bits and larger are supported")
-    }
-}
-
-// the index is independant of the turn, so must be stored separately
-#[derive(Debug, Clone, Default)]
-pub struct Queue<T = DefaultReversibleIndexer> {
-    // depending on the material configuration can be either won or drawn position
-    pub desired_outcome_pos_to_process: VecDeque<IndexWithTurn>,
-    pub losing_pos_to_process: VecDeque<IndexWithTurn>,
-    reversible_indexer: T,
-}
-
-impl<T: Indexer + DeIndexer> Deref for Queue<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        &self.reversible_indexer
     }
 }
 
