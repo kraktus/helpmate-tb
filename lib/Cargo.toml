@@ -11,7 +11,7 @@ cached = ["dep:cached"]
 syzygy = []
 
 [dependencies]
-retroboard = "0.2.6"
+retroboard = "0.2.7"
 arrayvec = { version = "0.7", features = ["serde"] }
 cached = {version = "0.40", features = ["proc_macro"], optional = true}
 indicatif = "0.17.2"
