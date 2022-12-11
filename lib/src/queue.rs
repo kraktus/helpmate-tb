@@ -1,16 +1,57 @@
-use std::{collections::VecDeque, marker::PhantomData, ops::Deref};
+use std::{collections::VecDeque, marker::PhantomData, mem, ops::Deref};
 
 use retroboard::shakmaty::{ByColor, Color};
 
 use crate::{DeIndexer, DefaultReversibleIndexer, IndexWithTurn};
 
-// the index is independant of the turn, so must be stored separately
+// TODO should be able to be replace with normal vec with the new queue system
 #[derive(Debug, Clone, Default)]
 pub struct Queue<T = DefaultReversibleIndexer> {
     // depending on the material configuration can be either won or drawn position
     pub desired_outcome_pos_to_process: VecDeque<IndexWithTurn>,
     pub losing_pos_to_process: VecDeque<IndexWithTurn>,
     reversible_indexer: T,
+}
+
+/// Wrapper containing the informations needed to process "one queue", ie initialise from a vec of desired outcome
+/// Then allow to store the positions that will need to be check in the next pass of the `Tagger` more efficiently than a traditional
+///  VecDeque, using packed bools.
+#[derive(Debug, Clone)]
+pub struct OneQueue {
+    mate_in_n: MateInQueue,
+    mate_in_n_plus_1: MateInQueue,
+}
+
+impl OneQueue {
+    pub fn new(
+        desired_outcome_pos_to_process: VecDeque<IndexWithTurn>,
+        all_pos_idx_len: usize,
+    ) -> Self {
+        let mut mate_in_n = MateInQueue::new(all_pos_idx_len);
+        for idx_with_turn in desired_outcome_pos_to_process.into_iter() {
+            mate_in_n.push_back(idx_with_turn);
+        }
+        let mate_in_n_plus_1 = MateInQueue::new(all_pos_idx_len);
+        Self {
+            mate_in_n,
+            mate_in_n_plus_1,
+        }
+    }
+
+    pub fn push_back(&mut self, idx_with_turn: IndexWithTurn) {
+        self.mate_in_n_plus_1.push_back(idx_with_turn)
+    }
+
+    pub fn pop_front(&mut self) -> Option<IndexWithTurn> {
+        self.mate_in_n.pop_front()
+    }
+
+    /// To be called at the end of a `Tagger` pass. `mate_in_n` must have been completely emptied
+    /// So we must take the N+1 queue and move it in the place of the N queue
+    pub fn swap(&mut self) {
+        self.mate_in_n.reset_counter();
+        mem::swap(&mut self.mate_in_n, &mut self.mate_in_n_plus_1)
+    }
 }
 
 impl<T: DeIndexer + DeIndexer> Deref for Queue<T> {
@@ -73,29 +114,36 @@ const EMPTY_PACKED_BOOLS_BYCOLOR: ByColor<PackedBools> = ByColor {
     white: PackedBools::EMPTY,
 };
 
-/// T being a marker, N or N+1
-#[derive(Debug)]
-struct MateInQueue<T> {
+#[derive(Debug, Clone)]
+struct MateInQueue {
     inner: Vec<ByColor<PackedBools>>,
     inner_index: usize, // where we're in the OneQueue
-    phantom: PhantomData<T>,
 }
 
-trait MateInN {}
-trait MateInNPlus1 {}
-
-impl<T> MateInQueue<T> {
+impl MateInQueue {
     pub fn new(len: usize) -> Self {
-        let inner: Vec<ByColor<PackedBools>> = vec![EMPTY_PACKED_BOOLS_BYCOLOR; len];
+        let mut inner: Vec<ByColor<PackedBools>> = vec![EMPTY_PACKED_BOOLS_BYCOLOR; len];
+        inner.shrink_to_fit();
         Self {
             inner,
             inner_index: 0,
-            phantom: PhantomData,
         }
     }
-}
 
-impl<T: MateInN> MateInQueue<T> {
+    pub fn reset_counter(&mut self) {
+        debug_assert!(self.inner_index == self.inner.len());
+        self.inner_index = 0;
+    }
+
+    fn is_empty(&self) -> bool {
+        for i in 0..self.inner.len() {
+            if self.inner[i] != EMPTY_PACKED_BOOLS_BYCOLOR {
+                return false;
+            }
+        }
+        true
+    }
+
     pub fn pop_front(&mut self) -> Option<IndexWithTurn> {
         while self.inner.get(self.inner_index)? == &EMPTY_PACKED_BOOLS_BYCOLOR {
             self.inner_index += 1;
@@ -116,9 +164,7 @@ impl<T: MateInN> MateInQueue<T> {
 
         None
     }
-}
 
-impl<T: MateInNPlus1> MateInQueue<T> {
     pub fn push_back(&mut self, idx_with_turn: IndexWithTurn) {
         let IndexWithTurn { idx, turn } = idx_with_turn;
         let inner_idx = (idx / 8) as usize;
@@ -131,14 +177,9 @@ impl<T: MateInNPlus1> MateInQueue<T> {
 
 #[cfg(test)]
 mod tests {
-    use retroboard::shakmaty::Color;
+    use retroboard::shakmaty::Color::*;
 
     use super::*;
-
-    #[derive(Debug)]
-    struct TestMarker;
-    impl MateInN for TestMarker {}
-    impl MateInNPlus1 for TestMarker {}
 
     #[test]
     fn test_packed_bool_iter() {
@@ -162,8 +203,7 @@ mod tests {
         for mul in test_idx {
             for div_rest in 0..7 {
                 for turn in Color::ALL {
-                    let mut mate_in_x: MateInQueue<TestMarker> =
-                        MateInQueue::new(test_idx.into_iter().max().unwrap());
+                    let mut mate_in_x = MateInQueue::new(test_idx.into_iter().max().unwrap());
                     let idx = (mul + div_rest) as u64;
                     let idx_with_turn = IndexWithTurn { idx, turn };
                     mate_in_x.push_back(idx_with_turn);
@@ -174,5 +214,86 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_one_queue() {
+        let test_idx = VecDeque::from([
+            IndexWithTurn {
+                idx: 11278,
+                turn: White,
+            },
+            IndexWithTurn {
+                idx: 8945,
+                turn: Black,
+            },
+            IndexWithTurn {
+                idx: 12,
+                turn: Black,
+            },
+            IndexWithTurn {
+                idx: 3,
+                turn: White,
+            },
+            IndexWithTurn {
+                idx: 145,
+                turn: Black,
+            },
+            IndexWithTurn {
+                idx: 568,
+                turn: White,
+            },
+            IndexWithTurn {
+                idx: 4812,
+                turn: White,
+            },
+        ]); // random
+        let mut one_queue = OneQueue::new(test_idx, 10000);
+        for _ in 0..2 {
+            while let Some(mut idx_with_turn) = one_queue.pop_front() {
+                idx_with_turn.idx += 1;
+                one_queue.push_back(idx_with_turn);
+            }
+            assert!(one_queue.mate_in_n.is_empty());
+            // the N+1 queue should NOT be empty
+            assert!(!one_queue.mate_in_n_plus_1.is_empty());
+            one_queue.swap();
+            // after swapping the N queue should NOT be empty
+            assert!(!one_queue.mate_in_n.is_empty());
+            assert!(one_queue.mate_in_n_plus_1.is_empty())
+        }
+        assert_eq!(
+            [0; 7].map(|_| one_queue.mate_in_n.pop_front().unwrap()),
+            [
+                IndexWithTurn {
+                    idx: 5,
+                    turn: White,
+                },
+                IndexWithTurn {
+                    idx: 14,
+                    turn: Black,
+                },
+                IndexWithTurn {
+                    idx: 147,
+                    turn: Black,
+                },
+                IndexWithTurn {
+                    idx: 570,
+                    turn: White,
+                },
+                IndexWithTurn {
+                    idx: 4814,
+                    turn: White,
+                },
+                IndexWithTurn {
+                    idx: 8947,
+                    turn: Black,
+                },
+                IndexWithTurn {
+                    idx: 11280,
+                    turn: White,
+                },
+            ]
+        )
     }
 }
