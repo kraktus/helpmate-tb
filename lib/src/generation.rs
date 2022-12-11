@@ -4,7 +4,7 @@ use crate::{
     Common, DefaultReversibleIndexer, Descendants, Material, Outcome, OutcomeU8, Report, ReportU8,
     A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
 };
-use log::{debug, warn};
+use log::{debug, error, warn};
 use retroboard::shakmaty::{
     Bitboard, Board, ByColor, CastlingMode,
     CastlingMode::Standard,
@@ -483,7 +483,7 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
                         *report = ReportU8::from(Report::Processed(Outcome::Draw))
                     }
                     Report::Unprocessed(not_unknown) => {
-                        panic!(
+                        error!(
                             "Found an unprocessed report which is not Unknown but {not_unknown:?}, idx: {idx}, turn {turn}",
                         )
                     }

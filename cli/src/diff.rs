@@ -3,7 +3,7 @@ pub use helpmate_tb::{
     UNDEFINED_OUTCOME_BYCOLOR,
 };
 use helpmate_tb::{DeIndexer, FileHandler, IndexWithTurn};
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use std::{path::PathBuf, str::FromStr};
 
 use retroboard::shakmaty::Color;
@@ -38,6 +38,7 @@ impl Diff {
     }
 
     fn diff(&self, old_file_handler: FileHandler, file_handler: FileHandler) {
+        let mut diff_outcomes = 0;
         if old_file_handler.outcomes.len() != file_handler.outcomes.len() {
             error!(
                 "The two tables do not have the same length, old: {}, new {}",
@@ -56,6 +57,7 @@ impl Diff {
                 let old_outcome = outcome_bc.get_outcome_by_color(turn);
                 let outcome = old_outcome_bc.get_outcome_by_color(turn);
                 if old_outcome != outcome {
+                    #[cfg(not(feature = "syzygy"))]
                     let pos = file_handler.indexer.restore(
                         &self.material,
                         IndexWithTurn {
@@ -63,10 +65,14 @@ impl Diff {
                             turn,
                         },
                     );
-                    error!("idx: {idx}, Outcome differs: old {old_outcome:?}, new {outcome:?}");
+                    diff_outcomes += 1;
+                    #[cfg(feature = "syzygy")]
+                    let pos = unreachable!("Syzygy indexer is not reversible");
+                    info!("idx: {idx}, Outcome differs: old {old_outcome:?}, new {outcome:?}");
                     debug!("pos: {pos:?}");
                 }
             }
         }
+        warn!("Found {diff_outcomes} differences");
     }
 }
