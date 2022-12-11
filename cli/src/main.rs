@@ -1,8 +1,10 @@
 mod check_indexer;
+mod diff;
 mod explore;
 mod generate;
 mod probe;
 
+use diff::Diff;
 pub use helpmate_tb::{
     Common, EncoderDecoder, Material, MaterialWinner, Outcome, SideToMoveGetter, TableBaseBuilder,
     UNDEFINED_OUTCOME_BYCOLOR,
@@ -45,6 +47,7 @@ enum Cmd {
     Explore(Explore),
     Probe(Probe),
     CheckIndexer(CheckIndexer),
+    Diff(Diff),
 }
 
 impl Cmd {
@@ -54,6 +57,7 @@ impl Cmd {
             Self::Explore(expl) => expl.run(),
             Self::Probe(probe) => probe.run(),
             Self::CheckIndexer(check_index) => check_index.run(),
+            Self::Diff(diff) => diff.run(),
         }
     }
 }

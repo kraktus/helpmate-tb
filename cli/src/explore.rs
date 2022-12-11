@@ -6,10 +6,7 @@ pub use helpmate_tb::{
 use helpmate_tb::{DeIndexer, DefaultIndexer, FileHandler, IndexWithTurn, Indexer};
 use log::{debug, info};
 use rustc_hash::FxHashMap;
-use std::{
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::{path::PathBuf, str::FromStr};
 
 use retroboard::{
     shakmaty::{ByColor, Color},
@@ -67,9 +64,7 @@ impl Explore {
     pub fn run(&self) {
         match self.material {
             MatOrAll::All => {
-                let entries = Path::new("./table")
-                    .read_dir()
-                    .expect("read_dir call failed");
+                let entries = self.tb_dir.read_dir().expect("read_dir call failed");
                 for entry_res in entries {
                     let mat_win_str = entry_res.unwrap().file_name().into_string().unwrap();
                     let mat_win =
