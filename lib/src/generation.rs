@@ -199,13 +199,16 @@ impl<I> PosHandler<I> for DefaultGeneratorHandler {
                 }
             }
             None => {
+                let (fetched_outcome, are_all_moves_capture) = tablebase
+                    .outcome_from_captures_promotion(chess, common.winner)
+                    .unwrap_or((Outcome::Unknown, false));
                 common.all_pos[all_pos_idx].set_to(
                     chess,
-                    Report::Unprocessed(
-                        tablebase
-                            .outcome_from_captures_promotion(chess, common.winner)
-                            .unwrap_or(Outcome::Unknown),
-                    ),
+                    if are_all_moves_capture {
+                        Report::Processed(fetched_outcome)
+                    } else {
+                        Report::Unprocessed(fetched_outcome)
+                    },
                 );
             }
         }
@@ -315,6 +318,9 @@ impl<T: PosHandler<I>, I: Indexer> Generator<T, I> {
                 // if format!("{}", rboard.board().board_fen(Bitboard::EMPTY))
                 //     == "7k/2R5/8/8/3K4/8/8/1R6"
                 // {
+                //     println!("TEST {rboard:?}")
+                // };
+                // if all_pos_idx == 132 {
                 //     println!("TEST {rboard:?}")
                 // };
                 // Check that position is generated for the first time/index schema is injective
@@ -447,10 +453,18 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
         }
 
         // all positions that are unknown at the end are drawn
-        for report_bc in &mut self.common.all_pos {
+        for (idx, report_bc) in &mut self.common.all_pos.iter_mut().enumerate() {
             for report in report_bc.iter_mut() {
-                if Report::Unprocessed(Outcome::Unknown) == Report::from(*report) {
-                    *report = ReportU8::from(Report::Processed(Outcome::Draw))
+                match Report::from(*report) {
+                    Report::Unprocessed(Outcome::Unknown) => {
+                        *report = ReportU8::from(Report::Processed(Outcome::Draw))
+                    }
+                    Report::Unprocessed(not_unknown) => {
+                        panic!(
+                            "Found an unprocessed report which is not Unknown but {not_unknown:?}, idx: {idx}",
+                        )
+                    }
+                    Report::Processed(_) => {}
                 }
             }
         }

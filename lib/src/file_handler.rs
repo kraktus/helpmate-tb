@@ -100,10 +100,17 @@ impl<T: Indexer + From<Material>> Descendants<T> {
     /// and return the best result
     /// Example:
     /// "`KPvRK`" where the pawn can take and promote then mate in 4, or just promote and mate in 2, will return `Outcome::Win(2)`
+    /// Also return a boolean whose value is `true` if and only if all legal moves are promotion/captures
     #[must_use]
-    pub fn outcome_from_captures_promotion(&self, pos: &Chess, winner: Color) -> Option<Outcome> {
+    pub fn outcome_from_captures_promotion(
+        &self,
+        pos: &Chess,
+        winner: Color,
+    ) -> Option<(Outcome, bool)> {
         let mut moves = pos.legal_moves();
+        let all_moves_nb = moves.len();
         moves.retain(|m| m.is_capture() || m.is_promotion());
+        let are_all_moves_captures = all_moves_nb == moves.len();
         moves
             .iter()
             .map(|chess_move| {
@@ -113,7 +120,7 @@ impl<T: Indexer + From<Material>> Descendants<T> {
                     .expect("No IO operation involved here")
             })
             .max()
-            .map(|o| o + 1) // we are one move further from the max
+            .map(|o| (o + 1, are_all_moves_captures)) // we are one move further from the max
     }
 }
 
@@ -184,27 +191,28 @@ mod tests {
         ["..", "table"].iter().collect()
     }
 
-    fn check_pos(fen: &str, outcome: Outcome, winner: Color) {
+    fn check_pos(fen: &str, outcome: Outcome, desired_are_all_moves_capture: bool, winner: Color) {
         let chess: Chess = Fen::from_ascii(fen.as_bytes())
             .unwrap()
             .into_position(Standard)
             .unwrap();
         let material = Material::from_board(chess.board());
         let descendants: Descendants = Descendants::new(&material, &tb_test_dir());
-        assert_eq!(
-            descendants.outcome_from_captures_promotion(&chess, winner),
-            Some(outcome)
-        );
+        let (fetched_outcome, are_all_moves_capture) = descendants
+            .outcome_from_captures_promotion(&chess, winner)
+            .unwrap();
+        assert_eq!(fetched_outcome, outcome);
+        assert_eq!(desired_are_all_moves_capture, are_all_moves_capture);
     }
 
     // macro for generating tests
     macro_rules! gen_tests_descendants {
-    ($($fn_name:ident, $fen:tt, $outcome:expr, $winner:tt,)+) => {
+    ($($fn_name:ident, $fen:tt, $outcome:expr, $all_moves_capture:expr, $winner:tt,)+) => {
         $(
             paste! {
             #[test]
             fn [<tests_descendants_ $fn_name>]() {
-                check_pos($fen, $outcome, $winner);
+                check_pos($fen, $outcome, $all_moves_capture, $winner);
             }
         }
         )+
@@ -214,11 +222,13 @@ mod tests {
     // the tests are tested against files generated with the naive indexer
     #[cfg(not(feature = "syzygy"))]
     gen_tests_descendants! {
-        from_captures_promotion_without_switching_color_white, "1k6/1r6/1K6/8/4Q3/8/8/8 w - - 0 1", Outcome::Win(1), White,
-        from_captures_promotion_with_switching_color_white, "3K4/1r2Q3/8/8/8/8/8/3k4 b - - 0 1", Outcome::Draw, White,
-        promotion_without_switching_color_black, "1Qk5/6Q1/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, Black,
-        promotion_with_switching_color_black,"8/8/8/8/8/1k6/3r4/1K1Q4 b - - 0 1",Outcome::Win(1), Black,
-        special_case_only_2_kings_left_w, "4k3/3Q4/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, White,
-        special_case_only_2_kings_left_b, "4k3/3Q4/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, Black,
+        from_captures_promotion_without_switching_color_white, "1k6/1r6/1K6/8/4Q3/8/8/8 w - - 0 1", Outcome::Win(1), false, White,
+        from_captures_promotion_with_switching_color_white, "3K4/1r2Q3/8/8/8/8/8/3k4 b - - 0 1", Outcome::Draw, false, White,
+        promotion_without_switching_color_black, "1Qk5/6Q1/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, true, Black,
+        promotion_with_switching_color_black,"8/8/8/8/8/1k6/3r4/1K1Q4 b - - 0 1",Outcome::Win(1), false, Black,
+        special_case_only_2_kings_left_w, "4k3/3Q4/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, false, White,
+        special_case_only_2_kings_left_b, "4k3/3Q4/8/8/8/8/8/3K4 b - - 0 1", Outcome::Draw, false, Black,
+        all_moves_are_capture_w, "8/8/8/8/8/8/8/1KNkB3 b - -", Outcome::Draw, true, White,
+        all_moves_are_capture_b, "8/8/8/8/8/8/8/1KNkB3 b - -", Outcome::Draw, true, Black,
     }
 }
