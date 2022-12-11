@@ -5,6 +5,8 @@ use retroboard::shakmaty::{ByColor, Color};
 use crate::{DeIndexer, DefaultReversibleIndexer, IndexWithTurn};
 
 // TODO should be able to be replace with normal vec with the new queue system
+// TODO this whole file should be able to be deleted by working directly on the all_idx vec
+// Because the naive inverser is reversible
 #[derive(Debug, Clone, Default)]
 pub struct Queue<T = DefaultReversibleIndexer> {
     // depending on the material configuration can be either won or drawn position
