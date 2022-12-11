@@ -17,7 +17,7 @@ impl<T: From<Material>> Common<T> {
     #[must_use]
     pub fn new(material: Material, winner: Color) -> Self {
         Self {
-            all_pos: vec![UNDEFINED_OUTCOME_BYCOLOR; get_nb_pos(&material) as usize / 10 * 9], // heuristic, less than 90% of pos are legals. Takes x2 (because each stored element is in fact 1 position, but with black and white to turn) more than number of legal positions
+            all_pos: vec![UNDEFINED_OUTCOME_BYCOLOR; get_estimate_nb_pos(&material)],
             winner,
             counter: 0,
             can_mate: material.can_mate(winner),
@@ -30,7 +30,7 @@ impl<T: From<Material>> Common<T> {
 impl<T> Common<T> {
     #[must_use]
     pub fn get_progress_bar(&self) -> ProgressBar {
-        let pb = ProgressBar::new(get_nb_pos(&self.material) * 2);
+        let pb = ProgressBar::new((get_estimate_nb_pos(&self.material) * 2) as u64);
         pb.set_style(
             ProgressStyle::with_template(
                 "{msg} {spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})",
@@ -55,9 +55,10 @@ impl<T: Indexer> Common<T> {
 }
 
 #[inline]
-fn get_nb_pos(mat: &Material) -> u64 {
+fn get_estimate_nb_pos(mat: &Material) -> usize {
     // white king is already included in `material.count()`, so substract it, and multiply by 10 instead, real number of cases the white king can go on
-    pow_minus_1(63, mat.count() - 1) * 10
+    // heuristic, less than 90% of pos are legals.
+    (pow_minus_1(63, mat.count() - 1) * 10) as usize / 10 * 9
 }
 
 // instead of 64**4 get 64*63*62*61
