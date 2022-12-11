@@ -47,7 +47,7 @@ impl Probe {
             })
             .collect();
         info!(
-            "For {:?}`\nOutcome is {outcome:?}, Moves: {uci_movelist:?}",
+            "For {:?}\nOutcome is {outcome:?}, Moves: {uci_movelist:?}",
             RetroBoard::from(self.fen),
         );
         if self.expanded {
