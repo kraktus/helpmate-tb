@@ -1,4 +1,4 @@
-dhat: Total:     1,9[..] bytes in 8[..] blocks
+dhat: Total:     1,9[..],[..] bytes in 8[..] blocks
 dhat: At t-gmax: 327,[..] bytes in [..] blocks
 dhat: At t-end:  [..] bytes in [..] blocks
 dhat: The data has been saved to dhat-heap.json, and is viewable with dhat/dh_view.html
