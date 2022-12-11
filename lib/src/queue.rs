@@ -29,11 +29,11 @@ impl OneQueue {
         desired_outcome_pos_to_process: VecDeque<IndexWithTurn>,
         all_pos_idx_len: usize,
     ) -> Self {
-        let mut mate_in_n = MateInQueue::new(all_pos_idx_len);
+        let mut mate_in_n = MateInQueue::new(all_pos_idx_len / 8 + 1);
         for idx_with_turn in desired_outcome_pos_to_process.into_iter() {
             mate_in_n.push_back(idx_with_turn);
         }
-        let mate_in_n_plus_1 = MateInQueue::new(all_pos_idx_len);
+        let mate_in_n_plus_1 = MateInQueue::new(all_pos_idx_len / 8 + 1);
         Self {
             mate_in_n,
             mate_in_n_plus_1,
@@ -210,7 +210,6 @@ mod tests {
                     let idx = (mul + div_rest) as u64;
                     let idx_with_turn = IndexWithTurn { idx, turn };
                     mate_in_x.push_back(idx_with_turn);
-                    println!("{:?}", &mate_in_x.inner[11278 / 8..11278 / 8 + 7]);
                     assert_eq!(idx_with_turn, mate_in_x.pop_front().unwrap());
                     // calling pop_front should remove the value from the queue
                     assert!(mate_in_x.pop_front().is_none());
@@ -251,7 +250,9 @@ mod tests {
                 turn: White,
             },
         ]); // random
-        let mut one_queue = OneQueue::new(test_idx, 10000);
+            // created with the number len of index, but since it's packed
+            // the effective len is divided by two
+        let mut one_queue = OneQueue::new(test_idx, 12_000 * 8);
         for _ in 0..2 {
             while let Some(mut idx_with_turn) = one_queue.pop_front() {
                 idx_with_turn.idx += 1;
