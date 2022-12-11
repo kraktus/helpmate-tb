@@ -186,16 +186,16 @@ impl<I> PosHandler<I> for DefaultGeneratorHandler {
                 });
                 common.all_pos[all_pos_idx].set_to(chess, outcome);
                 if winner == common.winner {
-                    queue.desired_outcome_pos_to_process.push_back(idx);
+                    queue.desired_outcome_pos_to_process.push(idx);
                 } else {
-                    queue.losing_pos_to_process.push_back(idx);
+                    queue.losing_pos_to_process.push(idx);
                 }
             }
 
             Some(ChessOutcome::Draw) => {
                 common.all_pos[all_pos_idx].set_to(chess, Report::Processed(Outcome::Draw));
                 if !common.can_mate() {
-                    queue.desired_outcome_pos_to_process.push_back(idx);
+                    queue.desired_outcome_pos_to_process.push(idx);
                 }
             }
             None => {

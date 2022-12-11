@@ -1,17 +1,16 @@
-use std::{collections::VecDeque, mem, ops::Deref};
+use std::{mem, ops::Deref};
 
 use retroboard::shakmaty::{ByColor, Color};
 
 use crate::{DeIndexer, DefaultReversibleIndexer, IndexWithTurn};
 
-// TODO should be able to be replace with normal vec with the new queue system
 // TODO this whole file should be able to be deleted by working directly on the all_idx vec
 // Because the naive inverser is reversible
 #[derive(Debug, Clone, Default)]
 pub struct Queue<T = DefaultReversibleIndexer> {
     // depending on the material configuration can be either won or drawn position
-    pub desired_outcome_pos_to_process: VecDeque<IndexWithTurn>,
-    pub losing_pos_to_process: VecDeque<IndexWithTurn>,
+    pub desired_outcome_pos_to_process: Vec<IndexWithTurn>,
+    pub losing_pos_to_process: Vec<IndexWithTurn>,
     reversible_indexer: T,
 }
 
@@ -25,10 +24,7 @@ pub struct OneQueue {
 }
 
 impl OneQueue {
-    pub fn new(
-        desired_outcome_pos_to_process: VecDeque<IndexWithTurn>,
-        all_pos_idx_len: usize,
-    ) -> Self {
+    pub fn new(desired_outcome_pos_to_process: Vec<IndexWithTurn>, all_pos_idx_len: usize) -> Self {
         let mut mate_in_n = MateInQueue::new(all_pos_idx_len / 8 + 1);
         for idx_with_turn in desired_outcome_pos_to_process.into_iter() {
             mate_in_n.push_back(idx_with_turn);
@@ -220,7 +216,7 @@ mod tests {
 
     #[test]
     fn test_one_queue() {
-        let test_idx = VecDeque::from([
+        let test_idx = Vec::from([
             IndexWithTurn {
                 idx: 11278,
                 turn: White,
