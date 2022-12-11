@@ -30,7 +30,7 @@ impl<T: From<Material>> Common<T> {
 impl<T> Common<T> {
     #[must_use]
     pub fn get_progress_bar(&self) -> ProgressBar {
-        let pb = ProgressBar::new(get_nb_pos(&self.material));
+        let pb = ProgressBar::new(get_nb_pos(&self.material) * 2);
         pb.set_style(
             ProgressStyle::with_template(
                 "{msg} {spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})",
