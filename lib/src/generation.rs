@@ -320,7 +320,7 @@ impl<T: PosHandler<I>, I: Indexer> Generator<T, I> {
                 // {
                 //     println!("TEST {rboard:?}")
                 // };
-                // if all_pos_idx == 132 {
+                // if all_pos_idx == 942601 {
                 //     println!("TEST {rboard:?}")
                 // };
                 // Check that position is generated for the first time/index schema is injective
@@ -473,16 +473,18 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
             one_queue.swap()
         }
 
+        // TODO move this out of this function and only call it at the end of the tagging, after the losing pos
         // all positions that are unknown at the end are drawn
         for (idx, report_bc) in &mut self.common.all_pos.iter_mut().enumerate() {
-            for report in report_bc.iter_mut() {
+            for turn in Color::ALL {
+                let report = report_bc.get_mut(turn);
                 match Report::from(*report) {
                     Report::Unprocessed(Outcome::Unknown) => {
                         *report = ReportU8::from(Report::Processed(Outcome::Draw))
                     }
                     Report::Unprocessed(not_unknown) => {
                         panic!(
-                            "Found an unprocessed report which is not Unknown but {not_unknown:?}, idx: {idx}",
+                            "Found an unprocessed report which is not Unknown but {not_unknown:?}, idx: {idx}, turn {turn}",
                         )
                     }
                     Report::Processed(_) => {}

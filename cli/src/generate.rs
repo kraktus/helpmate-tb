@@ -18,6 +18,12 @@ pub struct Generate {
     recursive: bool,
     #[arg(long, default_value = if cfg!(feature = "syzygy") {"syzygy_table/"} else {"table/"})]
     tb_dir: PathBuf,
+    #[arg(
+        short,
+        long,
+        help = "Color of the expected winner. If no color is provided, will search for both"
+    )]
+    winner: Option<Color>,
 }
 
 impl Generate {
@@ -34,7 +40,7 @@ impl Generate {
     }
 
     fn gen_one_material(&self, mat: Material) {
-        for winner in Color::ALL {
+        for winner in self.winner.map(|w| vec![w]).unwrap_or(Color::ALL.into()) {
             info!("Building {mat:?} with winner: {winner}");
             // white first, most interesting
             let common = TableBaseBuilder::build(mat.clone(), winner, &self.tb_dir);
