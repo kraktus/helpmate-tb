@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, marker::PhantomData, mem, ops::Deref};
+use std::{collections::VecDeque, mem, ops::Deref};
 
 use retroboard::shakmaty::{ByColor, Color};
 

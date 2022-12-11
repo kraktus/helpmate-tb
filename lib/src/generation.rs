@@ -13,7 +13,7 @@ use retroboard::shakmaty::{
     FromSetup, Outcome as ChessOutcome, Piece, Position, PositionError, Setup, Square,
 };
 use retroboard::RetroBoard;
-use std::{collections::VecDeque, ops::Deref, path::Path};
+use std::{collections::VecDeque, path::Path};
 
 use indicatif::ProgressBar;
 
