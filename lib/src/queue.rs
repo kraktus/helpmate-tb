@@ -137,6 +137,7 @@ impl MateInQueue {
         self.inner_index = 0;
     }
 
+    #[cfg(test)]
     fn is_empty(&self) -> bool {
         for i in 0..self.inner.len() {
             if self.inner[i] != EMPTY_PACKED_BOOLS_BYCOLOR {

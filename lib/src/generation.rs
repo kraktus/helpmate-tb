@@ -1,6 +1,6 @@
 use crate::{
     indexer::{DeIndexer, Indexer, A1_D1_D4},
-    queue::Queue,
+    queue::{OneQueue, Queue},
     Common, DefaultReversibleIndexer, Descendants, Material, Outcome, OutcomeU8, Report, ReportU8,
     A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
 };
@@ -13,7 +13,7 @@ use retroboard::shakmaty::{
     FromSetup, Outcome as ChessOutcome, Piece, Position, PositionError, Setup, Square,
 };
 use retroboard::RetroBoard;
-use std::{collections::VecDeque, path::Path};
+use std::path::Path;
 
 use indicatif::ProgressBar;
 
@@ -396,60 +396,74 @@ impl<T: From<Material>> Tagger<T> {
 }
 
 impl<T: Indexer + DeIndexer> Tagger<T> {
-    pub fn process_positions(&mut self, queue: &mut Queue) {
+    pub fn process_positions(&mut self, queue: Queue) {
         // need to process FIRST winning positions, then losing ones.
-        self.process_one_queue(&mut queue.desired_outcome_pos_to_process);
-        self.process_one_queue(&mut queue.losing_pos_to_process);
+        self.process_one_queue(&mut OneQueue::new(
+            queue.desired_outcome_pos_to_process,
+            self.common.all_pos.len(),
+        ));
+        self.process_one_queue(&mut OneQueue::new(
+            queue.losing_pos_to_process,
+            self.common.all_pos.len(),
+        ));
     }
 
-    pub fn process_one_queue(&mut self, one_queue: &mut VecDeque<IndexWithTurn>) {
+    pub fn process_one_queue(&mut self, one_queue: &mut OneQueue) {
         self.common.counter = 0;
-        while let Some(idx) = one_queue.pop_front() {
-            self.common.counter += 1;
-            if self.common.counter % 100_000 == 0 {
-                self.pb.set_position(self.common.counter);
-            }
-            let rboard = self.reversible_indexer.restore(&self.common.material, idx);
-            let out: Outcome = self
-                .common
-                .all_pos
-                .get(self.common.indexer().encode(&rboard).usize())
-                .map_or_else(
-                    || {
-                        panic!(
-                            "idx get_by_pos {}, idx recomputed {}, rboard {:?}",
-                            idx.idx,
-                            self.reversible_indexer.encode(&rboard).idx,
-                            rboard
-                        )
-                    },
-                    |bc| bc.get_by_pos(&rboard),
-                )
-                .outcome();
-            assert_ne!(out, Outcome::Undefined);
-            assert_ne!(out, Outcome::Unknown);
-            for m in rboard.legal_unmoves() {
-                let mut rboard_after_unmove = rboard.clone();
-                rboard_after_unmove.push(&m);
-                // let chess_after_unmove: Chess = rboard_after_unmove.clone().into();
-                let idx_after_unmove = self.reversible_indexer.encode(&rboard_after_unmove);
-                let idx_all_pos_after_unmove =
-                    self.common.indexer().encode(&rboard_after_unmove).usize();
-                match self.common.all_pos[idx_all_pos_after_unmove].get_by_pos(&rboard_after_unmove)
-                {
-                    Report::Processed(Outcome::Undefined) => {
-                        panic!("pos before: {rboard:?}, and after {m:?} pos not found, illegal? {rboard_after_unmove:?}, idx: {idx_all_pos_after_unmove:?}")
+        let mut at_least_one_pos_processed = true;
+        while at_least_one_pos_processed {
+            at_least_one_pos_processed = false;
+            while let Some(idx) = one_queue.pop_front() {
+                at_least_one_pos_processed = true;
+                self.common.counter += 1;
+                if self.common.counter % 100_000 == 0 {
+                    self.pb.set_position(self.common.counter);
+                }
+                let rboard = self.reversible_indexer.restore(&self.common.material, idx);
+                let out: Outcome = self
+                    .common
+                    .all_pos
+                    .get(self.common.indexer().encode(&rboard).usize())
+                    .map_or_else(
+                        || {
+                            panic!(
+                                "idx get_by_pos {}, idx recomputed {}, rboard {:?}",
+                                idx.idx,
+                                self.reversible_indexer.encode(&rboard).idx,
+                                rboard
+                            )
+                        },
+                        |bc| bc.get_by_pos(&rboard),
+                    )
+                    .outcome();
+                assert_ne!(out, Outcome::Undefined);
+                assert_ne!(out, Outcome::Unknown);
+                for m in rboard.legal_unmoves() {
+                    let mut rboard_after_unmove = rboard.clone();
+                    rboard_after_unmove.push(&m);
+                    // let chess_after_unmove: Chess = rboard_after_unmove.clone().into();
+                    let idx_after_unmove = self.reversible_indexer.encode(&rboard_after_unmove);
+                    let idx_all_pos_after_unmove =
+                        self.common.indexer().encode(&rboard_after_unmove).usize();
+                    match self.common.all_pos[idx_all_pos_after_unmove]
+                        .get_by_pos(&rboard_after_unmove)
+                    {
+                        Report::Processed(Outcome::Undefined) => {
+                            panic!("pos before: {rboard:?}, and after {m:?} pos not found, illegal? {rboard_after_unmove:?}, idx: {idx_all_pos_after_unmove:?}")
+                        }
+                        Report::Unprocessed(fetched_outcome) => {
+                            // we know the position is unprocessed
+                            one_queue.push_back(idx_after_unmove);
+                            let processed_outcome =
+                                Report::Processed((out + 1).max(fetched_outcome));
+                            self.common.all_pos[idx_all_pos_after_unmove]
+                                .set_to(&rboard_after_unmove, processed_outcome);
+                        }
+                        Report::Processed(_) => (),
                     }
-                    Report::Unprocessed(fetched_outcome) => {
-                        // we know the position is unprocessed
-                        one_queue.push_back(idx_after_unmove);
-                        let processed_outcome = Report::Processed((out + 1).max(fetched_outcome));
-                        self.common.all_pos[idx_all_pos_after_unmove]
-                            .set_to(&rboard_after_unmove, processed_outcome);
-                    }
-                    Report::Processed(_) => (),
                 }
             }
+            one_queue.swap()
         }
 
         // all positions that are unknown at the end are drawn
@@ -486,8 +500,7 @@ impl TableBaseBuilder {
         let common = Common::new(material, winner);
         let mut generator = Generator::new(common, tablebase_dir);
         generator.generate_positions();
-        let (mut queue, common, _): (Queue, Common, DefaultGeneratorHandler) =
-            generator.get_result();
+        let (queue, common, _): (Queue, Common, DefaultGeneratorHandler) = generator.get_result();
         debug!("nb pos {:?}", common.all_pos.len());
         debug!("counter {:?}", common.counter);
         debug!(
@@ -507,7 +520,7 @@ impl TableBaseBuilder {
         );
         // Should be the same indexer than for `Queue`
         let mut tagger: Tagger = Tagger::new(common);
-        tagger.process_positions(&mut queue);
+        tagger.process_positions(queue);
         tagger.into()
     }
 }
