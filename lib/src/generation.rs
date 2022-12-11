@@ -4,7 +4,7 @@ use crate::{
     Common, DefaultReversibleIndexer, Descendants, Material, Outcome, OutcomeU8, Report, ReportU8,
     A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
 };
-use log::debug;
+use log::{debug, warn};
 use retroboard::shakmaty::{
     Bitboard, Board, ByColor, CastlingMode,
     CastlingMode::Standard,
@@ -356,13 +356,20 @@ impl<T: PosHandler<I>, I: Indexer> Generator<T, I> {
     pub fn generate_positions(&mut self) {
         let piece_vec = self.common.material.pieces_without_white_king();
         self.common.counter = 0;
+        let all_pos_vec_capacity_before_gen = self.common.all_pos.capacity();
+        debug!("all_pos_vec capacity before generating: {all_pos_vec_capacity_before_gen}");
         for white_king_sq in A1_D1_D4 {
             let mut new_setup = Setup::empty();
             new_setup.board.set_piece_at(white_king_sq, White.king());
             self.generate_positions_internal(&piece_vec, &new_setup, (White.king(), white_king_sq))
         }
         self.pb.finish_and_clear();
-        debug!("all_pos_vec capacity: {}", self.common.all_pos.capacity());
+        let all_pos_vec_capacity_after_gen = self.common.all_pos.capacity();
+        debug!("all_pos_vec capacity after generating: {all_pos_vec_capacity_after_gen}");
+        // can this actually happen in practice or will the common use of Index make it panic during the process?
+        if all_pos_vec_capacity_after_gen > all_pos_vec_capacity_before_gen {
+            warn!("For material {:?}, all_pos capacity was not enough to generate the positions, before {all_pos_vec_capacity_before_gen}, after {all_pos_vec_capacity_after_gen}", self.common.material)
+        }
         while Some(&UNDEFINED_OUTCOME_BYCOLOR) == self.common.all_pos.last() {
             self.common.all_pos.pop();
         }

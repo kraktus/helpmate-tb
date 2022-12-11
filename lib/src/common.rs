@@ -57,7 +57,7 @@ impl<T: Indexer> Common<T> {
 #[inline]
 fn get_nb_pos(mat: &Material) -> u64 {
     // white king is already included in `material.count()`, so substract it, and multiply by 10 instead, real number of cases the white king can go on
-    pow_minus_1(63, mat.count() - 1) * 10 * 2
+    pow_minus_1(63, mat.count() - 1) * 10
 }
 
 // instead of 64**4 get 64*63*62*61
