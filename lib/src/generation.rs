@@ -193,7 +193,6 @@ impl<I> PosHandler<I> for DefaultGeneratorHandler {
             }
 
             Some(ChessOutcome::Draw) => {
-                // TODO verify the thing with processed/unprocessed
                 let can_mate = common.can_mate();
                 common.all_pos[all_pos_idx].set_to(
                     chess,
