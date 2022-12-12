@@ -19,8 +19,8 @@ pub struct Queue<T = DefaultReversibleIndexer> {
 ///  VecDeque, using packed bools.
 #[derive(Debug, Clone)]
 pub struct OneQueue {
-    mate_in_n: MateInQueue,
-    mate_in_n_plus_1: MateInQueue,
+    pub mate_in_n: MateInQueue,
+    pub mate_in_n_plus_1: MateInQueue,
     // nb_pass: usize, // number of `Tagger` pass done
 }
 
@@ -34,7 +34,15 @@ impl OneQueue {
         Self {
             mate_in_n,
             mate_in_n_plus_1,
-            // nb_pass: 0,
+        }
+    }
+
+    pub fn new_empty(all_pos_idx_len: usize) -> Self {
+        let mate_in_n = MateInQueue::new(all_pos_idx_len / 8 + 1);
+        let mate_in_n_plus_1 = MateInQueue::new(all_pos_idx_len / 8 + 1);
+        Self {
+            mate_in_n,
+            mate_in_n_plus_1,
         }
     }
 
@@ -121,7 +129,7 @@ const EMPTY_PACKED_BOOLS_BYCOLOR: ByColor<PackedBools> = ByColor {
 };
 
 #[derive(Debug, Clone)]
-struct MateInQueue {
+pub struct MateInQueue {
     inner: Vec<ByColor<PackedBools>>,
     inner_index: usize, // where we're in the OneQueue
 }

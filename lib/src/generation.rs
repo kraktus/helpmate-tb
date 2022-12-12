@@ -4,7 +4,7 @@ use crate::{
     Common, DefaultReversibleIndexer, Descendants, Material, Outcome, OutcomeU8, Report, ReportU8,
     A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
 };
-use log::{debug, error, warn};
+use log::{debug, error, info, trace, warn};
 use retroboard::shakmaty::{
     Bitboard, Board, ByColor, CastlingMode,
     CastlingMode::Standard,
@@ -178,7 +178,7 @@ impl<I> PosHandler<I> for DefaultGeneratorHandler {
         match chess.outcome() {
             Some(ChessOutcome::Decisive { winner }) => {
                 // we know the result is exact, since the game is over
-                let outcome = Report::Processed(if winner == common.winner {
+                let outcome = Report::Unprocessed(if winner == common.winner {
                     assert!(common.can_mate());
                     Outcome::Win(0)
                 } else {
@@ -193,7 +193,16 @@ impl<I> PosHandler<I> for DefaultGeneratorHandler {
             }
 
             Some(ChessOutcome::Draw) => {
-                common.all_pos[all_pos_idx].set_to(chess, Report::Processed(Outcome::Draw));
+                // TODO verify the thing with processed/unprocessed
+                let can_mate = common.can_mate();
+                common.all_pos[all_pos_idx].set_to(
+                    chess,
+                    if !can_mate {
+                        Report::Unprocessed(Outcome::Draw)
+                    } else {
+                        Report::Processed(Outcome::Draw)
+                    },
+                );
                 if !common.can_mate() {
                     queue.desired_outcome_pos_to_process.push(idx);
                 }
@@ -205,6 +214,9 @@ impl<I> PosHandler<I> for DefaultGeneratorHandler {
                 common.all_pos[all_pos_idx].set_to(
                     chess,
                     if are_all_moves_capture {
+                        // DEBUG changing this value change the output of the generated table
+                        // TODO verify if the assumption no move different than capture <-> no un-move different than uncapture
+                        // I think this does not hold for positions with pawns
                         Report::Processed(fetched_outcome)
                     } else {
                         Report::Unprocessed(fetched_outcome)
@@ -403,103 +415,11 @@ impl<T: From<Material>> Tagger<T> {
 }
 
 impl<T: Indexer + DeIndexer> Tagger<T> {
-    pub fn process_positions(&mut self, queue: Queue) {
+    pub fn process_positions(&mut self, _: Queue) {
         // need to process FIRST winning positions, then losing ones.
-        self.process_one_queue(&mut OneQueue::new(
-            queue.desired_outcome_pos_to_process,
-            self.common.all_pos.len(),
-        ));
-        self.process_one_queue(&mut OneQueue::new(
-            queue.losing_pos_to_process,
-            self.common.all_pos.len(),
-        ));
-    }
+        self.process_one_queue(true);
+        self.process_one_queue(false);
 
-    pub fn process_one_queue(&mut self, one_queue: &mut OneQueue) {
-        self.common.counter = 0;
-        let mut at_least_one_pos_processed = true;
-        while at_least_one_pos_processed {
-            at_least_one_pos_processed = false;
-            while let Some(idx) = one_queue.pop_front() {
-                at_least_one_pos_processed = true;
-                self.common.counter += 1;
-                if self.common.counter % 100_000 == 0 {
-                    self.pb.set_position(self.common.counter);
-                }
-                let rboard = self.reversible_indexer.restore(&self.common.material, idx);
-                let out: Outcome = self
-                    .common
-                    .all_pos
-                    .get(self.common.indexer().encode(&rboard).usize())
-                    .map_or_else(
-                        || {
-                            panic!(
-                                "idx get_by_pos {}, idx recomputed {}, rboard {:?}",
-                                idx.idx,
-                                self.reversible_indexer.encode(&rboard).idx,
-                                rboard
-                            )
-                        },
-                        |bc| bc.get_by_pos(&rboard),
-                    )
-                    .outcome();
-                // if idx
-                //     == (IndexWithTurn {
-                //         idx: 1601709,
-                //         turn: Color::Black,
-                //     })
-                // {
-                //     println!("Outcome of x: {out:?}");
-                //     println!("NB pass: {}", one_queue.nb_pass());
-                //     println!(
-                //         "Report of it: {:?}",
-                //         self.common.all_pos[self.common.indexer().encode(&rboard).usize()]
-                //     );
-                // }
-                assert_ne!(out, Outcome::Undefined);
-                assert_ne!(out, Outcome::Unknown);
-                for m in rboard.legal_unmoves() {
-                    let mut rboard_after_unmove = rboard.clone();
-                    rboard_after_unmove.push(&m);
-                    // let chess_after_unmove: Chess = rboard_after_unmove.clone().into();
-                    let idx_after_unmove = self.reversible_indexer.encode(&rboard_after_unmove);
-                    let idx_all_pos_after_unmove =
-                        self.common.indexer().encode(&rboard_after_unmove).usize();
-                    match self.common.all_pos[idx_all_pos_after_unmove]
-                        .get_by_pos(&rboard_after_unmove)
-                    {
-                        Report::Processed(Outcome::Undefined) => {
-                            panic!("pos before: {rboard:?}, and after {m:?} pos not found, illegal? {rboard_after_unmove:?}, idx: {idx_all_pos_after_unmove:?}")
-                        }
-                        Report::Unprocessed(fetched_outcome) => {
-                            // we know the position is unprocessed
-                            one_queue.push_back(idx_after_unmove);
-                            let processed_outcome =
-                                Report::Processed((out + 1).max(fetched_outcome));
-                            // if idx_after_unmove
-                            //     == (IndexWithTurn {
-                            //         idx: 1601709,
-                            //         turn: Black,
-                            //     })
-                            // {
-                            //     // 5Bk1/8/8/4K3/8/2R5/8/8 w - -
-                            //     println!("rboard leading to x: {rboard:?}, idx {idx:?}");
-                            //     println!("outcome of x-1: {out:?}");
-                            //     println!("fetched_outcome of x: {fetched_outcome:?}");
-                            //     println!("processed_outcome of x: {processed_outcome:?}");
-                            // }
-                            self.common.all_pos[idx_all_pos_after_unmove]
-                                .set_to(&rboard_after_unmove, processed_outcome);
-                        }
-                        Report::Processed(_) => (),
-                    }
-                }
-            }
-            one_queue.swap()
-        }
-
-        // TODO move this out of this function and only call it at the end of the tagging, after the losing pos
-        // all positions that are unknown at the end are drawn
         for (idx, report_bc) in &mut self.common.all_pos.iter_mut().enumerate() {
             for turn in Color::ALL {
                 let report = report_bc.get_mut(turn);
@@ -515,6 +435,93 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
                     Report::Processed(_) => {}
                 }
             }
+        }
+    }
+
+    // if `desired_outcome_to_process` is set to `true`, we go from `Win(0)` to Win(1) ...
+    // if `false`, go from `Lose(0)` to Lose(1) Lose(2) ...
+    pub fn process_one_queue(&mut self, desired_outcome_to_process: bool) {
+        self.common.counter = 0;
+        let mut at_least_one_pos_processed = true;
+        let mut desired_outcome = if desired_outcome_to_process {
+            if self.common.can_mate() {
+                Outcome::Win(0)
+            } else {
+                Outcome::Draw
+            }
+        } else {
+            Outcome::Lose(0)
+        };
+        println!("{desired_outcome:?}");
+        while at_least_one_pos_processed {
+            at_least_one_pos_processed = false;
+            let desired_report_u8: ReportU8 = Report::Unprocessed(desired_outcome).into();
+            let mut one_queue = OneQueue::new_empty(self.common.all_pos.len());
+            for (idx, report_u8_bc) in self.common.all_pos.iter().enumerate() {
+                for turn in Color::ALL {
+                    if &desired_report_u8 == report_u8_bc.get(turn) {
+                        let idx_with_turn = IndexWithTurn {
+                            idx: idx as u64,
+                            turn,
+                        };
+                        one_queue.mate_in_n.push_back(idx_with_turn);
+                        at_least_one_pos_processed = true;
+                        self.common.counter += 1;
+                        if self.common.counter % 100_000 == 0 {
+                            self.pb.set_position(self.common.counter);
+                        }
+                        let rboard = self
+                            .reversible_indexer
+                            .restore(&self.common.material, idx_with_turn);
+                        for m in rboard.legal_unmoves() {
+                            let mut rboard_after_unmove = rboard.clone();
+                            rboard_after_unmove.push(&m);
+                            let idx_all_pos_after_unmove =
+                                self.common.indexer().encode(&rboard_after_unmove);
+                            match self.common.all_pos[idx_all_pos_after_unmove.usize()]
+                                .get_by_pos(&rboard_after_unmove)
+                            {
+                                Report::Processed(Outcome::Undefined) => {
+                                    panic!("pos before: {rboard:?}, and after {m:?} pos not found, illegal? {rboard_after_unmove:?}, idx: {idx_all_pos_after_unmove:?}")
+                                }
+                                Report::Unprocessed(fetched_outcome) => {
+                                    // we know the position is unprocessed
+                                    assert!(fetched_outcome <= desired_outcome);
+                                    one_queue
+                                        .mate_in_n_plus_1
+                                        .push_back(idx_all_pos_after_unmove)
+                                }
+                                Report::Processed(_) => (),
+                            }
+                        }
+                    }
+                }
+            }
+
+            while let Some(idx_with_turn_n) = one_queue.mate_in_n.pop_front() {
+                *self.common.all_pos[idx_with_turn_n.usize()].get_mut(idx_with_turn_n.turn) =
+                    Report::Processed(desired_outcome).into();
+            }
+
+            while let Some(idx_with_turn_n_plus_1) = one_queue.mate_in_n_plus_1.pop_front() {
+                // a position mate in N can reach a another position mate in N, so we need to double check
+                // it has not been processed already before setting its value
+                match self.common.all_pos[idx_with_turn_n_plus_1.usize()]
+                    .get_by_color(idx_with_turn_n_plus_1.turn)
+                {
+                    // if the report is `mate_in_n_plus_1` queue it means that
+                    // it was unprocessed and has been processed by the loop just above
+                    // so it should be equal to the desired outcome
+                    Report::Processed(outcome) => assert!(outcome == desired_outcome),
+                    Report::Unprocessed(_) => {
+                        *self.common.all_pos[idx_with_turn_n_plus_1.usize()]
+                            .get_mut(idx_with_turn_n_plus_1.turn) =
+                            Report::Unprocessed(desired_outcome + 1).into()
+                    }
+                }
+            }
+
+            desired_outcome = desired_outcome + 1; // one move further from mate
         }
         self.pb.finish_and_clear();
     }
