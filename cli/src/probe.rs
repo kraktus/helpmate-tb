@@ -55,7 +55,11 @@ impl Probe {
         if self.expanded {
             let rboards_fmt: Vec<String> = pos_list
                 .into_iter()
-                .map(|p| format!("{:?}", RetroBoard::from(p)))
+                .map(|p| {
+                    let r = RetroBoard::from(p);
+                    let idx = NaiveIndexer.encode(&r);
+                    format!("{r:?}, idx: {idx:?}")
+                })
                 .collect();
             info!("{}", rboards_fmt.join("\n"));
         }

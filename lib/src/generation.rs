@@ -211,13 +211,23 @@ impl<I> PosHandler<I> for DefaultGeneratorHandler {
                 let (fetched_outcome, are_all_moves_capture) = tablebase
                     .outcome_from_captures_promotion(chess, common.winner)
                     .unwrap_or((Outcome::Unknown, false));
+
+                if idx
+                    == (IndexWithTurn {
+                        idx: 74785,
+                        turn: Color::Black,
+                    })
+                {
+                    println!("{fetched_outcome:?}");
+                };
                 common.all_pos[all_pos_idx].set_to(
                     chess,
                     if are_all_moves_capture {
                         // DEBUG changing this value change the output of the generated table
+                        // SHOULD REALLY BE UNPROCESSED
                         // TODO verify if the assumption no move different than capture <-> no un-move different than uncapture
                         // I think this does not hold for positions with pawns
-                        Report::Processed(fetched_outcome)
+                        Report::Unprocessed(fetched_outcome)
                     } else {
                         Report::Unprocessed(fetched_outcome)
                     },
