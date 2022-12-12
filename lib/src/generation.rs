@@ -198,6 +198,8 @@ impl<I> PosHandler<I> for DefaultGeneratorHandler {
                 common.all_pos[all_pos_idx].set_to(
                     chess,
                     if !can_mate {
+                        // need to be unprocessed because when we cannot mate
+                        // we work backward from stalemate/captures that lead to insufficient material
                         Report::Unprocessed(Outcome::Draw)
                     } else {
                         Report::Processed(Outcome::Draw)
@@ -211,15 +213,6 @@ impl<I> PosHandler<I> for DefaultGeneratorHandler {
                 let (fetched_outcome, are_all_moves_capture) = tablebase
                     .outcome_from_captures_promotion(chess, common.winner)
                     .unwrap_or((Outcome::Unknown, false));
-
-                if idx
-                    == (IndexWithTurn {
-                        idx: 74785,
-                        turn: Color::Black,
-                    })
-                {
-                    println!("{fetched_outcome:?}");
-                };
                 common.all_pos[all_pos_idx].set_to(
                     chess,
                     if are_all_moves_capture {
@@ -430,7 +423,7 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
         self.process_one_queue(true);
         self.process_one_queue(false);
 
-        for (idx, report_bc) in &mut self.common.all_pos.iter_mut().enumerate() {
+        for report_bc in &mut self.common.all_pos.iter_mut() {
             for turn in Color::ALL {
                 let report = report_bc.get_mut(turn);
                 match Report::from(*report) {
@@ -438,9 +431,9 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
                         *report = ReportU8::from(Report::Processed(Outcome::Draw))
                     }
                     Report::Unprocessed(not_unknown) => {
-                        error!(
-                            "Found an unprocessed report which is not Unknown but {not_unknown:?}, idx: {idx}, turn {turn}",
-                        )
+                        // some positions are unreachable, like "8/8/8/8/8/2N5/1B6/k2K4 b - - 0 1"
+                        // so their outcome is only determined by the outcome of the capture
+                        debug_assert!(not_unknown == Outcome::Draw)
                     }
                     Report::Processed(_) => {}
                 }
@@ -462,7 +455,6 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
         } else {
             Outcome::Lose(0)
         };
-        println!("{desired_outcome:?}");
         while at_least_one_pos_processed {
             at_least_one_pos_processed = false;
             let desired_report_u8: ReportU8 = Report::Unprocessed(desired_outcome).into();
