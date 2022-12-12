@@ -24,6 +24,13 @@ pub struct Diff {
         help = "Color of the expected winner. If no color is provided, will search for both"
     )]
     winner: Option<Color>,
+    #[arg(
+        short,
+        long,
+        default_value_t = usize::MAX,
+        help = "Max number of differences to look for"
+    )]
+    number: usize,
 }
 
 impl Diff {
@@ -55,8 +62,8 @@ impl Diff {
         {
             for turn in Color::ALL {
                 // could be faster to look at the OutcomeU8
-                let old_outcome = outcome_bc.get_outcome_by_color(turn);
-                let outcome = old_outcome_bc.get_outcome_by_color(turn);
+                let old_outcome = old_outcome_bc.get_outcome_by_color(turn);
+                let outcome = outcome_bc.get_outcome_by_color(turn);
                 if old_outcome != outcome {
                     old_better += usize::from(old_outcome > outcome);
                     new_better += usize::from(old_outcome < outcome);
@@ -74,6 +81,9 @@ impl Diff {
                     debug!("idx: {idx}, Outcome differs: old {old_outcome:?}, new {outcome:?}");
                     debug!("pos: {pos:?}");
                 }
+            }
+            if self.number <= old_better + new_better {
+                break;
             }
         }
         warn!(
