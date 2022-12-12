@@ -421,12 +421,7 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
                     Report::Unprocessed(Outcome::Unknown) => {
                         *report = ReportU8::from(Report::Processed(Outcome::Draw))
                     }
-                    Report::Unprocessed(not_unknown) => {
-                        // some positions are unreachable, like "8/8/8/8/8/2N5/1B6/k2K4 b - - 0 1"
-                        // so their outcome is only determined by the outcome of the capture
-                        debug_assert!(not_unknown == Outcome::Draw)
-                    }
-                    Report::Processed(_) => {}
+                    _ => {}
                 }
             }
         }

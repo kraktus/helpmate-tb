@@ -1,6 +1,6 @@
 c11f42cd9f8f10269faad249ee31c88d  table/KQvKb
 0c99dc076f27e4a8debf2231035bc6b8  table/KQvKw
-8693d612ac0c20eae9b122e0c36ea38d  table/KRBvKw
+d4876cd0f41f30eeb56c9f161f84319b  table/KRBvKw
 640c963fbe7d142a4eb9e46d797d313c  table/KRBvKb
 32df3ba020b54533b4ab1e9298f84969  table/KQQvKb
 f258883cf1e7e8525e563ac0c6c398fa  table/KQQvKw
@@ -10,9 +10,9 @@ a24fd7694efb38df2f71991eb4d3c7e0  table/KBNvKw
 f46916d726e6325e621ba28c7bef1174  table/KQvKRw
 0417c03184ec0374c384e832dcae89d1  table/KRRvKb
 d559fbaf3ac8d02f0f970964bcc86d02  table/KRRvKw
-219ee5f365f044aa31d4b0c80e403fe6  table/KRNvKw
+27f09e43ead528ccb29c1c7fb403d748  table/KRNvKw
 eb7547cd2a0041538ffc87c6b438d233  table/KRNvKb
-c8603752d66240701267bc6b147b9a8f  table/KRBNvKw
+67522ffe68539b86a8ef320fce3d33e6  table/KRBNvKw
 f27cf684f568a2c7e14c7e3092f4a6be  table/KRBNvKb
 da124cb0dbd9008c69a9d9c4a15f7152  table/KRvKb
 aeef7132a19431eac6f7627116713851  table/KRvKw
