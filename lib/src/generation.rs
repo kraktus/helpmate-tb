@@ -210,21 +210,13 @@ impl<I> PosHandler<I> for DefaultGeneratorHandler {
                 }
             }
             None => {
-                let (fetched_outcome, are_all_moves_capture) = tablebase
+                let (fetched_outcome, _) = tablebase
                     .outcome_from_captures_promotion(chess, common.winner)
                     .unwrap_or((Outcome::Unknown, false));
-                common.all_pos[all_pos_idx].set_to(
-                    chess,
-                    if are_all_moves_capture {
-                        // DEBUG changing this value change the output of the generated table
-                        // SHOULD REALLY BE UNPROCESSED
-                        // TODO verify if the assumption no move different than capture <-> no un-move different than uncapture
-                        // I think this does not hold for positions with pawns
-                        Report::Unprocessed(fetched_outcome)
-                    } else {
-                        Report::Unprocessed(fetched_outcome)
-                    },
-                );
+                // fetched outcome should always be unprocessed
+                // in case of **drawn** unreachable positions (and only when we try to win),
+                // those will be left unprocessed
+                common.all_pos[all_pos_idx].set_to(chess, Report::Unprocessed(fetched_outcome));
             }
         }
     }
