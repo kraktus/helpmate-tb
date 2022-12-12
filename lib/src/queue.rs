@@ -21,6 +21,7 @@ pub struct Queue<T = DefaultReversibleIndexer> {
 pub struct OneQueue {
     mate_in_n: MateInQueue,
     mate_in_n_plus_1: MateInQueue,
+    // nb_pass: usize, // number of `Tagger` pass done
 }
 
 impl OneQueue {
@@ -33,6 +34,7 @@ impl OneQueue {
         Self {
             mate_in_n,
             mate_in_n_plus_1,
+            // nb_pass: 0,
         }
     }
 
@@ -44,10 +46,16 @@ impl OneQueue {
         self.mate_in_n.pop_front()
     }
 
+    // pub fn nb_pass(&mut self) -> usize {
+    //     self.nb_pass
+    // }
+
     /// To be called at the end of a `Tagger` pass. `mate_in_n` must have been completely emptied
     /// So we must take the N+1 queue and move it in the place of the N queue
     pub fn swap(&mut self) {
         self.mate_in_n.reset_counter();
+        // debug_assert!(self.mate_in_n.is_empty());
+        // self.nb_pass += 1;
         mem::swap(&mut self.mate_in_n, &mut self.mate_in_n_plus_1)
     }
 }

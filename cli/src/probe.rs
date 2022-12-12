@@ -1,9 +1,9 @@
-use helpmate_tb::RetrieveOutcome;
 pub use helpmate_tb::{
     to_chess_with_illegal_checks, Common, EncoderDecoder, Material, MaterialWinner, TablebaseProber,
 };
+use helpmate_tb::{Indexer, NaiveIndexer, RetrieveOutcome};
 
-use log::info;
+use log::{debug, info};
 use retroboard::shakmaty::fen::Fen;
 
 use retroboard::shakmaty::{Chess, Color, Position};
@@ -46,10 +46,12 @@ impl Probe {
                     .to_string()
             })
             .collect();
+        let rboard = RetroBoard::from(self.fen);
         info!(
             "For {:?}\nOutcome is {outcome:?}, Moves: {uci_movelist:?}",
-            RetroBoard::from(self.fen),
+            rboard,
         );
+        debug!("Naive indexer idx: {:?}", NaiveIndexer.encode(&rboard));
         if self.expanded {
             let rboards_fmt: Vec<String> = pos_list
                 .into_iter()

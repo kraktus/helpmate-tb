@@ -38,7 +38,8 @@ impl Diff {
     }
 
     fn diff(&self, old_file_handler: FileHandler, file_handler: FileHandler) {
-        let mut diff_outcomes = 0;
+        let mut old_better = 0;
+        let mut new_better = 0;
         if old_file_handler.outcomes.len() != file_handler.outcomes.len() {
             error!(
                 "The two tables do not have the same length, old: {}, new {}",
@@ -57,6 +58,9 @@ impl Diff {
                 let old_outcome = outcome_bc.get_outcome_by_color(turn);
                 let outcome = old_outcome_bc.get_outcome_by_color(turn);
                 if old_outcome != outcome {
+                    old_better += usize::from(old_outcome > outcome);
+                    new_better += usize::from(old_outcome < outcome);
+
                     #[cfg(not(feature = "syzygy"))]
                     let pos = file_handler.indexer.restore(
                         &self.material,
@@ -65,14 +69,16 @@ impl Diff {
                             turn,
                         },
                     );
-                    diff_outcomes += 1;
                     #[cfg(feature = "syzygy")]
                     let pos = unreachable!("Syzygy indexer is not reversible");
-                    info!("idx: {idx}, Outcome differs: old {old_outcome:?}, new {outcome:?}");
+                    debug!("idx: {idx}, Outcome differs: old {old_outcome:?}, new {outcome:?}");
                     debug!("pos: {pos:?}");
                 }
             }
         }
-        warn!("Found {diff_outcomes} differences");
+        warn!(
+            "Found {} differences\nOld is better: {old_better} cases New is better: {new_better}",
+            old_better + new_better,
+        );
     }
 }

@@ -443,6 +443,19 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
                         |bc| bc.get_by_pos(&rboard),
                     )
                     .outcome();
+                // if idx
+                //     == (IndexWithTurn {
+                //         idx: 1601709,
+                //         turn: Color::Black,
+                //     })
+                // {
+                //     println!("Outcome of x: {out:?}");
+                //     println!("NB pass: {}", one_queue.nb_pass());
+                //     println!(
+                //         "Report of it: {:?}",
+                //         self.common.all_pos[self.common.indexer().encode(&rboard).usize()]
+                //     );
+                // }
                 assert_ne!(out, Outcome::Undefined);
                 assert_ne!(out, Outcome::Unknown);
                 for m in rboard.legal_unmoves() {
@@ -463,6 +476,18 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
                             one_queue.push_back(idx_after_unmove);
                             let processed_outcome =
                                 Report::Processed((out + 1).max(fetched_outcome));
+                            // if idx_after_unmove
+                            //     == (IndexWithTurn {
+                            //         idx: 1601709,
+                            //         turn: Black,
+                            //     })
+                            // {
+                            //     // 5Bk1/8/8/4K3/8/2R5/8/8 w - -
+                            //     println!("rboard leading to x: {rboard:?}, idx {idx:?}");
+                            //     println!("outcome of x-1: {out:?}");
+                            //     println!("fetched_outcome of x: {fetched_outcome:?}");
+                            //     println!("processed_outcome of x: {processed_outcome:?}");
+                            // }
                             self.common.all_pos[idx_all_pos_after_unmove]
                                 .set_to(&rboard_after_unmove, processed_outcome);
                         }
