@@ -23,8 +23,8 @@ fn from_fen(fen: &str) -> Result<Chess, &'static str> {
 
 #[derive(Args, Debug)]
 pub struct Probe {
-    #[arg(short, long, value_parser = from_fen)]
-    fen: Chess, // `fen` name to improve CLI usability. better would be to have the CLI still show `fen` but use `chess` internally
+    #[arg(short, long, value_parser = from_fen, name = "fen")]
+    chess: Chess,
     #[arg(short, long)]
     winner: Color,
     #[arg(long, default_value = if cfg!(feature = "syzygy") {"syzygy_table/"} else {"table/"})]
@@ -35,10 +35,12 @@ pub struct Probe {
 
 impl Probe {
     pub fn run(self) {
-        let material = Material::from_board(self.fen.board());
+        let material = Material::from_board(self.chess.board());
         let tb_prober: TablebaseProber = TablebaseProber::new(&material, &self.tb_dir);
-        let outcome = tb_prober.retrieve_outcome(&self.fen, self.winner).unwrap();
-        let (move_list, pos_list) = tb_prober.probe(&self.fen, self.winner).unwrap();
+        let outcome = tb_prober
+            .retrieve_outcome(&self.chess, self.winner)
+            .unwrap();
+        let (move_list, pos_list) = tb_prober.probe(&self.chess, self.winner).unwrap();
         let uci_movelist: Vec<String> = move_list
             .into_iter()
             .map(|m| {
@@ -46,7 +48,7 @@ impl Probe {
                     .to_string()
             })
             .collect();
-        let rboard = RetroBoard::from(self.fen);
+        let rboard = RetroBoard::from(self.chess);
         info!(
             "For {:?}\nOutcome is {outcome:?}, Moves: {uci_movelist:?}",
             rboard,
