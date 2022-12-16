@@ -100,16 +100,37 @@ impl<I: Indexer> PosHandler<I> for CheckIndexerPosHandler {
 }
 
 #[derive(Debug, Clone, FromStrSequential)]
-enum MatOrNbPieces {
+pub enum MatOrNbPieces {
     Mat(Material),
     UpTo(usize),
 }
 
-impl From<MatOrNbPieces> for HashSet<Material> {
-    fn from(mat_or_nb_pieces: MatOrNbPieces) -> Self {
-        match mat_or_nb_pieces {
-            MatOrNbPieces::Mat(mat) => [mat].into(),
-            MatOrNbPieces::UpTo(up_to) => gen_all_pawnless_mat_up_to(up_to),
+impl MatOrNbPieces {
+    pub fn materials(&self) -> Vec<Material> {
+        match self {
+            MatOrNbPieces::Mat(mat) => vec![mat.clone()],
+            MatOrNbPieces::UpTo(up_to) => gen_all_pawnless_mat_up_to(*up_to),
+        }
+    }
+
+    pub fn list_of_materials_with_recursive(&self, recursive: bool) -> Vec<Material> {
+        match self {
+            MatOrNbPieces::Mat(mat) => {
+                let mut materials = if recursive {
+                    mat.descendants_recursive(false)
+                } else {
+                    vec![]
+                };
+                materials.push(mat.clone());
+                materials
+            }
+            MatOrNbPieces::UpTo(_) => {
+                assert!(
+                    !recursive,
+                    "--recursive not compatible with generating all materials"
+                );
+                self.materials()
+            }
         }
     }
 }
@@ -137,7 +158,7 @@ pub struct CheckIndexer {
     indexer: CliIndexer,
 }
 
-fn gen_all_pawnless_mat_up_to(nb_pieces: usize) -> HashSet<Material> {
+fn gen_all_pawnless_mat_up_to(nb_pieces: usize) -> Vec<Material> {
     let iter_pieces = vec![
         Black.bishop(),
         Black.knight(),
@@ -151,12 +172,16 @@ fn gen_all_pawnless_mat_up_to(nb_pieces: usize) -> HashSet<Material> {
     .repeat(nb_pieces - 2)
     .into_iter();
 
-    (1..nb_pieces - 1)
+    // the two kings must always be on the board
+    let mut materials_up_to: Vec<Material> = (1..nb_pieces - 1)
         .flat_map(|i| iter_pieces.clone().combinations(i))
         .map(|pieces_vec| {
             Material::from_iter(pieces_vec.into_iter().chain([Black.king(), White.king()]))
         })
-        .collect()
+        .collect();
+    materials_up_to.sort();
+    materials_up_to.dedup(); // dedup only work as expected when the vec is already sorted
+    materials_up_to
 }
 
 macro_rules! check_index {
@@ -187,7 +212,7 @@ macro_rules! check_index {
 
 impl CheckIndexer {
     pub fn run(&self) {
-        let all_mats_config = HashSet::from(self.mat_or_nb_pieces.clone());
+        let all_mats_config = self.mat_or_nb_pieces.materials();
         all_mats_config
             .into_iter()
             .for_each(|mat| match self.indexer {

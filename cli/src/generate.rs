@@ -1,19 +1,20 @@
+use from_str_sequential::FromStrSequential;
 pub use helpmate_tb::{Common, EncoderDecoder, Material, MaterialWinner, TableBaseBuilder};
 
 use log::info;
 
 use retroboard::shakmaty::Color;
-use std::str::FromStr;
 use std::{fs::File, path::PathBuf};
 
 use clap::{ArgAction, Args};
 
+use crate::check_indexer::MatOrNbPieces;
 use crate::explore::stats;
 
 #[derive(Args, Debug)]
 pub struct Generate {
-    #[arg(short, long, value_parser = Material::from_str, help = "example \"KQvK\"")]
-    material: Material,
+    #[arg(short, long, value_parser = MatOrNbPieces::from_str_sequential, help = "maximum number of pieces on the board, will build all pawnless material config up to this number included.\nOr just a particular material configuration. Note that if a number is given, not compatible with --recursive")]
+    mat_or_nb_pieces: MatOrNbPieces,
     #[arg(short, long, action = ArgAction::SetTrue)]
     recursive: bool,
     #[arg(long, default_value = if cfg!(feature = "syzygy") {"syzygy_table/"} else {"table/"})]
@@ -28,13 +29,10 @@ pub struct Generate {
 
 impl Generate {
     pub fn run(self) {
-        let mut materials = if self.recursive {
-            self.material.descendants_recursive(false)
-        } else {
-            vec![]
-        };
-        materials.push(self.material.clone());
-        for mat in materials {
+        for mat in self
+            .mat_or_nb_pieces
+            .list_of_materials_with_recursive(self.recursive)
+        {
             self.gen_one_material(mat)
         }
     }
