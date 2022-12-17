@@ -57,8 +57,8 @@ impl<T: Indexer> Common<T> {
 #[inline]
 fn get_estimate_nb_pos(mat: &Material) -> usize {
     // white king is already included in `material.count()`, so substract it, and multiply by 10 instead, real number of cases the white king can go on
-    // heuristic, less than 90% of pos are legals.
-    (pow_minus_1(63, mat.count() - 1) * 10) as usize / 10 * 9
+    // heuristic, less than 91% of pos are legals.
+    (pow_minus_1(63, mat.count() - 1) * 10) as usize / 100 * 91
 }
 
 // instead of 64**4 get 64*63*62*61

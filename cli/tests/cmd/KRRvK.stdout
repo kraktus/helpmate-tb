@@ -1,6 +1,6 @@
 [INFO  helpmate_tb_cli::generate] Building KRvK with winner: white
-[DEBUG helpmate_tb::generation] all_pos_vec capacity before generating: 35154
-[DEBUG helpmate_tb::generation] all_pos_vec capacity after generating: 35154
+[DEBUG helpmate_tb::generation] all_pos_vec capacity before generating: 35490
+[DEBUG helpmate_tb::generation] all_pos_vec capacity after generating: 35490
 [DEBUG helpmate_tb::generation] all_pos_vec capacity: 29560 after shrinking
 [DEBUG helpmate_tb::generation] nb pos 29560
 [DEBUG helpmate_tb::generation] counter 62664
@@ -24,8 +24,8 @@
 [DEBUG helpmate_tb_cli::explore] Win(13), 35
 [DEBUG helpmate_tb_cli::explore] Win(14), 27
 [INFO  helpmate_tb_cli::generate] Building KRvK with winner: black
-[DEBUG helpmate_tb::generation] all_pos_vec capacity before generating: 35154
-[DEBUG helpmate_tb::generation] all_pos_vec capacity after generating: 35154
+[DEBUG helpmate_tb::generation] all_pos_vec capacity before generating: 35490
+[DEBUG helpmate_tb::generation] all_pos_vec capacity after generating: 35490
 [DEBUG helpmate_tb::generation] all_pos_vec capacity: 29560 after shrinking
 [DEBUG helpmate_tb::generation] nb pos 29560
 [DEBUG helpmate_tb::generation] counter 62664
@@ -34,8 +34,8 @@
 [DEBUG helpmate_tb_cli::explore] Index density = 84%
 [DEBUG helpmate_tb_cli::explore] Lose(0), 27
 [INFO  helpmate_tb_cli::generate] Building KRRvK with winner: white
-[DEBUG helpmate_tb::generation] all_pos_vec capacity before generating: 2144394
-[DEBUG helpmate_tb::generation] all_pos_vec capacity after generating: 2144394
+[DEBUG helpmate_tb::generation] all_pos_vec capacity before generating: 2168166
+[DEBUG helpmate_tb::generation] all_pos_vec capacity after generating: 2168166
 [DEBUG helpmate_tb::generation] all_pos_vec capacity: 1891839 after shrinking
 [DEBUG helpmate_tb::generation] nb pos 1891839
 [DEBUG helpmate_tb::generation] counter 1959076
@@ -57,8 +57,8 @@
 [DEBUG helpmate_tb_cli::explore] Win(12), 475
 [DEBUG helpmate_tb_cli::explore] Win(14), 23
 [INFO  helpmate_tb_cli::generate] Building KRRvK with winner: black
-[DEBUG helpmate_tb::generation] all_pos_vec capacity before generating: 2144394
-[DEBUG helpmate_tb::generation] all_pos_vec capacity after generating: 2144394
+[DEBUG helpmate_tb::generation] all_pos_vec capacity before generating: 2168166
+[DEBUG helpmate_tb::generation] all_pos_vec capacity after generating: 2168166
 [DEBUG helpmate_tb::generation] all_pos_vec capacity: 1891839 after shrinking
 [DEBUG helpmate_tb::generation] nb pos 1891839
 [DEBUG helpmate_tb::generation] counter 1959076
