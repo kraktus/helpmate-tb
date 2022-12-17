@@ -165,7 +165,6 @@ mod tests {
     // macro for generating tests
     macro_rules! gen_tests_probe {
     ($(
-        $(#[$meta:meta])?
         $fn_name:ident, $fen:tt, $outcome:expr, $winner:tt,
         )+) => {
         $(
