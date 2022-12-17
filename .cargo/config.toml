@@ -1,4 +1,5 @@
 [alias]
-slow-test = "test --profile dhat --features dhat -- --include-ignored"
+checksum = "run --release --bin checksum"
 gen-snap = "test --profile dhat --features dhat --features trycmd-overwrite --test cli_tests -- --ignored" # include `--ignored` to run test ignored by default"
+slow-test = "test --profile dhat --features dhat -- --include-ignored"
 tb = "run --release --bin helpmate_tb_cli --"

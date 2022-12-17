@@ -10,7 +10,10 @@ use log::{debug, error, info};
 
 use std::path::PathBuf;
 
-use retroboard::shakmaty::{Chess, Color, Position};
+use retroboard::{
+    shakmaty::{Chess, Color, Position},
+    RetroBoard,
+};
 
 use clap::Args;
 
@@ -65,7 +68,11 @@ impl Verify {
                         assert_ne!(outcome_after_m, Outcome::Undefined);
 
                         if outcome_after_m + 1 > outcome {
-                            error!("idx: {idx_with_turn:?}, pos: {rboard:?} outcome is {outcome:?}, but after {m:?}, outcome is {outcome_after_m:?}")
+                            error!("idx: {idx_with_turn:?}, pos: {rboard:?} outcome is {outcome:?}, but after {m:?}, outcome is {outcome_after_m:?}");
+                            debug!(
+                                "unmoves after the move: {:?}",
+                                RetroBoard::from(chess_after_move).legal_unmoves()
+                            );
                         }
                     }
                 }
