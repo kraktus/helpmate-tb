@@ -1,0 +1,123 @@
+[INFO  helpmate_tb_cli::generate] Building KRvK with winner: white
+[DEBUG helpmate_tb::generation] all_pos_vec capacity before generating: 35154
+[DEBUG helpmate_tb::generation] all_pos_vec capacity after generating: 35154
+[DEBUG helpmate_tb::generation] all_pos_vec capacity: 29560 after shrinking
+[DEBUG helpmate_tb::generation] nb pos 29560
+[DEBUG helpmate_tb::generation] counter 62664
+[DEBUG helpmate_tb::generation] nb White mate 27
+[DEBUG helpmate_tb::generation] nb Black mates 0
+[DEBUG helpmate_tb_cli::explore] From White perspective, win: 49952, draw: 63, lost: 0, unkown: 0
+[DEBUG helpmate_tb_cli::explore] Index density = 84%
+[DEBUG helpmate_tb_cli::explore] Win(0), 27
+[DEBUG helpmate_tb_cli::explore] Win(1), 189
+[DEBUG helpmate_tb_cli::explore] Win(2), 294
+[DEBUG helpmate_tb_cli::explore] Win(3), 1372
+[DEBUG helpmate_tb_cli::explore] Win(4), 3270
+[DEBUG helpmate_tb_cli::explore] Win(5), 5248
+[DEBUG helpmate_tb_cli::explore] Win(6), 9039
+[DEBUG helpmate_tb_cli::explore] Win(7), 7893
+[DEBUG helpmate_tb_cli::explore] Win(8), 10129
+[DEBUG helpmate_tb_cli::explore] Win(9), 6181
+[DEBUG helpmate_tb_cli::explore] Win(10), 4473
+[DEBUG helpmate_tb_cli::explore] Win(11), 1041
+[DEBUG helpmate_tb_cli::explore] Win(12), 734
+[DEBUG helpmate_tb_cli::explore] Win(13), 35
+[DEBUG helpmate_tb_cli::explore] Win(14), 27
+[INFO  helpmate_tb_cli::generate] Building KRvK with winner: black
+[DEBUG helpmate_tb::generation] all_pos_vec capacity before generating: 35154
+[DEBUG helpmate_tb::generation] all_pos_vec capacity after generating: 35154
+[DEBUG helpmate_tb::generation] all_pos_vec capacity: 29560 after shrinking
+[DEBUG helpmate_tb::generation] nb pos 29560
+[DEBUG helpmate_tb::generation] counter 62664
+[DEBUG helpmate_tb::generation] nb Black stalemate/capture resulting in draw 9
+[DEBUG helpmate_tb::generation] nb White mates 27
+[DEBUG helpmate_tb_cli::explore] From Black perspective, win: 0, draw: 49988, lost: 27, unkown: 0
+[DEBUG helpmate_tb_cli::explore] Index density = 84%
+[DEBUG helpmate_tb_cli::explore] Lose(0), 27
+[INFO  helpmate_tb_cli::generate] Building KQvK with winner: white
+[DEBUG helpmate_tb::generation] all_pos_vec capacity before generating: 35154
+[DEBUG helpmate_tb::generation] all_pos_vec capacity after generating: 35154
+[DEBUG helpmate_tb::generation] all_pos_vec capacity: 29560 after shrinking
+[DEBUG helpmate_tb::generation] nb pos 29560
+[DEBUG helpmate_tb::generation] counter 62664
+[DEBUG helpmate_tb::generation] nb White mate 46
+[DEBUG helpmate_tb::generation] nb Black mates 0
+[DEBUG helpmate_tb_cli::explore] From White perspective, win: 45723, draw: 414, lost: 0, unkown: 0
+[DEBUG helpmate_tb_cli::explore] Index density = 78%
+[DEBUG helpmate_tb_cli::explore] Win(0), 46
+[DEBUG helpmate_tb_cli::explore] Win(1), 306
+[DEBUG helpmate_tb_cli::explore] Win(2), 580
+[DEBUG helpmate_tb_cli::explore] Win(3), 1751
+[DEBUG helpmate_tb_cli::explore] Win(4), 4336
+[DEBUG helpmate_tb_cli::explore] Win(5), 5851
+[DEBUG helpmate_tb_cli::explore] Win(6), 11208
+[DEBUG helpmate_tb_cli::explore] Win(7), 7267
+[DEBUG helpmate_tb_cli::explore] Win(8), 9197
+[DEBUG helpmate_tb_cli::explore] Win(9), 2551
+[DEBUG helpmate_tb_cli::explore] Win(10), 1987
+[DEBUG helpmate_tb_cli::explore] Win(11), 353
+[DEBUG helpmate_tb_cli::explore] Win(12), 284
+[DEBUG helpmate_tb_cli::explore] Win(13), 2
+[DEBUG helpmate_tb_cli::explore] Win(14), 4
+[INFO  helpmate_tb_cli::generate] Building KQvK with winner: black
+[DEBUG helpmate_tb::generation] all_pos_vec capacity before generating: 35154
+[DEBUG helpmate_tb::generation] all_pos_vec capacity after generating: 35154
+[DEBUG helpmate_tb::generation] all_pos_vec capacity: 29560 after shrinking
+[DEBUG helpmate_tb::generation] nb pos 29560
+[DEBUG helpmate_tb::generation] counter 62664
+[DEBUG helpmate_tb::generation] nb Black stalemate/capture resulting in draw 109
+[DEBUG helpmate_tb::generation] nb White mates 46
+[DEBUG helpmate_tb_cli::explore] From Black perspective, win: 0, draw: 46091, lost: 46, unkown: 0
+[DEBUG helpmate_tb_cli::explore] Index density = 78%
+[DEBUG helpmate_tb_cli::explore] Lose(0), 46
+[INFO  helpmate_tb_cli::generate] Building KQvKR with winner: white
+[DEBUG helpmate_tb::generation] all_pos_vec capacity before generating: 2144394
+[DEBUG helpmate_tb::generation] all_pos_vec capacity after generating: 2144394
+[DEBUG helpmate_tb::generation] all_pos_vec capacity: 1892280 after shrinking
+[DEBUG helpmate_tb::generation] nb pos 1892280
+[DEBUG helpmate_tb::generation] counter 3813096
+[DEBUG helpmate_tb::generation] nb White mate 1374
+[DEBUG helpmate_tb::generation] nb Black mates 306
+[DEBUG helpmate_tb_cli::explore] From White perspective, win: 2451242, draw: 15574, lost: 306, unkown: 0
+[DEBUG helpmate_tb_cli::explore] Index density = 65%
+[DEBUG helpmate_tb_cli::explore] Win(0), 1374
+[DEBUG helpmate_tb_cli::explore] Win(1), 11285
+[DEBUG helpmate_tb_cli::explore] Win(2), 39913
+[DEBUG helpmate_tb_cli::explore] Win(3), 132195
+[DEBUG helpmate_tb_cli::explore] Win(4), 357472
+[DEBUG helpmate_tb_cli::explore] Win(5), 435790
+[DEBUG helpmate_tb_cli::explore] Win(6), 597744
+[DEBUG helpmate_tb_cli::explore] Win(7), 416266
+[DEBUG helpmate_tb_cli::explore] Win(8), 313721
+[DEBUG helpmate_tb_cli::explore] Win(9), 122195
+[DEBUG helpmate_tb_cli::explore] Win(10), 22048
+[DEBUG helpmate_tb_cli::explore] Win(11), 1178
+[DEBUG helpmate_tb_cli::explore] Win(12), 61
+[DEBUG helpmate_tb_cli::explore] Lose(0), 306
+[INFO  helpmate_tb_cli::generate] Building KQvKR with winner: black
+[DEBUG helpmate_tb::generation] all_pos_vec capacity before generating: 2144394
+[DEBUG helpmate_tb::generation] all_pos_vec capacity after generating: 2144394
+[DEBUG helpmate_tb::generation] all_pos_vec capacity: 1892280 after shrinking
+[DEBUG helpmate_tb::generation] nb pos 1892280
+[DEBUG helpmate_tb::generation] counter 3813096
+[DEBUG helpmate_tb::generation] nb Black mate 306
+[DEBUG helpmate_tb::generation] nb White mates 1374
+[DEBUG helpmate_tb_cli::explore] From Black perspective, win: 2464941, draw: 807, lost: 1374, unkown: 0
+[DEBUG helpmate_tb_cli::explore] Index density = 65%
+[DEBUG helpmate_tb_cli::explore] Win(0), 306
+[DEBUG helpmate_tb_cli::explore] Win(1), 2381
+[DEBUG helpmate_tb_cli::explore] Win(2), 10903
+[DEBUG helpmate_tb_cli::explore] Win(3), 57149
+[DEBUG helpmate_tb_cli::explore] Win(4), 104641
+[DEBUG helpmate_tb_cli::explore] Win(5), 272856
+[DEBUG helpmate_tb_cli::explore] Win(6), 329500
+[DEBUG helpmate_tb_cli::explore] Win(7), 482023
+[DEBUG helpmate_tb_cli::explore] Win(8), 431134
+[DEBUG helpmate_tb_cli::explore] Win(9), 428200
+[DEBUG helpmate_tb_cli::explore] Win(10), 216018
+[DEBUG helpmate_tb_cli::explore] Win(11), 101459
+[DEBUG helpmate_tb_cli::explore] Win(12), 25707
+[DEBUG helpmate_tb_cli::explore] Win(13), 2450
+[DEBUG helpmate_tb_cli::explore] Win(14), 213
+[DEBUG helpmate_tb_cli::explore] Win(15), 1
+[DEBUG helpmate_tb_cli::explore] Lose(0), 1374

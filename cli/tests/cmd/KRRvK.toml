@@ -1,0 +1,2 @@
+bin.name = "helpmate_tb_cli"
+args = "--no-time generate -m \"KRRvK\" --tb-dir ../table --recursive"
