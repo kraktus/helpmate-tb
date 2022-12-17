@@ -27,7 +27,7 @@ pub struct Probe {
     chess: Chess,
     #[arg(short, long)]
     winner: Color,
-    #[arg(long, default_value = if cfg!(feature = "syzygy") {"syzygy_table/"} else {"table/"})]
+    #[arg(long, default_value = "table/")]
     tb_dir: PathBuf,
     #[arg(long, action = ArgAction::SetTrue)]
     expanded: bool,

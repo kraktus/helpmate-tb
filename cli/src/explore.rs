@@ -81,7 +81,7 @@ pub struct Explore {
     query: Option<Query>,
     #[arg(long, action = ArgAction::SetFalse, default_value_t = false)]
     exclude_summary: bool,
-    #[arg(long, default_value = if cfg!(feature = "syzygy") {"syzygy_table/"} else {"table/"})]
+    #[arg(long, default_value = "table/")]
     tb_dir: PathBuf,
 }
 
@@ -155,7 +155,6 @@ pub fn stats<T>(
             let outcome = by_color_outcome.get_outcome_by_color(turn);
             match query {
                 Some(Query::Outcome(searched_outcome)) if &outcome == searched_outcome => {
-                    #[cfg(not(feature = "syzygy"))]
                     let pos = indexer
                         .expect("Not indexer given despite specific outcome being searched")
                         .restore(
@@ -165,8 +164,6 @@ pub fn stats<T>(
                                 turn,
                             },
                         );
-                    #[cfg(feature = "syzygy")]
-                    let pos = unreachable!("Syzygy indexer is not reversible");
                     info!("Macthing {outcome:?}, position {:?}", pos)
                 }
                 Some(Query::Pos(pos))

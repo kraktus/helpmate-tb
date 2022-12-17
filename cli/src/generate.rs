@@ -17,7 +17,7 @@ pub struct Generate {
     mat_or_nb_pieces: MatOrNbPieces,
     #[arg(short, long, action = ArgAction::SetTrue)]
     recursive: bool,
-    #[arg(long, default_value = if cfg!(feature = "syzygy") {"syzygy_table/"} else {"table/"})]
+    #[arg(long, default_value = "table/")]
     tb_dir: PathBuf,
     #[arg(
         short,

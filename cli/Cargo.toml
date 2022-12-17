@@ -10,7 +10,6 @@ default = ["cached"]
 cached = ["helpmate_tb/cached"]
 dhat = ["dep:dhat"]
 trycmd-overwrite = [] # feature to allow snapshots tests to be updated via cargo alias
-syzygy = ["helpmate_tb/syzygy"]
 
 [dependencies]
 retroboard = "0.2.8"

@@ -1,8 +1,8 @@
-//! Custom target that perform sanity checks and stats on the syzygy indexer
+//! Custom target that perform sanity checks and stats on the indexer
 //! Given a material config, it ouputs:
 //! - The maximum index for the config
 //! - All the positions which are the same modulo symetry, but yield different indexes
-//! Run with `cargo run syzygy-check`
+//! Run with `cargo tb check-indexer`
 
 use std::{
     collections::{HashMap, HashSet},
@@ -151,7 +151,7 @@ pub struct CheckIndexer {
 
     #[arg(short, long, action = clap::ArgAction::Count, default_value_t = 3)]
     verbose: u8,
-    #[arg(long, default_value = if cfg!(feature = "syzygy") {"syzygy_table/"} else {"table/"})]
+    #[arg(long, default_value = "table/")]
     tb_dir: PathBuf,
     #[arg(short, long, default_value = "naive", value_parser = CliIndexer::from_str_sequential)]
     indexer: CliIndexer,

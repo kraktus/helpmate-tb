@@ -16,7 +16,7 @@ pub struct Diff {
     material: Material,
     #[arg(long, default_value = "old_table/")]
     old_tb_dir: PathBuf,
-    #[arg(long, default_value = if cfg!(feature = "syzygy") {"syzygy_table/"} else {"table/"})]
+    #[arg(long, default_value = "table/")]
     tb_dir: PathBuf,
     #[arg(
         short,
@@ -68,7 +68,6 @@ impl Diff {
                     old_better += usize::from(old_outcome > outcome);
                     new_better += usize::from(old_outcome < outcome);
 
-                    #[cfg(not(feature = "syzygy"))]
                     let pos = file_handler.indexer.restore(
                         &self.material,
                         IndexWithTurn {
@@ -76,8 +75,6 @@ impl Diff {
                             turn,
                         },
                     );
-                    #[cfg(feature = "syzygy")]
-                    let pos = unreachable!("Syzygy indexer is not reversible");
                     debug!("idx: {idx}, Outcome differs: old {old_outcome:?}, new {outcome:?}");
                     debug!("pos: {pos:?}");
                 }
