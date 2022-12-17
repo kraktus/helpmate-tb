@@ -3,18 +3,12 @@ pub use helpmate_tb::{
     Common, EncoderDecoder, Material, MaterialWinner, Outcome, SideToMoveGetter, TableBaseBuilder,
     UNDEFINED_OUTCOME_BYCOLOR,
 };
-use helpmate_tb::{
-    DeIndexer, DefaultIndexer, FileHandler, IndexWithTurn, Indexer, OutcomeU8, RetrieveOutcome,
-    TablebaseProber,
-};
-use log::{debug, error, info};
-use rustc_hash::FxHashMap;
-use std::{path::PathBuf, str::FromStr};
+use helpmate_tb::{DeIndexer, FileHandler, IndexWithTurn, RetrieveOutcome, TablebaseProber};
+use log::{error, info};
 
-use retroboard::{
-    shakmaty::{ByColor, Chess, Color, Position},
-    RetroBoard,
-};
+use std::path::PathBuf;
+
+use retroboard::shakmaty::{Chess, Color, Position};
 
 use clap::Args;
 
