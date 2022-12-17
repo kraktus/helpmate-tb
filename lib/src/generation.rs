@@ -1,10 +1,9 @@
 use crate::{
     indexer::{DeIndexer, Indexer, A1_D1_D4},
-    queue::OneQueue,
     Common, DefaultReversibleIndexer, Descendants, Material, Outcome, OutcomeU8, Report, ReportU8,
     A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
 };
-use log::{debug, error, info, trace, warn};
+use log::{debug, warn};
 use retroboard::shakmaty::{
     Bitboard, Board, ByColor, CastlingMode,
     CastlingMode::Standard,
@@ -170,7 +169,7 @@ impl<I> PosHandler<I> for DefaultGeneratorHandler {
         common: &mut Common<I>,
         tablebase: &Descendants,
         chess: &Chess,
-        idx: IndexWithTurn,
+        _: IndexWithTurn,
         all_pos_idx: usize,
     ) {
         match chess.outcome() {
@@ -419,7 +418,6 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
     pub fn process_one_queue(&mut self, desired_outcome_to_process: bool) {
         self.common.counter = 0;
         let mut at_least_one_pos_processed = true;
-        let mut first_pass = true;
         let mut desired_outcome = if desired_outcome_to_process {
             if self.common.can_mate() {
                 Outcome::Win(0)
@@ -432,16 +430,17 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
         while at_least_one_pos_processed {
             at_least_one_pos_processed = false;
             let desired_report_u8: ReportU8 = Report::Unprocessed(desired_outcome).into();
-            let mut one_queue = OneQueue::new_empty(self.common.all_pos.len());
-            for (idx, report_u8_bc) in self.common.all_pos.iter().enumerate() {
+            for idx in 0..self.common.all_pos.len() {
+                let report_u8_bc = self.common.all_pos[idx];
                 for turn in Color::ALL {
                     if &desired_report_u8 == report_u8_bc.get(turn) {
+                        at_least_one_pos_processed = true;
                         let idx_with_turn = IndexWithTurn {
                             idx: idx as u64,
                             turn,
                         };
-                        one_queue.mate_in_n.push_back(idx_with_turn);
-                        at_least_one_pos_processed = true;
+                        *self.common.all_pos[idx].get_mut(turn) =
+                            Report::Processed(desired_outcome).into();
                         self.common.counter += 1;
                         if self.common.counter % 100_000 == 0 {
                             self.pb.set_position(self.common.counter);
@@ -463,9 +462,13 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
                                 Report::Unprocessed(fetched_outcome) => {
                                     // we know the position is unprocessed
                                     assert!(fetched_outcome <= desired_outcome);
-                                    one_queue
-                                        .mate_in_n_plus_1
-                                        .push_back(idx_all_pos_after_unmove)
+                                    *self.common.all_pos[idx_all_pos_after_unmove.usize()]
+                                        .get_mut(idx_all_pos_after_unmove.turn) =
+                                        Report::Unprocessed(std::cmp::max(
+                                            fetched_outcome,
+                                            desired_outcome + 1,
+                                        ))
+                                        .into()
                                 }
                                 Report::Processed(_) => (),
                             }
@@ -474,49 +477,14 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
                 }
             }
 
-            while let Some(idx_with_turn_n) = one_queue.mate_in_n.pop_front() {
-                *self.common.all_pos[idx_with_turn_n.usize()].get_mut(idx_with_turn_n.turn) =
-                    Report::Processed(desired_outcome).into();
-            }
-
-            while let Some(idx_with_turn_n_plus_1) = one_queue.mate_in_n_plus_1.pop_front() {
-                // a position mate in N can reach a another position mate in N, so we need to double check
-                // it has not been processed already before setting its value
-                match self.common.all_pos[idx_with_turn_n_plus_1.usize()]
-                    .get_by_color(idx_with_turn_n_plus_1.turn)
-                {
-                    // if the report is `mate_in_n_plus_1` queue it means that
-                    // it was unprocessed and has been processed by the loop just above
-                    // so it should be equal to the desired outcome
-                    Report::Processed(outcome) => assert!(outcome == desired_outcome),
-                    Report::Unprocessed(_) => {
-                        *self.common.all_pos[idx_with_turn_n_plus_1.usize()]
-                            .get_mut(idx_with_turn_n_plus_1.turn) =
-                            Report::Unprocessed(desired_outcome + 1).into()
-                    }
-                }
-            }
-
-            if desired_outcome == Outcome::Win(0)
-                || (first_pass && desired_outcome == Outcome::Draw)
-            {
-                debug!(
-                    "nb {:?} {} {:?}",
-                    self.common.winner,
-                    if self.common.can_mate() {
-                        "mate"
-                    } else {
-                        "stalemate/capture resulting in draw"
-                    },
-                    self.common.counter
-                );
+            if desired_outcome == Outcome::Win(0) {
+                debug!("nb {:?} mate {:?}", self.common.winner, self.common.counter);
             } else if desired_outcome == Outcome::Lose(0) {
                 debug!(
                     "nb {:?} mates {:?}",
                     !self.common.winner, self.common.counter
                 );
             }
-            first_pass = false;
 
             desired_outcome = desired_outcome + 1; // one move further from mate
         }
