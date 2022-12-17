@@ -11,12 +11,12 @@ cached = ["dep:cached"]
 syzygy = []
 
 [dependencies]
-retroboard = "0.2.8"
+retroboard.workspace = true
 arrayvec = { version = "0.7", features = ["serde"] }
 cached = {version = "0.40", features = ["proc_macro"], optional = true}
 indicatif = "0.17.2"
-itertools = "0.10.3"
-log = "0.4"
+itertools.workspace = true
+log.workspace = true
 serde_json = "1"
 serde = { version = "1.0", features = ["derive"] }
 zstd = "0.11.2"
@@ -24,7 +24,7 @@ deku = "0.15"
 positioned-io = "0.3"
 
 [dev-dependencies]
-paste = "1"
+paste.workspace = true
 criterion = { version = "0.4", features = ["html_reports"] }
 
 [[bin]]

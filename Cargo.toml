@@ -12,3 +12,9 @@ debug = 1
 [profile.release]
 overflow-checks = true # allow to easily spot bugs with the indexer
 debug-assertions = true # allow to easily spot bugs with the indexer
+
+[workspace.dependencies]
+retroboard = "0.2.8"
+log = "0.4"
+itertools = "0.10.3"
+paste = "1"
