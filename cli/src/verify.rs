@@ -3,8 +3,10 @@ pub use helpmate_tb::{
     Common, EncoderDecoder, Material, MaterialWinner, Outcome, SideToMoveGetter, TableBaseBuilder,
     UNDEFINED_OUTCOME_BYCOLOR,
 };
-use helpmate_tb::{DeIndexer, FileHandler, IndexWithTurn, RetrieveOutcome, TablebaseProber};
-use log::{error, info};
+use helpmate_tb::{
+    DeIndexer, FileHandler, IndexWithTurn, Indexer, RetrieveOutcome, TablebaseProber,
+};
+use log::{debug, error, info};
 
 use std::path::PathBuf;
 
@@ -52,9 +54,14 @@ impl Verify {
                     for m in chess.legal_moves() {
                         let mut chess_after_move = chess.clone();
                         chess_after_move.play_unchecked(&m);
-                        let outcome_after_m = tb_prober
-                            .retrieve_outcome(&chess_after_move, mat_win.winner)
-                            .unwrap();
+                        let outcome_after_m = if m.is_capture() {
+                            tb_prober
+                                .retrieve_outcome(&chess_after_move, mat_win.winner)
+                                .unwrap()
+                        } else {
+                            let idx_after_m = file_handler.indexer.encode(&chess_after_move);
+                            file_handler.outcomes[idx_after_m.usize()].get_by_pos(&chess_after_move)
+                        };
                         assert_ne!(outcome_after_m, Outcome::Undefined);
 
                         if outcome_after_m + 1 > outcome {
