@@ -3,6 +3,7 @@ mod diff;
 mod explore;
 mod generate;
 mod probe;
+mod verify;
 
 use diff::Diff;
 pub use helpmate_tb::{
@@ -15,6 +16,7 @@ use log::LevelFilter;
 
 use clap::{ArgAction, Parser, Subcommand};
 use probe::Probe;
+use verify::Verify;
 
 use crate::check_indexer::CheckIndexer;
 use crate::explore::Explore;
@@ -48,6 +50,7 @@ enum Cmd {
     Probe(Probe),
     CheckIndexer(CheckIndexer),
     Diff(Diff),
+    Verify(Verify),
 }
 
 impl Cmd {
@@ -58,6 +61,7 @@ impl Cmd {
             Self::Probe(probe) => probe.run(),
             Self::CheckIndexer(check_index) => check_index.run(),
             Self::Diff(diff) => diff.run(),
+            Self::Verify(verify) => verify.run(),
         }
     }
 }

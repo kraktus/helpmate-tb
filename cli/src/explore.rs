@@ -6,7 +6,10 @@ pub use helpmate_tb::{
 use helpmate_tb::{DeIndexer, DefaultIndexer, FileHandler, IndexWithTurn, Indexer};
 use log::{debug, info};
 use rustc_hash::FxHashMap;
-use std::{path::PathBuf, str::FromStr};
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use retroboard::{
     shakmaty::{ByColor, Color},
@@ -16,9 +19,31 @@ use retroboard::{
 use clap::{ArgAction, Args};
 
 #[derive(Debug, Clone, FromStrSequential)]
-enum MatOrAll {
+pub enum MatOrAll {
     Mat(Material),
     All,
+}
+
+impl MatOrAll {
+    pub fn mat_winners(&self, tb_dir: &Path, winner: Option<Color>) -> Vec<MaterialWinner> {
+        match self {
+            MatOrAll::All => {
+                let entries = tb_dir.read_dir().expect("read_dir call failed");
+                entries
+                    .map(|entry_res| {
+                        let mat_win_str = entry_res.unwrap().file_name().into_string().unwrap();
+                        MaterialWinner::from_str(&mat_win_str).expect("invalid file name")
+                    })
+                    .collect()
+            }
+            MatOrAll::Mat(mat) => winner
+                .map(|w| vec![w])
+                .unwrap_or(Color::ALL.into())
+                .into_iter()
+                .map(|w| MaterialWinner::new(mat, w))
+                .collect(),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
