@@ -4,7 +4,7 @@ pub use helpmate_tb::{
     UNDEFINED_OUTCOME_BYCOLOR,
 };
 use helpmate_tb::{
-    DeIndexer, FileHandler, IndexWithTurn, Indexer, RetrieveOutcome, TablebaseProber,
+    DeIndexer, Descendants, FileHandler, IndexWithTurn, Indexer, RetrieveOutcome, TablebaseProber,
 };
 use log::{debug, error, info};
 
@@ -40,7 +40,8 @@ impl Verify {
             mat_win.material, mat_win.winner
         );
         let file_handler: FileHandler = FileHandler::new(&mat_win, &self.tb_dir);
-        let tb_prober: TablebaseProber = TablebaseProber::new(&mat_win.material, &self.tb_dir);
+        let descendants: Descendants = Descendants::new(&mat_win.material, &self.tb_dir);
+        debug!("outcomes len: {}", file_handler.outcomes.len());
         for (idx, by_color_outcome) in file_handler.outcomes.iter().enumerate() {
             for turn in Color::ALL {
                 let outcome = by_color_outcome.get_by_color(turn);
@@ -58,7 +59,7 @@ impl Verify {
                         let mut chess_after_move = chess.clone();
                         chess_after_move.play_unchecked(&m);
                         let outcome_after_m = if m.is_capture() {
-                            tb_prober
+                            descendants
                                 .retrieve_outcome(&chess_after_move, mat_win.winner)
                                 .unwrap()
                         } else {
@@ -76,6 +77,9 @@ impl Verify {
                         }
                     }
                 }
+            }
+            if idx % 100_000 == 0 {
+                debug!("idx: {idx}")
             }
         }
     }
