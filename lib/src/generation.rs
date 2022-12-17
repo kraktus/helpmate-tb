@@ -1,6 +1,6 @@
 use crate::{
     indexer::{DeIndexer, Indexer, A1_D1_D4},
-    queue::{OneQueue, Queue},
+    queue::OneQueue,
     Common, DefaultReversibleIndexer, Descendants, Material, Outcome, OutcomeU8, Report, ReportU8,
     A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
 };
@@ -153,7 +153,6 @@ pub trait PosHandler<I> {
     fn handle_position(
         &mut self,
         common: &mut Common<I>,
-        queue: &mut Queue,
         tablebase: &Descendants,
         chess: &Chess,
         idx: IndexWithTurn,
@@ -169,7 +168,6 @@ impl<I> PosHandler<I> for DefaultGeneratorHandler {
     fn handle_position(
         &mut self,
         common: &mut Common<I>,
-        queue: &mut Queue,
         tablebase: &Descendants,
         chess: &Chess,
         idx: IndexWithTurn,
@@ -185,11 +183,6 @@ impl<I> PosHandler<I> for DefaultGeneratorHandler {
                     Outcome::Lose(0)
                 });
                 common.all_pos[all_pos_idx].set_to(chess, outcome);
-                if winner == common.winner {
-                    queue.desired_outcome_pos_to_process.push(idx);
-                } else {
-                    queue.losing_pos_to_process.push(idx);
-                }
             }
 
             Some(ChessOutcome::Draw) => {
@@ -204,9 +197,6 @@ impl<I> PosHandler<I> for DefaultGeneratorHandler {
                         Report::Processed(Outcome::Draw)
                     },
                 );
-                if !common.can_mate() {
-                    queue.desired_outcome_pos_to_process.push(idx);
-                }
             }
             None => {
                 let (fetched_outcome, _) = tablebase
@@ -227,7 +217,6 @@ pub struct Generator<T, I> {
     common: Common<I>,
     tablebase: Descendants, // access to the DTM of descendants (different material config, following a capture/promotion)
     pb: ProgressBar,
-    queue: Queue,
     pos_handler: T,
 }
 
@@ -245,13 +234,12 @@ impl<T: PosHandler<I>, I: Indexer> Generator<T, I> {
             pb,
             tablebase: Descendants::new(&common.material, tablebase_dir),
             common,
-            queue: Queue::default(),
             pos_handler,
         }
     }
 
-    pub fn get_result(self) -> (Queue, Common<I>, T) {
-        (self.queue, self.common, self.pos_handler)
+    pub fn get_result(self) -> (Common<I>, T) {
+        (self.common, self.pos_handler)
     }
 
     fn generate_positions_internal(
@@ -319,7 +307,7 @@ impl<T: PosHandler<I>, I: Indexer> Generator<T, I> {
             if let Ok(chess) = to_chess_with_illegal_checks(valid_setup.clone()) {
                 let rboard = RetroBoard::from_setup(valid_setup, Standard)
                     .expect("if chess is valid then rboard should be too");
-                let idx = self.queue.encode(&rboard); // The position by construction is unfortunately not always canonical, so best to re-check when encoding
+                let idx = self.common.indexer().encode(&rboard); // The position by construction is unfortunately not always canonical, so best to re-check when encoding
                 let all_pos_idx = self.common.indexer().encode(&chess).usize();
                 // if format!("{}", rboard.board().board_fen(Bitboard::EMPTY))
                 //     == "7k/2R5/8/8/3K4/8/8/1R6"
@@ -340,7 +328,6 @@ impl<T: PosHandler<I>, I: Indexer> Generator<T, I> {
                     // only handle the position if it's not a duplicate
                     self.pos_handler.handle_position(
                         &mut self.common,
-                        &mut self.queue,
                         &self.tablebase,
                         &chess,
                         idx,
@@ -409,7 +396,7 @@ impl<T: From<Material>> Tagger<T> {
 }
 
 impl<T: Indexer + DeIndexer> Tagger<T> {
-    pub fn process_positions(&mut self, _: Queue) {
+    pub fn process_positions(&mut self) {
         // need to process FIRST winning positions, then losing ones.
         self.process_one_queue(true);
         self.process_one_queue(false);
@@ -427,11 +414,12 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
         }
     }
 
-    // if `desired_outcome_to_process` is set to `true`, we go from `Win(0)` to Win(1) ...
+    // if `desired_outcome_to_process` is set to `true`, we go from `Win(0)` to `Win(1)` ...
     // if `false`, go from `Lose(0)` to Lose(1) Lose(2) ...
     pub fn process_one_queue(&mut self, desired_outcome_to_process: bool) {
         self.common.counter = 0;
         let mut at_least_one_pos_processed = true;
+        let mut first_pass = true;
         let mut desired_outcome = if desired_outcome_to_process {
             if self.common.can_mate() {
                 Outcome::Win(0)
@@ -509,6 +497,27 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
                 }
             }
 
+            if desired_outcome == Outcome::Win(0)
+                || (first_pass && desired_outcome == Outcome::Draw)
+            {
+                debug!(
+                    "nb {:?} {} {:?}",
+                    self.common.winner,
+                    if self.common.can_mate() {
+                        "mate"
+                    } else {
+                        "stalemate/capture resulting in draw"
+                    },
+                    self.common.counter
+                );
+            } else if desired_outcome == Outcome::Lose(0) {
+                debug!(
+                    "nb {:?} mates {:?}",
+                    !self.common.winner, self.common.counter
+                );
+            }
+            first_pass = false;
+
             desired_outcome = desired_outcome + 1; // one move further from mate
         }
         self.pb.finish_and_clear();
@@ -529,27 +538,12 @@ impl TableBaseBuilder {
         let common = Common::new(material, winner);
         let mut generator = Generator::new(common, tablebase_dir);
         generator.generate_positions();
-        let (queue, common, _): (Queue, Common, DefaultGeneratorHandler) = generator.get_result();
+        let (common, _): (Common, DefaultGeneratorHandler) = generator.get_result();
         debug!("nb pos {:?}", common.all_pos.len());
         debug!("counter {:?}", common.counter);
-        debug!(
-            "nb {:?} {} {:?}",
-            common.winner,
-            if common.can_mate() {
-                "mate"
-            } else {
-                "stalemate/capture resulting in draw"
-            },
-            queue.desired_outcome_pos_to_process.len()
-        );
-        debug!(
-            "nb {:?} mates {:?}",
-            !common.winner,
-            queue.losing_pos_to_process.len()
-        );
         // Should be the same indexer than for `Queue`
         let mut tagger: Tagger = Tagger::new(common);
-        tagger.process_positions(queue);
+        tagger.process_positions();
         tagger.into()
     }
 }

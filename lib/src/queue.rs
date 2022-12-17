@@ -2,17 +2,7 @@ use std::{mem, ops::Deref};
 
 use retroboard::shakmaty::{ByColor, Color};
 
-use crate::{DeIndexer, DefaultReversibleIndexer, IndexWithTurn};
-
-// TODO this whole file should be able to be deleted by working directly on the all_idx vec
-// Because the naive inverser is reversible
-#[derive(Debug, Clone, Default)]
-pub struct Queue<T = DefaultReversibleIndexer> {
-    // depending on the material configuration can be either won or drawn position
-    pub desired_outcome_pos_to_process: Vec<IndexWithTurn>,
-    pub losing_pos_to_process: Vec<IndexWithTurn>,
-    reversible_indexer: T,
-}
+use crate::{DeIndexer, IndexWithTurn};
 
 /// Wrapper containing the informations needed to process "one queue", ie initialise from a vec of desired outcome
 /// Then allow to store the positions that will need to be check in the next pass of the `Tagger` more efficiently than a traditional
@@ -65,14 +55,6 @@ impl OneQueue {
         // debug_assert!(self.mate_in_n.is_empty());
         // self.nb_pass += 1;
         mem::swap(&mut self.mate_in_n, &mut self.mate_in_n_plus_1)
-    }
-}
-
-impl<T: DeIndexer + DeIndexer> Deref for Queue<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        &self.reversible_indexer
     }
 }
 

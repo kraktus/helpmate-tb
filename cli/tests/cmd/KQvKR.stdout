@@ -29,7 +29,7 @@
 [DEBUG helpmate_tb::generation] all_pos_vec capacity: 29560 after shrinking
 [DEBUG helpmate_tb::generation] nb pos 29560
 [DEBUG helpmate_tb::generation] counter 62664
-[DEBUG helpmate_tb::generation] nb Black stalemate/capture resulting in draw 9
+[DEBUG helpmate_tb::generation] nb Black stalemate/capture resulting in draw 2796
 [DEBUG helpmate_tb::generation] nb White mates 27
 [DEBUG helpmate_tb_cli::explore] From Black perspective, win: 0, draw: 49988, lost: 27, unkown: 0
 [DEBUG helpmate_tb_cli::explore] Index density = 84%
@@ -65,7 +65,7 @@
 [DEBUG helpmate_tb::generation] all_pos_vec capacity: 29560 after shrinking
 [DEBUG helpmate_tb::generation] nb pos 29560
 [DEBUG helpmate_tb::generation] counter 62664
-[DEBUG helpmate_tb::generation] nb Black stalemate/capture resulting in draw 109
+[DEBUG helpmate_tb::generation] nb Black stalemate/capture resulting in draw 2896
 [DEBUG helpmate_tb::generation] nb White mates 46
 [DEBUG helpmate_tb_cli::explore] From Black perspective, win: 0, draw: 46091, lost: 46, unkown: 0
 [DEBUG helpmate_tb_cli::explore] Index density = 78%
