@@ -2,8 +2,7 @@
 #![allow(
     clippy::missing_panics_doc,
     clippy::missing_errors_doc,
-    clippy::cast_possible_truncation,
-    clippy::semicolon_if_nothing_returned // should be machine applicable
+    clippy::cast_possible_truncation
 )]
 
 mod common;
