@@ -3,9 +3,7 @@ pub use helpmate_tb::{
     Common, EncoderDecoder, Material, MaterialWinner, Outcome, SideToMoveGetter, TableBaseBuilder,
     UNDEFINED_OUTCOME_BYCOLOR,
 };
-use helpmate_tb::{
-    DeIndexer, Descendants, FileHandler, IndexWithTurn, Indexer, RetrieveOutcome, TablebaseProber,
-};
+use helpmate_tb::{DeIndexer, Descendants, FileHandler, IndexWithTurn, Indexer, RetrieveOutcome};
 use log::{debug, error, info};
 
 use std::path::PathBuf;

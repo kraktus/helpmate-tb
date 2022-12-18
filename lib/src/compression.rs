@@ -90,14 +90,14 @@ impl<T: Write> EncoderDecoder<T> {
 }
 
 impl<T: ReadAt> EncoderDecoder<T> {
-    fn decompress_block_header(&self, byte_offset: u64) -> io::Result<BlockHeader> {
+    fn read_block_header(&self, byte_offset: u64) -> io::Result<BlockHeader> {
         let mut header_buf: [u8; BlockHeader::BYTE_SIZE] = [0; BlockHeader::BYTE_SIZE];
         self.inner.read_exact_at(byte_offset, &mut header_buf)?;
         from_bytes_exact::<BlockHeader>(&header_buf)
     }
 
-    fn decompress_block(&self, byte_offset: u64) -> io::Result<Block> {
-        let block_header = self.decompress_block_header(byte_offset)?;
+    fn read_block(&self, byte_offset: u64) -> io::Result<Block> {
+        let block_header = self.read_block_header(byte_offset)?;
         trace!(
             "size_including_headers {:?}",
             block_header.size_including_headers()
@@ -127,10 +127,10 @@ impl<T: ReadAt> EncoderDecoder<T> {
     ) -> io::Result<Outcome> {
         let mut byte_offset = 0;
         loop {
-            match self.decompress_block_header(byte_offset) {
+            match self.read_block_header(byte_offset) {
                 Ok(block_header) if block_header.idx_is_in_block(idx_with_turn.idx) => {
                     return self
-                        .decompress_block(byte_offset)
+                        .read_block(byte_offset)
                         .and_then(|block| {
                             #[cfg(feature = "cached")]
                             let outcome = block.get_outcome_cached(
@@ -164,7 +164,7 @@ impl<T: ReadAt> EncoderDecoder<T> {
         let mut outcomes = Outcomes::new();
         let mut byte_offset = 0;
         loop {
-            match self.decompress_block(byte_offset) {
+            match self.read_block(byte_offset) {
                 Ok(block) => {
                     byte_offset += to_u64(block.header.size_including_headers());
                     outcomes.extend(block.decompress_outcomes()?);
@@ -412,7 +412,7 @@ mod tests {
         let mut encoder = EncoderDecoder::new(Vec::<u8>::new());
         encoder.compress(&reports).expect("compression failed");
         let decompressed = encoder
-            .decompress_block(0)
+            .read_block(0)
             .expect("block retrieval failed")
             .decompress_outcomes()
             .expect("decompression failed");
