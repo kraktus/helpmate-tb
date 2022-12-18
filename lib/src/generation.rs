@@ -403,11 +403,8 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
         for report_bc in &mut self.common.all_pos.iter_mut() {
             for turn in Color::ALL {
                 let report = report_bc.get_mut(turn);
-                match Report::from(*report) {
-                    Report::Unprocessed(Outcome::Unknown) => {
-                        *report = ReportU8::from(Report::Processed(Outcome::Draw))
-                    }
-                    _ => {}
+                if let Report::Unprocessed(Outcome::Unknown) = Report::from(*report) {
+                    *report = ReportU8::from(Report::Processed(Outcome::Draw))
                 }
             }
         }
