@@ -13,6 +13,13 @@ debug = 1
 overflow-checks = true # allow to easily spot bugs with the indexer
 debug-assertions = true # allow to easily spot bugs with the indexer
 
+[workspace.package]
+authors = ["Kraktus"]
+edition = "2021"
+license = "AGPL-3.0+"
+repository = "https://github.com/kraktus/helpmate-tb"
+version = "0.0.1"
+
 [workspace.dependencies]
 retroboard = "0.2.8"
 log = "0.4"
