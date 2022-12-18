@@ -130,7 +130,7 @@ pub fn handle_symetry(b: &Board) -> (Board, bool) {
     let mut board_check = b.clone();
     let is_black_stronger = is_black_stronger(b.board());
     if is_black_stronger {
-        board_check = swap_color_board(board_check)
+        board_check = swap_color_board(board_check);
     }
     let white_king_sq = board_check.king_of(White).expect("white king");
     let board_transfo_needed = WHITE_KING_SQUARES_TO_TRANSFO[white_king_sq as usize];

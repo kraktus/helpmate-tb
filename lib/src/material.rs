@@ -98,7 +98,7 @@ impl MaterialSide {
                 let mut descendant = self.clone();
                 descendant.by_role.pawn -= 1;
                 *descendant.by_role.get_mut(role) += 1;
-                descendants.push(descendant)
+                descendants.push(descendant);
             }
         }
         // all pieces but king can be taken
@@ -112,7 +112,7 @@ impl MaterialSide {
             if *self.by_role.get(role) > 0 {
                 let mut descendant = self.clone();
                 *descendant.by_role.get_mut(role) -= 1;
-                descendants.push(descendant)
+                descendants.push(descendant);
             }
         }
 
@@ -426,7 +426,7 @@ impl Material {
         for piece in PIECES_ORDER {
             if with_white_king || !(piece == Color::White.king()) {
                 for _ in 0..self.by_piece(piece) {
-                    pieces.push(piece)
+                    pieces.push(piece);
                 }
             }
         }

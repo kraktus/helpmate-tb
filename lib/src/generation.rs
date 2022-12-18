@@ -353,14 +353,14 @@ impl<T: PosHandler<I>, I: Indexer> Generator<T, I> {
         for white_king_sq in A1_D1_D4 {
             let mut new_setup = Setup::empty();
             new_setup.board.set_piece_at(white_king_sq, White.king());
-            self.generate_positions_internal(&piece_vec, &new_setup, (White.king(), white_king_sq))
+            self.generate_positions_internal(&piece_vec, &new_setup, (White.king(), white_king_sq));
         }
         self.pb.finish_and_clear();
         let all_pos_vec_capacity_after_gen = self.common.all_pos.capacity();
         debug!("all_pos_vec capacity after generating: {all_pos_vec_capacity_after_gen}");
         // can this actually happen in practice or will the common use of Index make it panic during the process?
         if all_pos_vec_capacity_after_gen > all_pos_vec_capacity_before_gen {
-            warn!("For material {:?}, all_pos capacity was not enough to generate the positions, before {all_pos_vec_capacity_before_gen}, after {all_pos_vec_capacity_after_gen}", self.common.material)
+            warn!("For material {:?}, all_pos capacity was not enough to generate the positions, before {all_pos_vec_capacity_before_gen}, after {all_pos_vec_capacity_after_gen}", self.common.material);
         }
         while Some(&UNDEFINED_OUTCOME_BYCOLOR) == self.common.all_pos.last() {
             self.common.all_pos.pop();
@@ -404,7 +404,7 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
             for turn in Color::ALL {
                 let report = report_bc.get_mut(turn);
                 if let Report::Unprocessed(Outcome::Unknown) = Report::from(*report) {
-                    *report = ReportU8::from(Report::Processed(Outcome::Draw))
+                    *report = ReportU8::from(Report::Processed(Outcome::Draw));
                 }
             }
         }
@@ -465,7 +465,7 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
                                             fetched_outcome,
                                             desired_outcome + 1,
                                         ))
-                                        .into()
+                                        .into();
                                 }
                                 Report::Processed(_) => (),
                             }
