@@ -38,7 +38,11 @@ impl Generate {
     }
 
     fn gen_one_material(&self, mat: Material) {
-        for winner in self.winner.map(|w| vec![w]).unwrap_or(Color::ALL.into()) {
+        for winner in self
+            .winner
+            .map(|w| vec![w])
+            .unwrap_or_else(|| Color::ALL.into())
+        {
             info!("Building {mat:?} with winner: {winner}");
             // white first, most interesting
             let common = TableBaseBuilder::build(mat.clone(), winner, &self.tb_dir);

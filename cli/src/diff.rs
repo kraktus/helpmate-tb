@@ -35,7 +35,11 @@ pub struct Diff {
 
 impl Diff {
     pub fn run(&self) {
-        for winner in self.winner.map(|w| vec![w]).unwrap_or(Color::ALL.into()) {
+        for winner in self
+            .winner
+            .map(|w| vec![w])
+            .unwrap_or_else(|| Color::ALL.into())
+        {
             info!("Diff-ing {:?} with winner: {winner}", self.material);
             let mat_win = MaterialWinner::new(&self.material, winner);
             let old_file_handler: FileHandler = FileHandler::new(&mat_win, &self.old_tb_dir);

@@ -38,7 +38,7 @@ impl MatOrAll {
             }
             MatOrAll::Mat(mat) => winner
                 .map(|w| vec![w])
-                .unwrap_or(Color::ALL.into())
+                .unwrap_or_else(|| Color::ALL.into())
                 .into_iter()
                 .map(|w| MaterialWinner::new(mat, w))
                 .collect(),
@@ -98,7 +98,11 @@ impl Explore {
                 }
             }
             MatOrAll::Mat(ref mat) => {
-                for winner in self.winner.map(|w| vec![w]).unwrap_or(Color::ALL.into()) {
+                for winner in self
+                    .winner
+                    .map(|w| vec![w])
+                    .unwrap_or_else(|| Color::ALL.into())
+                {
                     let mat_win = MaterialWinner::new(mat, winner);
                     self.stats_one_mat(mat_win);
                 }
