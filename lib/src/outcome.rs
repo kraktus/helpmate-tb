@@ -268,7 +268,7 @@ mod tests {
             Outcome::Undefined,
             Outcome::Unknown,
         ] {
-            println!("{:?}", outcome);
+            println!("{outcome:?}");
             assert_eq!(
                 Report::Unprocessed(outcome),
                 ReportU8::from(Report::Unprocessed(outcome)).into()

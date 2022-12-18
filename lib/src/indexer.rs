@@ -48,7 +48,7 @@ const fn invert_kk_idx(kk_idx: &[[u64; 64]; 10]) -> [ByColor<Square>; 462] {
         // for loops not available in const context
         let mut black_king_sq: usize = 0;
         loop {
-            let idx = kk_idx[white_king_sq as usize][black_king_sq];
+            let idx = kk_idx[white_king_sq][black_king_sq];
             if idx != Z0 {
                 res[idx as usize] = ByColor {
                     white: Square::new(INV_TRIANGLE[white_king_sq] as u32),
