@@ -21,9 +21,9 @@ fn check_checksum() {
             .output()
             .expect("failed to execute md5");
         let checksum_line = String::from_utf8_lossy(&cmd_output.stdout).to_string();
-        let one_checksum = checksum_line.split_once(" ").unwrap().0;
+        let one_checksum = checksum_line.split_once(' ').unwrap().0;
         assert!(
-            checksum.contains(&one_checksum),
+            checksum.contains(one_checksum),
             "{table_name} checksum changed"
         )
     }

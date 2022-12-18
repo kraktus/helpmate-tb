@@ -52,7 +52,7 @@ impl WithBoard for (Board, Color) {
 
 impl<'a> WithBoard for (&'a Board, Color) {
     fn board(&self) -> &Board {
-        &self.0
+        self.0
     }
 }
 

@@ -125,6 +125,7 @@ impl From<Material> for NaiveIndexer {
 
 // should take any board and return the canonical version of it, along with a boolean
 // whose truthness is equal to the fact that black were stronger in the original board
+#[must_use]
 pub fn handle_symetry(b: &Board) -> (Board, bool) {
     let mut board_check = b.clone();
     let is_black_stronger = is_black_stronger(b.board());

@@ -268,7 +268,7 @@ impl Block {
         #[cfg(feature = "cached")]
         let decompressed_outcomes = decompress_outcomes_cached(
             _mat_win.expect("not material winner to set cache key"),
-            &self,
+            self,
         );
         #[cfg(not(feature = "cached"))]
         let decompressed_outcomes = self.decompress_outcomes();
