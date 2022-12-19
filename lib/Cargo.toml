@@ -15,7 +15,7 @@ cached = ["dep:cached"]
 [dependencies]
 retroboard.workspace = true
 arrayvec = { version = "0.7", features = ["serde"] }
-cached = {version = "0.40", features = ["proc_macro"], optional = true}
+cached = {version = "0.41", features = ["proc_macro"], optional = true}
 indicatif = "0.17.2"
 itertools.workspace = true
 log.workspace = true
