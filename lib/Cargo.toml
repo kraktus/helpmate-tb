@@ -22,13 +22,15 @@ log.workspace = true
 serde_json = "1"
 serde = { version = "1.0", features = ["derive"] }
 zstd = "0.11.2"
-deku = {git = "https://github.com/sharksforarms/deku"}
+deku = "0.15.1"
 positioned-io = "0.3"
 
 [dev-dependencies]
 paste.workspace = true
 criterion = { version = "0.4", features = ["html_reports"] }
 binrw = "0.10"
+bincode = "1"
+
 
 [[bin]]
 name = "checksum"

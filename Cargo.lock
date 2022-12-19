@@ -97,6 +97,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bincode"
+version = "1.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "binrw"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -515,8 +524,9 @@ dependencies = [
 
 [[package]]
 name = "deku"
-version = "0.15.0"
-source = "git+https://github.com/sharksforarms/deku#df8775d8f1b350e688c6b224f0a3c02cfab2a457"
+version = "0.15.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3d631ba36587888e2f176cda075d73971c504283efd7d0112997a3fd02372c0"
 dependencies = [
  "bitvec",
  "deku_derive",
@@ -524,8 +534,9 @@ dependencies = [
 
 [[package]]
 name = "deku_derive"
-version = "0.15.0"
-source = "git+https://github.com/sharksforarms/deku#df8775d8f1b350e688c6b224f0a3c02cfab2a457"
+version = "0.15.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9009099da9734d3dc49ce9c8c7f9b12905612c84c6dd4b4c075455743e47840d"
 dependencies = [
  "darling 0.14.2",
  "proc-macro-crate",
@@ -751,6 +762,7 @@ name = "helpmate_tb"
 version = "0.1.0-alpha"
 dependencies = [
  "arrayvec",
+ "bincode",
  "binrw",
  "cached",
  "criterion",

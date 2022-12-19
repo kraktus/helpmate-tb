@@ -418,14 +418,37 @@ mod tests {
         assert_eq!(into_outcomes(reports), decompressed)
     }
 
-    // Too slow even in release mode! With debug information
-    // #[ignore = "too slow to be enabled by default"]
     // #[test]
-    // fn test_file_compression_soundness() {
-    //     let reports = gen_reports(BLOCK_ELEMENTS * 2 + BLOCK_ELEMENTS / 2);
-    //     let mut encoder = EncoderDecoder::new(Vec::<u8>::new());
-    //     encoder.compress(&reports).expect("compression failed");
-    //     let decompressed = encoder.decompress_file().unwrap();
-    //     assert_eq!(into_outcomes(reports), decompressed)
+    // fn test_serilialise_bincode() {
+    //     #[derive(serde::Serialize, serde::Deserialize)]
+    //     struct TestCompression {
+    //         pub a: u16,
+    //         pub b: u8,
+    //         pub c: u8,
+    //     }
+    //     impl TestCompression {
+    //         fn to_bytes_custom<T: Write>(&self, writer: &mut T) {
+    //             writer.write(&self.a.to_ne_bytes()).unwrap();
+    //             writer.write(&self.b.to_ne_bytes()).unwrap();
+    //             writer.write(&self.c.to_ne_bytes()).unwrap();
+    //         }
+    //     }
+    //     let input: Vec<_> = (0..10_0000usize)
+    //         .map(|i| TestCompression {
+    //             a: 10000,
+    //             b: 0,
+    //             c: 0,
+    //         })
+    //         .collect();
+    //     let mut custom = Vec::new();
+    //     for i in input.iter() {
+    //         i.to_bytes_custom(&mut custom)
+    //     }
+    //     let bincode = bincode::serialize(&input).unwrap();
+    //     println!("bincode {:?}", &bincode[0..10]);
+    //     println!("custom {:?}", &custom[0..10]);
+    //     for (i, elem) in custom.into_iter().enumerate() {
+    //         assert_eq!(elem, bincode[i], "at idx {i}, diff");
+    //     }
     // }
 }
