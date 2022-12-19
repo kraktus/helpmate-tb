@@ -202,10 +202,6 @@ impl BlockHeader {
     }
 }
 
-// Empty wrap because `deku` does not implement `DekuWrite` for Vec<T: DekuWrite>
-#[derive(Debug, PartialEq, DekuWrite, Eq)]
-struct RawOutcomes(pub Vec<RawOutcome>);
-
 #[derive(Debug, PartialEq, DekuRead, DekuWrite, Eq, Hash)]
 struct Block {
     header: BlockHeader,
@@ -217,11 +213,14 @@ impl Block {
     pub fn new(outcomes: ReportsSlice, index_from_usize: usize) -> io::Result<Self> {
         let index_from = to_u64(index_from_usize);
         let index_to = to_u64(index_from_usize + outcomes.len());
-        trace!("turning into raw outcomes");
-        let raw_outcomes = RawOutcomes(outcomes.iter().map(RawOutcome::from).collect());
 
-        trace!("turning raw outcomes into bytes");
-        let raw_outcomes_bytes = raw_outcomes.to_bytes().unwrap();
+        trace!("turning outcomes into bytes");
+        let raw_outcomes_bytes: Vec<u8> = outcomes
+            .iter()
+            .map(RawOutcome::from)
+            .flat_map(|raw_outcome| raw_outcome.to_bytes().unwrap())
+            .collect();
+
         trace!("Compressing block");
         encode_all(raw_outcomes_bytes.as_slice(), 21).map(|compressed_outcomes| {
             let block_size = to_u64(compressed_outcomes.len());
