@@ -1,8 +1,16 @@
+use std::io::{Cursor, Write};
+
+use binrw::{
+    BinRead,  // trait for reading
+    BinWrite, // trait for writing
+    BinWriterExt,
+};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use deku::{prelude::*, DekuRead, DekuWrite};
 use helpmate_tb::{handle_symetry, Indexer, Material, NaiveIndexer, SideToMove, Table};
 use retroboard::RetroBoard;
 
-pub fn bench_indexers(c: &mut Criterion) {
+fn bench_indexers(c: &mut Criterion) {
     let fens = [
         "8/8/8/8/8/8/8/KNBk4 w - - 0 1",
         "8/8/2B5/3N4/8/2K2k2/8/8 w - - 0 1",
@@ -67,5 +75,56 @@ pub fn bench_indexers(c: &mut Criterion) {
     group.finish()
 }
 
-criterion_group!(benches, bench_indexers);
+#[derive(DekuRead, BinRead, BinWrite, DekuWrite)]
+struct TestCompression {
+    pub a: u64,
+    pub b: u64,
+    pub c: u64,
+}
+
+impl TestCompression {
+    fn to_bytes_custom<T: Write>(&self, writer: &mut T) {
+        writer.write(&self.a.to_ne_bytes()).unwrap();
+        writer.write(&self.b.to_ne_bytes()).unwrap();
+        writer.write(&self.c.to_ne_bytes()).unwrap();
+    }
+}
+
+fn bench_compression(c: &mut Criterion) {
+    let input: Vec<_> = (0..10_0000)
+        .map(|i| TestCompression {
+            a: i,
+            b: i + 1,
+            c: i + 2,
+        })
+        .collect();
+    {
+        let mut group = c.benchmark_group("Compression");
+        group.bench_function("deku", |b| {
+            b.iter(|| {
+                let _: Vec<u8> = input
+                    .iter()
+                    .flat_map(|x| x.to_bytes().unwrap().into_iter())
+                    .collect();
+            })
+        });
+        group.bench_function("binrw", |b| {
+            b.iter(|| {
+                let mut buf = Cursor::new(Vec::new());
+                buf.write_le(&input).unwrap();
+            })
+        });
+        group.bench_function("custom", |b| {
+            b.iter(|| {
+                let mut buf = Vec::new();
+                for i in input.iter() {
+                    i.to_bytes_custom(&mut buf)
+                }
+            })
+        });
+        group.finish()
+    }
+}
+
+criterion_group!(benches, bench_indexers, bench_compression);
 criterion_main!(benches);

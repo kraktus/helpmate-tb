@@ -3,6 +3,7 @@ use std::io::{self, ErrorKind::InvalidData, Write};
 #[cfg(feature = "cached")]
 use cached::proc_macro::cached;
 use deku::bitvec::BitView;
+use deku::ctx::BitSize;
 use deku::{ctx::Limit, prelude::*};
 use log::trace;
 use positioned_io::ReadAt;
@@ -186,8 +187,7 @@ struct BlockHeader {
 }
 
 impl BlockHeader {
-    // TODO replace by BitSize::of::<BlockHeader>() which is now const
-    const BYTE_SIZE: usize = 8 * 3; // const instead of using BitSize::of::<BlockHeader>() for speed I guess
+    const BYTE_SIZE: usize = BitSize::of::<BlockHeader>().0 / 8;
 
     pub fn size_including_headers(&self) -> usize {
         Self::BYTE_SIZE + self.block_size as usize
