@@ -5,7 +5,7 @@ use binrw::{
     BinWrite, // trait for writing
     BinWriterExt,
 };
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
 use deku::{bitvec::BitView, ctx::Limit, prelude::*, DekuRead, DekuWrite};
 use helpmate_tb::{handle_symetry, Indexer, Material, NaiveIndexer, SideToMove, Table};
 use retroboard::RetroBoard;
@@ -184,12 +184,16 @@ fn bench_deserialise(c: &mut Criterion) {
         })
     });
     let mut binrw = Cursor::new(custom.clone());
-    group.bench_function("custom", |b| {
-        b.iter(|| {
-            for _ in 0..10_0000 {
-                TestCompression::from_bytes_custom(&mut custom.as_slice());
-            }
-        })
+    group.bench_function("custom", move |b| {
+        b.iter_batched(
+            || custom.clone(),
+            |mut custom_input| {
+                for _ in 0..10_0000 {
+                    TestCompression::from_bytes_custom(&mut custom_input.as_slice());
+                }
+            },
+            BatchSize::SmallInput,
+        );
     });
     //     group.bench_function("binrw", |b| {
     //     b.iter(|| {
