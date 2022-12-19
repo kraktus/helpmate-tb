@@ -4,7 +4,7 @@ Generating chess helpmate endgame tablebase.
 
 ## Status
 
-Alpha, with the caveats it means. It it advised to use the latest commit on master that pass the CI. Currently only able to generate pawnless positions
+Alpha, with the caveats it entails. It it advised to use the latest commit on master that pass the CI. Currently only able to generate pawnless positions
 
 ## Usage
 
