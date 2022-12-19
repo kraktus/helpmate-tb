@@ -18,7 +18,7 @@ authors = ["Kraktus"]
 edition = "2021"
 license = "AGPL-3.0+"
 repository = "https://github.com/kraktus/helpmate-tb"
-version = "0.0.1"
+version = "0.1.0-alpha"
 
 [workspace.dependencies]
 retroboard = "0.2.8"
