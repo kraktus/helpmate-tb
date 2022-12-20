@@ -37,5 +37,9 @@ name = "checksum"
 path = "src/bin/checksum.rs"
 
 [[bench]]
-name = "bench"
+name = "indexer"
+harness = false
+
+[[bench]]
+name = "serialise"
 harness = false
