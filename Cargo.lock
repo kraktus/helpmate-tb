@@ -1270,9 +1270,9 @@ dependencies = [
 
 [[package]]
 name = "retroboard"
-version = "0.2.8"
+version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "598bbca5cafd86b98d5d82d5a3f105e3d000bb2758dde6206742f5d9b0f29f10"
+checksum = "afdfeb86919a3fc6b598c77090028984b94d6f8326d85352ea0fb4551005eb60"
 dependencies = [
  "arrayvec",
  "lazy_static",
