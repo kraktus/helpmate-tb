@@ -2,6 +2,7 @@ use std::fmt;
 use std::path::Path;
 use std::{collections::HashMap, str::FromStr};
 
+use log::trace;
 use positioned_io::RandomAccessFile;
 use retroboard::shakmaty::{ByColor, Chess, Color, Position};
 
@@ -20,6 +21,7 @@ impl<T: From<Material>> FileHandler<T> {
     #[must_use]
     pub fn new(mat: &MaterialWinner, tablebase_dir: &Path) -> Self {
         let table_path = tablebase_dir.join(format!("{mat:?}"));
+        trace!("Creating new FileHandler for {table_path:?}");
         let raf = RandomAccessFile::open(&table_path).unwrap_or_else(|e| panic!("{e}, Most probably {table_path:?} not found, use `--recursive` option to regenerate descendants"));
         let outcomes = EncoderDecoder::new(raf)
             .decompress_file()

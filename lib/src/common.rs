@@ -1,6 +1,7 @@
 use crate::{indexer::Indexer, DefaultIndexer, Material, Reports, UNDEFINED_OUTCOME_BYCOLOR};
 
 use indicatif::{ProgressBar, ProgressStyle};
+use log::trace;
 use retroboard::shakmaty::Color;
 
 #[derive(Debug)]
@@ -16,6 +17,7 @@ pub struct Common<T = DefaultIndexer> {
 impl<T: From<Material>> Common<T> {
     #[must_use]
     pub fn new(material: Material, winner: Color) -> Self {
+        trace!("Creating a new `Common` instance");
         Self {
             all_pos: vec![UNDEFINED_OUTCOME_BYCOLOR; get_estimate_nb_pos(&material)],
             winner,
