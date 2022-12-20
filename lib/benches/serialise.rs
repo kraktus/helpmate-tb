@@ -5,10 +5,9 @@ use binrw::{
     BinWrite, // trait for writing
     BinWriterExt,
 };
-use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 use deku::{bitvec::BitView, ctx::Limit, prelude::*, DekuRead, DekuWrite};
-use helpmate_tb::{handle_symetry, Indexer, Material, NaiveIndexer, SideToMove, Table};
-use retroboard::RetroBoard;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(DekuRead, BinRead, BinWrite, DekuWrite, Serialize, Deserialize)]
@@ -123,7 +122,7 @@ fn bench_deserialise(c: &mut Criterion) {
     group.bench_function("custom", move |b| {
         b.iter_batched(
             || custom.clone(),
-            |mut custom_input| {
+            |custom_input| {
                 for _ in 0..10_0000 {
                     Test::from_bytes_custom(&mut custom_input.as_slice());
                 }

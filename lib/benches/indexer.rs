@@ -1,15 +1,7 @@
-use std::io::{Cursor, IoSliceMut, Read, Write};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
-use binrw::{
-    BinRead,  // trait for reading
-    BinWrite, // trait for writing
-    BinWriterExt,
-};
-use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
-use deku::{bitvec::BitView, ctx::Limit, prelude::*, DekuRead, DekuWrite};
 use helpmate_tb::{handle_symetry, Indexer, Material, NaiveIndexer, SideToMove, Table};
 use retroboard::RetroBoard;
-use serde::{Deserialize, Serialize};
 
 fn bench_indexers(c: &mut Criterion) {
     let fens = [
