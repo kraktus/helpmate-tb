@@ -25,6 +25,8 @@ pub struct Generate {
         help = "Color of the expected winner. If no color is provided, will search for both"
     )]
     winner: Option<Color>,
+    #[arg(long, help = "Do not regenerate existing tables")]
+    do_not_regenerate: bool,
 }
 
 impl Generate {
@@ -43,17 +45,20 @@ impl Generate {
             .map(|w| vec![w])
             .unwrap_or_else(|| Color::ALL.into())
         {
-            info!("Building {mat:?} with winner: {winner}");
-            // white first, most interesting
-            let common = TableBaseBuilder::build(mat.clone(), winner, &self.tb_dir);
-            let mat_win = MaterialWinner::new(&common.material, common.winner);
-            let mut encoder = EncoderDecoder::new(
-                File::create(self.tb_dir.join(format!("{mat_win:?}"))).unwrap(),
-            );
-            encoder
-                .compress(&common.all_pos)
-                .expect("Compression failed for mat {mat:?}");
-            stats(mat_win, None, &common.all_pos, None)
+            let mat_win = MaterialWinner::new(&mat, winner);
+            let table_path = self.tb_dir.join(format!("{mat_win:?}"));
+            if !table_path.exists() || !self.do_not_regenerate {
+                info!("Building {mat:?} with winner: {winner}");
+                // white first, most interesting
+                let common = TableBaseBuilder::build(mat.clone(), winner, &self.tb_dir);
+                let mut encoder = EncoderDecoder::new(File::create(table_path).unwrap());
+                encoder
+                    .compress(&common.all_pos)
+                    .expect("Compression failed for mat {mat:?}");
+                stats(mat_win, None, &common.all_pos, None)
+            } else {
+                info!("Skipping {mat:?} with winner: {winner}")
+            }
         }
     }
 }
