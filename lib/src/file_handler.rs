@@ -1,10 +1,10 @@
 use std::fmt;
 use std::path::Path;
-use std::{collections::HashMap, str::FromStr};
+use std::str::FromStr;
 
 use log::trace;
 use positioned_io::RandomAccessFile;
-use retroboard::shakmaty::{ByColor, Chess, Color, Position};
+use retroboard::shakmaty::{Chess, Color, Position};
 use rustc_hash::FxHashMap;
 
 use crate::{
