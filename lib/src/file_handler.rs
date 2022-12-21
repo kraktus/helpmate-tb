@@ -207,7 +207,6 @@ mod tests {
             .unwrap()
             .into_position(Standard)
             .unwrap();
-        let material = Material::from_board(chess.board());
         let mut descendants: Descendants = Descendants::new(&tb_test_dir());
         let (fetched_outcome, are_all_moves_capture) = descendants
             .outcome_from_captures_promotion(&chess, winner)
