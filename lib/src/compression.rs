@@ -282,7 +282,9 @@ impl Block {
     }
 
     pub fn decompress_outcomes(&self) -> io::Result<Outcomes> {
+        trace!("decompressing outcomes");
         decode_all(self.compressed_outcomes.as_slice()).and_then(|decompressed_outcomes_bytes| {
+            trace!("finished decompressing outcomes");
             Vec::<RawOutcome>::read(
                 decompressed_outcomes_bytes.view_bits(),
                 Limit::new_count(self.header.nb_elements()),
