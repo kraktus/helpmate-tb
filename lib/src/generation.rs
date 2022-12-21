@@ -152,7 +152,7 @@ pub trait PosHandler<I> {
     fn handle_position(
         &mut self,
         common: &mut Common<I>,
-        tablebase: &mut Descendants,
+        tablebase: &Descendants,
         chess: &Chess,
         idx: IndexWithTurn,
         all_pos_idx: usize,
@@ -167,7 +167,7 @@ impl<I> PosHandler<I> for DefaultGeneratorHandler {
     fn handle_position(
         &mut self,
         common: &mut Common<I>,
-        tablebase: &mut Descendants,
+        tablebase: &Descendants,
         chess: &Chess,
         _: IndexWithTurn,
         all_pos_idx: usize,
@@ -231,7 +231,7 @@ impl<T: PosHandler<I>, I: Indexer> Generator<T, I> {
         let pb = common.get_progress_bar().with_message("Gen pos");
         Self {
             pb,
-            tablebase: Descendants::new(tablebase_dir),
+            tablebase: Descendants::new(&common.material, tablebase_dir),
             common,
             pos_handler,
         }
@@ -327,7 +327,7 @@ impl<T: PosHandler<I>, I: Indexer> Generator<T, I> {
                     // only handle the position if it's not a duplicate
                     self.pos_handler.handle_position(
                         &mut self.common,
-                        &mut self.tablebase,
+                        &self.tablebase,
                         &chess,
                         idx,
                         all_pos_idx,

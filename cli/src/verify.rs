@@ -38,7 +38,7 @@ impl Verify {
             mat_win.material, mat_win.winner
         );
         let file_handler: FileHandler = FileHandler::new(&mat_win, &self.tb_dir);
-        let mut descendants: Descendants = Descendants::new(&self.tb_dir);
+        let descendants: Descendants = Descendants::new(&mat_win.material, &self.tb_dir);
         debug!("outcomes len: {}", file_handler.outcomes.len());
         for (idx, by_color_outcome) in file_handler.outcomes.iter().enumerate() {
             for turn in Color::ALL {

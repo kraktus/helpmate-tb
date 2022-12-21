@@ -69,7 +69,7 @@ impl<I: Indexer> PosHandler<I> for CheckIndexerPosHandler {
     fn handle_position(
         &mut self,
         common: &mut Common<I>,
-        _: &mut Descendants,
+        _: &Descendants,
         chess: &Chess,
         _: IndexWithTurn,
         all_pos_idx: usize,
