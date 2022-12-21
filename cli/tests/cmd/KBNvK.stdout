@@ -1,6 +1,6 @@
 [INFO  helpmate_tb_cli::generate] Building KBNvK with winner: white
-[DEBUG helpmate_tb::generation] all_pos_vec capacity before generating: 2168166
-[DEBUG helpmate_tb::generation] all_pos_vec capacity after generating: 2168166
+[DEBUG helpmate_tb::generation] all_pos_vec capacity before generating: 2191992
+[DEBUG helpmate_tb::generation] all_pos_vec capacity after generating: 2191992
 [DEBUG helpmate_tb::generation] all_pos_vec capacity: 1891839 after shrinking
 [DEBUG helpmate_tb::generation] nb pos 1891839
 [DEBUG helpmate_tb::generation] counter 3813096
@@ -26,8 +26,8 @@
 [DEBUG helpmate_tb_cli::explore] Win(15), 2989
 [DEBUG helpmate_tb_cli::explore] Win(16), 96
 [INFO  helpmate_tb_cli::generate] Building KBNvK with winner: black
-[DEBUG helpmate_tb::generation] all_pos_vec capacity before generating: 2168166
-[DEBUG helpmate_tb::generation] all_pos_vec capacity after generating: 2168166
+[DEBUG helpmate_tb::generation] all_pos_vec capacity before generating: 2191992
+[DEBUG helpmate_tb::generation] all_pos_vec capacity after generating: 2191992
 [DEBUG helpmate_tb::generation] all_pos_vec capacity: 1891839 after shrinking
 [DEBUG helpmate_tb::generation] nb pos 1891839
 [DEBUG helpmate_tb::generation] counter 3813096
