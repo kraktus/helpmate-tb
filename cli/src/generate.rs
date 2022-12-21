@@ -50,7 +50,7 @@ impl Generate {
             if !table_path.exists() || !self.do_not_regenerate {
                 info!("Building {mat:?} with winner: {winner}");
                 // white first, most interesting
-                let common = TableBaseBuilder::build(mat.clone(), winner, &self.tb_dir);
+                let common = TableBaseBuilder::build(mat_win.clone(), &self.tb_dir);
                 let mut encoder = EncoderDecoder::new(File::create(table_path).unwrap());
                 encoder
                     .compress(&common.all_pos)

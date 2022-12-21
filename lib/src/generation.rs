@@ -1,7 +1,8 @@
 use crate::{
+    common,
     indexer::{DeIndexer, Indexer, A1_D1_D4},
-    Common, DefaultReversibleIndexer, Descendants, Material, Outcome, OutcomeU8, Report, ReportU8,
-    A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
+    Common, DefaultReversibleIndexer, Descendants, Material, MaterialWinner, Outcome, OutcomeU8,
+    Report, ReportU8, A1_H8_DIAG, UNDEFINED_OUTCOME_BYCOLOR,
 };
 use log::{debug, warn};
 use retroboard::shakmaty::{
@@ -219,19 +220,28 @@ pub struct Generator<T, I> {
     pos_handler: T,
 }
 
-impl<I: Indexer> Generator<DefaultGeneratorHandler, I> {
+impl<I: Indexer + From<Material>> Generator<DefaultGeneratorHandler, I> {
     #[must_use]
-    pub fn new(common: Common<I>, tablebase_path: &Path) -> Self {
-        Self::new_with_pos_handler(DefaultGeneratorHandler, common, tablebase_path)
+    pub fn new(mat_win: MaterialWinner, tablebase_path: &Path) -> Self {
+        Self::new_with_pos_handler(DefaultGeneratorHandler, mat_win, tablebase_path)
     }
 }
 
-impl<T: PosHandler<I>, I: Indexer> Generator<T, I> {
-    pub fn new_with_pos_handler(pos_handler: T, common: Common<I>, tablebase_dir: &Path) -> Self {
+impl<T: PosHandler<I>, I: Indexer + From<Material>> Generator<T, I> {
+    pub fn new_with_pos_handler(
+        pos_handler: T,
+        mat_win: MaterialWinner,
+        tablebase_dir: &Path,
+    ) -> Self {
+        // it's important to initialise `Descendants` before `Common`
+        // because decompressing a table with zstd takes quite some RAM, which we will not have much left
+        // after `Common` being created
+        let tablebase = Descendants::new(&mat_win, tablebase_dir);
+        let common: Common<I> = Common::new(mat_win);
         let pb = common.get_progress_bar().with_message("Gen pos");
         Self {
             pb,
-            tablebase: Descendants::new(&common.material_winner(), tablebase_dir),
+            tablebase,
             common,
             pos_handler,
         }
@@ -504,9 +514,8 @@ pub struct TableBaseBuilder;
 
 impl TableBaseBuilder {
     #[must_use]
-    pub fn build(material: Material, winner: Color, tablebase_dir: &Path) -> Common {
-        let common = Common::new(material, winner);
-        let mut generator = Generator::new(common, tablebase_dir);
+    pub fn build(mat_win: MaterialWinner, tablebase_dir: &Path) -> Common {
+        let mut generator = Generator::new(mat_win, tablebase_dir);
         generator.generate_positions();
         let (common, _): (Common, DefaultGeneratorHandler) = generator.get_result();
         debug!("nb pos {:?}", common.all_pos.len());

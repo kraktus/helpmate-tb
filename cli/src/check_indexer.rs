@@ -21,7 +21,7 @@ use retroboard::{
 
 use helpmate_tb::{
     to_chess_with_illegal_checks, Common, Descendants, Generator, IndexWithTurn, Indexer, Material,
-    NaiveIndexer, PosHandler, Table,
+    MaterialWinner, NaiveIndexer, PosHandler, Table,
 };
 
 type Transfo = (
@@ -188,10 +188,10 @@ macro_rules! check_index {
         paste::paste! {
         fn [<check_mat_ $suffix>](&self, mat: Material) {
             info!("looking at {mat:?}");
-            let common: Common<$indexer> = Common::new(mat.clone(), Color::White);
+            let mat_win = MaterialWinner::new(&mat, Color::White);
             let mut gen: Generator<CheckIndexerPosHandler, $indexer> = Generator::new_with_pos_handler(
                 CheckIndexerPosHandler::default(),
-                common,
+                mat_win,
                 &self.tb_dir,
             );
             gen.generate_positions();

@@ -17,15 +17,14 @@ pub struct Common<T = DefaultIndexer> {
 
 impl<T: From<Material>> Common<T> {
     #[must_use]
-    pub fn new(material: Material, winner: Color) -> Self {
+    pub fn new(mat_win: MaterialWinner) -> Self {
         trace!("Creating a new `Common` instance");
-        let mat_win = MaterialWinner::new(&material, winner);
         Self {
-            all_pos: vec![UNDEFINED_OUTCOME_BYCOLOR; get_estimate_nb_pos(&material)],
-            mat_win,
+            all_pos: vec![UNDEFINED_OUTCOME_BYCOLOR; get_estimate_nb_pos(&mat_win.material)],
             counter: 0,
-            can_mate: material.can_mate(winner),
-            indexer: T::from(material.clone()),
+            can_mate: mat_win.material.can_mate(mat_win.winner),
+            indexer: T::from(mat_win.material.clone()),
+            mat_win,
         }
     }
 }

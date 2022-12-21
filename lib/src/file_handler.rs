@@ -92,6 +92,7 @@ impl<T: Indexer + From<Material>> Descendants<T> {
             }
         }
 
+        trace!("All descendants decompressed and loaded");
         Self(hash_map)
     }
 
