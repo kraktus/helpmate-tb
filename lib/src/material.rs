@@ -307,6 +307,15 @@ impl Material {
     }
 
     #[must_use]
+    pub fn can_need_opposite_winner(&self) -> bool {
+        self.by_color
+            .white
+            .count()
+            .abs_diff(self.by_color.black.count())
+            < 2
+    }
+
+    #[must_use]
     pub fn has_pawns(&self) -> bool {
         self.by_color.iter().any(MaterialSide::has_pawns)
     }

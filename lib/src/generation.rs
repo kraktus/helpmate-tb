@@ -175,7 +175,7 @@ impl<I> PosHandler<I> for DefaultGeneratorHandler {
         match chess.outcome() {
             Some(ChessOutcome::Decisive { winner }) => {
                 // we know the result is exact, since the game is over
-                let outcome = Report::Unprocessed(if winner == common.winner {
+                let outcome = Report::Unprocessed(if winner == common.winner() {
                     assert!(common.can_mate());
                     Outcome::Win(0)
                 } else {
@@ -199,7 +199,7 @@ impl<I> PosHandler<I> for DefaultGeneratorHandler {
             }
             None => {
                 let (fetched_outcome, _) = tablebase
-                    .outcome_from_captures_promotion(chess, common.winner)
+                    .outcome_from_captures_promotion(chess, common.winner())
                     .unwrap_or((Outcome::Unknown, false));
                 // fetched outcome should always be unprocessed
                 // in case of **drawn** unreachable positions (and only when we try to win),
@@ -231,7 +231,7 @@ impl<T: PosHandler<I>, I: Indexer> Generator<T, I> {
         let pb = common.get_progress_bar().with_message("Gen pos");
         Self {
             pb,
-            tablebase: Descendants::new(&common.material, tablebase_dir),
+            tablebase: Descendants::new(&common.material_winner(), tablebase_dir),
             common,
             pos_handler,
         }
@@ -285,7 +285,7 @@ impl<T: PosHandler<I>, I: Indexer> Generator<T, I> {
         }
         // Do not restrict duplicate pieces as they already have other constraints
         // and combining with this one resulting in the generating function not to be surjective anymore
-        else if (self.common.material.by_piece(piece) == 1)
+        else if (self.common.material().by_piece(piece) == 1)
             && A1_H8_DIAG.is_superset(board.occupied())
         {
             A1_H1_H8
@@ -336,8 +336,8 @@ impl<T: PosHandler<I>, I: Indexer> Generator<T, I> {
                     assert!(
                         // In positions without pawns with duplicate pieces, duplicate indexes are tolerated
                         // because could not find a way to generate positions without those
-                        !self.common.material.has_pawns()
-                            && self.common.material.min_like_man() > 1,
+                        !self.common.material().has_pawns()
+                            && self.common.material().min_like_man() > 1,
                         "Index {all_pos_idx} already generated, board: {rboard:?}"
                     );
                 }
@@ -346,7 +346,7 @@ impl<T: PosHandler<I>, I: Indexer> Generator<T, I> {
     }
 
     pub fn generate_positions(&mut self) {
-        let piece_vec = self.common.material.pieces_without_white_king();
+        let piece_vec = self.common.material().pieces_without_white_king();
         self.common.counter = 0;
         let all_pos_vec_capacity_before_gen = self.common.all_pos.capacity();
         debug!("all_pos_vec capacity before generating: {all_pos_vec_capacity_before_gen}");
@@ -360,7 +360,7 @@ impl<T: PosHandler<I>, I: Indexer> Generator<T, I> {
         debug!("all_pos_vec capacity after generating: {all_pos_vec_capacity_after_gen}");
         // can this actually happen in practice or will the common use of Index make it panic during the process?
         if all_pos_vec_capacity_after_gen > all_pos_vec_capacity_before_gen {
-            warn!("For material {:?}, all_pos capacity was not enough to generate the positions, before {all_pos_vec_capacity_before_gen}, after {all_pos_vec_capacity_after_gen}", self.common.material);
+            warn!("For material {:?}, all_pos capacity was not enough to generate the positions, before {all_pos_vec_capacity_before_gen}, after {all_pos_vec_capacity_after_gen}", self.common.material());
         }
         while Some(&UNDEFINED_OUTCOME_BYCOLOR) == self.common.all_pos.last() {
             self.common.all_pos.pop();
@@ -387,7 +387,7 @@ impl<T: From<Material>> Tagger<T> {
     pub fn new(common: Common) -> Self {
         let pb = common.get_progress_bar().with_message("Tagging pos");
         Self {
-            reversible_indexer: T::from(common.material.clone()),
+            reversible_indexer: T::from(common.material().clone()),
             common,
             pb,
         }
@@ -444,7 +444,7 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
                         }
                         let rboard = self
                             .reversible_indexer
-                            .restore(&self.common.material, idx_with_turn);
+                            .restore(&self.common.material(), idx_with_turn);
                         for m in rboard.legal_unmoves() {
                             let mut rboard_after_unmove = rboard.clone();
                             rboard_after_unmove.push(&m);
@@ -475,11 +475,16 @@ impl<T: Indexer + DeIndexer> Tagger<T> {
             }
 
             if desired_outcome == Outcome::Win(0) {
-                debug!("nb {:?} mate {:?}", self.common.winner, self.common.counter);
+                debug!(
+                    "nb {:?} mate {:?}",
+                    self.common.winner(),
+                    self.common.counter
+                );
             } else if desired_outcome == Outcome::Lose(0) {
                 debug!(
                     "nb {:?} mates {:?}",
-                    !self.common.winner, self.common.counter
+                    !self.common.winner(),
+                    self.common.counter
                 );
             }
 

@@ -5,6 +5,7 @@ use std::{collections::HashMap, str::FromStr};
 use log::trace;
 use positioned_io::RandomAccessFile;
 use retroboard::shakmaty::{ByColor, Chess, Color, Position};
+use rustc_hash::FxHashMap;
 
 use crate::{
     indexer::Indexer, is_black_stronger, DefaultIndexer, EncoderDecoder, Material, Outcome,
@@ -72,30 +73,32 @@ impl fmt::Debug for MaterialWinner {
 }
 
 #[derive(Debug)]
-pub struct Descendants<T = DefaultIndexer>(HashMap<Material, ByColor<FileHandler<T>>>);
+pub struct Descendants<T = DefaultIndexer>(FxHashMap<MaterialWinner, FileHandler<T>>);
 
 impl<T: Indexer + From<Material>> Descendants<T> {
     #[must_use]
-    pub fn new(mat: &Material, tablebase_dir: &Path) -> Self {
-        Self(
-            mat.descendants_not_draw()
-                .map(|m| {
-                    (
-                        m.clone(),
-                        ByColor::new_with(|winner| {
-                            let mat_winner = MaterialWinner::new(&m, winner);
-                            FileHandler::new(&mat_winner, tablebase_dir)
-                        }),
-                    )
-                })
-                .collect(),
-        )
+    pub fn new(mat: &MaterialWinner, tablebase_dir: &Path) -> Self {
+        let MaterialWinner { material, winner } = mat;
+        let winners: Vec<Color> = if material.can_need_opposite_winner() {
+            Color::ALL.into()
+        } else {
+            vec![*winner]
+        };
+        let mut hash_map: FxHashMap<MaterialWinner, FileHandler<T>> = FxHashMap::default();
+        for m in material.descendants_not_draw() {
+            for w in winners.iter() {
+                let mat_win = MaterialWinner::new(&m, *w);
+                hash_map.insert(mat_win.clone(), FileHandler::new(&mat_win, tablebase_dir));
+            }
+        }
+
+        Self(hash_map)
     }
 
     // For test purpose
     #[must_use]
     pub fn empty() -> Self {
-        Self(HashMap::new())
+        Self(FxHashMap::default())
     }
 
     /// For the given position, compute all moves that are either captures and/or promotion,
@@ -155,11 +158,11 @@ impl<T: Indexer> RetrieveOutcome for Descendants<T> {
         winner: Color,
         flip: bool,
     ) -> std::io::Result<Outcome> {
+        let mat_win = MaterialWinner::new(&mat, winner ^ flip);
         let table_file = self
             .0
-            .get(&mat)
-            .expect("Position to be among descendants")
-            .get(winner ^ flip);
+            .get(&mat_win)
+            .expect("Position to be among descendants");
         let idx = table_file.indexer.encode(pos).usize();
         Ok(table_file.outcomes[idx].get_by_color(pos.turn() ^ flip))
     }
@@ -198,8 +201,8 @@ mod tests {
             .unwrap()
             .into_position(Standard)
             .unwrap();
-        let material = Material::from_board(chess.board());
-        let descendants: Descendants = Descendants::new(&material, &tb_test_dir());
+        let mat_win = MaterialWinner::new(&Material::from_board(chess.board()), winner);
+        let descendants: Descendants = Descendants::new(&mat_win, &tb_test_dir());
         let (fetched_outcome, are_all_moves_capture) = descendants
             .outcome_from_captures_promotion(&chess, winner)
             .unwrap();

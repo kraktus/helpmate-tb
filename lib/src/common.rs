@@ -1,4 +1,6 @@
-use crate::{indexer::Indexer, DefaultIndexer, Material, Reports, UNDEFINED_OUTCOME_BYCOLOR};
+use crate::{
+    indexer::Indexer, DefaultIndexer, Material, MaterialWinner, Reports, UNDEFINED_OUTCOME_BYCOLOR,
+};
 
 use indicatif::{ProgressBar, ProgressStyle};
 use log::trace;
@@ -7,9 +9,8 @@ use retroboard::shakmaty::Color;
 #[derive(Debug)]
 pub struct Common<T = DefaultIndexer> {
     pub all_pos: Reports,
-    pub winner: Color,
     pub counter: u64,
-    pub material: Material,
+    mat_win: MaterialWinner,
     can_mate: bool, // if `true`, the desired outcome is winning, otherwise it's to draw
     indexer: T,
 }
@@ -18,13 +19,13 @@ impl<T: From<Material>> Common<T> {
     #[must_use]
     pub fn new(material: Material, winner: Color) -> Self {
         trace!("Creating a new `Common` instance");
+        let mat_win = MaterialWinner::new(&material, winner);
         Self {
             all_pos: vec![UNDEFINED_OUTCOME_BYCOLOR; get_estimate_nb_pos(&material)],
-            winner,
+            mat_win,
             counter: 0,
             can_mate: material.can_mate(winner),
             indexer: T::from(material.clone()),
-            material,
         }
     }
 }
@@ -32,7 +33,7 @@ impl<T: From<Material>> Common<T> {
 impl<T> Common<T> {
     #[must_use]
     pub fn get_progress_bar(&self) -> ProgressBar {
-        let pb = ProgressBar::new((get_estimate_nb_pos(&self.material) * 2) as u64);
+        let pb = ProgressBar::new((get_estimate_nb_pos(&self.material()) * 2) as u64);
         pb.set_style(
             ProgressStyle::with_template(
                 "{msg} {spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})",
@@ -46,6 +47,21 @@ impl<T> Common<T> {
     #[must_use]
     pub fn can_mate(&self) -> bool {
         self.can_mate
+    }
+
+    #[must_use]
+    pub fn material(&self) -> &Material {
+        &self.mat_win.material
+    }
+
+    #[must_use]
+    pub fn winner(&self) -> Color {
+        self.mat_win.winner
+    }
+
+    #[must_use]
+    pub fn material_winner(&self) -> &MaterialWinner {
+        &self.mat_win
     }
 }
 

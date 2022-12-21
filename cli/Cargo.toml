@@ -24,7 +24,7 @@ log.workspace = true
 itertools.workspace = true
 paste.workspace = true
 from-str-sequential = "0.1.0"
-rustc-hash = "1.1.0"
+rustc-hash.workspace = true
 
 [dev-dependencies]
 trycmd = "0.14"

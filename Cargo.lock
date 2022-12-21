@@ -773,6 +773,7 @@ dependencies = [
  "paste",
  "positioned-io",
  "retroboard",
+ "rustc-hash",
  "serde",
  "serde_json",
  "zstd",
