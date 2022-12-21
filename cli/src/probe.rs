@@ -36,7 +36,7 @@ pub struct Probe {
 impl Probe {
     pub fn run(self) {
         let material = Material::from_board(self.chess.board());
-        let tb_prober: TablebaseProber = TablebaseProber::new(&material, &self.tb_dir);
+        let mut tb_prober: TablebaseProber = TablebaseProber::new(&material, &self.tb_dir);
         let outcome = tb_prober
             .retrieve_outcome(&self.chess, self.winner)
             .unwrap();

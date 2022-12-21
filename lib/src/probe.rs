@@ -69,7 +69,7 @@ impl<T: Indexer + From<Material>> TablebaseProber<T> {
     }
 
     /// Returns one of the best possible line until mate or drawn position
-    pub fn probe(&self, root_pos: &Chess, winner: Color) -> io::Result<(MoveList, Vec<Chess>)> {
+    pub fn probe(&mut self, root_pos: &Chess, winner: Color) -> io::Result<(MoveList, Vec<Chess>)> {
         let mut pos = root_pos.clone();
         let mut move_list = MoveList::new();
         let mut pos_list = Vec::new();
@@ -104,7 +104,7 @@ impl<T: Indexer + From<Material>> TablebaseProber<T> {
 
 impl<T: Indexer> RetrieveOutcome for TablebaseProber<T> {
     fn raw_access_outcome(
-        &self,
+        &mut self,
         mat: Material,
         pos: &Chess,
         winner: Color,
@@ -141,7 +141,7 @@ mod tests {
             .into_position(CastlingMode::Standard)
             .unwrap();
         let material = Material::from_board(chess.board());
-        let tb_prober: TablebaseProber = TablebaseProber::new(&material, &tb_test_dir());
+        let mut tb_prober: TablebaseProber = TablebaseProber::new(&material, &tb_test_dir());
         assert_eq!(tb_prober.retrieve_outcome(&chess, winner).unwrap(), outcome);
     }
 
@@ -151,7 +151,7 @@ mod tests {
             .into_position(CastlingMode::Standard)
             .unwrap();
         let material = Material::from_board(chess.board());
-        let tb_prober: TablebaseProber = TablebaseProber::new(&material, &tb_test_dir());
+        let mut tb_prober: TablebaseProber = TablebaseProber::new(&material, &tb_test_dir());
         let outcome = tb_prober.retrieve_outcome(&chess, winner).unwrap();
         let mainline_len = match outcome {
             Outcome::Win(x) | Outcome::Lose(x) => x as usize,
