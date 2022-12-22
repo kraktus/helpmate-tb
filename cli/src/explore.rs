@@ -135,10 +135,10 @@ pub fn stats<T>(
 ) where
     ByColor<T>: SideToMoveGetter,
 {
-    let mut draw = 0;
-    let mut win = 0;
-    let mut lose = 0;
-    let mut unkown = 0;
+    let mut draw: usize = 0;
+    let mut win: usize = 0;
+    let mut lose: usize = 0;
+    let mut unkown: usize = 0;
     let mut distrib: FxHashMap<Outcome, u64> = FxHashMap::default();
     let mut undefined_outcome: usize = 0;
 
