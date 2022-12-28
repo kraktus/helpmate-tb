@@ -1,10 +1,12 @@
 mod check_indexer;
+mod convert;
 mod diff;
 mod explore;
 mod generate;
 mod probe;
 mod verify;
 
+use convert::Convert;
 use diff::Diff;
 pub use helpmate_tb::{
     Common, EncoderDecoder, Material, MaterialWinner, Outcome, SideToMoveGetter, TableBaseBuilder,
@@ -51,6 +53,7 @@ enum Cmd {
     CheckIndexer(CheckIndexer),
     Diff(Diff),
     Verify(Verify),
+    Convert(Convert),
 }
 
 impl Cmd {
@@ -62,6 +65,7 @@ impl Cmd {
             Self::CheckIndexer(check_index) => check_index.run(),
             Self::Diff(diff) => diff.run(),
             Self::Verify(verify) => verify.run(),
+            Self::Convert(convert) => convert.run(),
         }
     }
 }
