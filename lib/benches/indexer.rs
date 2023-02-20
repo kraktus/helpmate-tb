@@ -68,5 +68,7 @@ fn bench_indexers(c: &mut Criterion) {
     group.finish()
 }
 
-criterion_group!(benches, bench_indexers);
-criterion_main!(benches);
+//criterion_group!(benches, bench_indexers);
+//criterion_main!(benches);
+
+fn main() {}
