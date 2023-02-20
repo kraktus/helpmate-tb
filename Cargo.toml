@@ -3,12 +3,12 @@
 members = ["lib", "cli"]
 
 [profile.dhat] # for profiling only # dhat
-inherits = "release"
 debug = 1
+inherits = "release"
 
 [profile.release]
-overflow-checks = true  # allow to easily spot bugs with the indexer
 debug-assertions = true # allow to easily spot bugs with the indexer
+overflow-checks = true  # allow to easily spot bugs with the indexer
 
 [workspace.package]
 authors = ["Kraktus"]
@@ -18,8 +18,8 @@ repository = "https://github.com/kraktus/helpmate-tb"
 version = "0.1.0-alpha"
 
 [workspace.dependencies]
-retroboard = "0.2.9"
-log = "0.4"
 itertools = "0.10.3"
+log = "0.4"
 paste = "1"
+retroboard = "0.2.9"
 rustc-hash = "1"

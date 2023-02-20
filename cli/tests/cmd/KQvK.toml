@@ -1,2 +1,2 @@
-bin.name = "helpmate_tb_cli"
 args = "--no-time generate -m \"KQvK\" --tb-dir ../table"
+bin.name = "helpmate_tb_cli"

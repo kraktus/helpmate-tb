@@ -9,28 +9,28 @@ version.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["cached"]
 cached = ["dep:cached"]
+default = ["cached"]
 
 [dependencies]
-retroboard.workspace = true
 arrayvec = { version = "0.7", features = ["serde"] }
-cached = {version = "0.41", features = ["proc_macro"], optional = true}
+cached = { version = "0.41", features = ["proc_macro"], optional = true }
+deku = "0.15.1"
 indicatif = "0.17.2"
 itertools.workspace = true
 log.workspace = true
-serde_json = "1"
-serde = { version = "1.0", features = ["derive"] }
-zstd = "0.11.2"
-deku = "0.15.1"
 positioned-io = "0.3"
+retroboard.workspace = true
 rustc-hash.workspace = true
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1"
+zstd = "0.11.2"
 
 [dev-dependencies]
-paste.workspace = true
-criterion = { version = "0.4", features = ["html_reports"] }
-binrw = "0.10"
 bincode = "1"
+binrw = "0.10"
+criterion = { version = "0.4", features = ["html_reports"] }
+paste.workspace = true
 
 
 [[bin]]
@@ -38,9 +38,9 @@ name = "checksum"
 path = "src/bin/checksum.rs"
 
 [[bench]]
-name = "indexer"
 harness = false
+name = "indexer"
 
 [[bench]]
-name = "serialise"
 harness = false
+name = "serialise"
