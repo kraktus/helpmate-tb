@@ -14,7 +14,7 @@ default = ["cached"]
 
 [dependencies]
 arrayvec = { version = "0.7", features = ["serde"] }
-cached = { version = "0.42", features = ["proc_macro"], optional = true }
+cached = { version = "0.44", features = ["proc_macro"], optional = true }
 deku = "0.15.1"
 indicatif = "0.17.2"
 itertools.workspace = true
