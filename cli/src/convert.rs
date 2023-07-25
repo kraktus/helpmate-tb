@@ -3,15 +3,8 @@ pub use helpmate_tb::{
     Common, EncoderDecoder, Material, MaterialWinner, Outcome, SideToMoveGetter, TableBaseBuilder,
     UNDEFINED_OUTCOME_BYCOLOR,
 };
-use helpmate_tb::{DeIndexer, Descendants, FileHandler, IndexWithTurn, Indexer, RetrieveOutcome};
-use log::{debug, error, info};
 
 use std::path::PathBuf;
-
-use retroboard::{
-    shakmaty::{Chess, Color, Position},
-    RetroBoard,
-};
 
 use clap::Args;
 
@@ -29,6 +22,6 @@ pub struct Convert {
 
 impl Convert {
     pub fn run(&self) {
-        for mat_win in self.mat_or_all.mat_winners(&self.tb_dir, None) {}
+        for _mat_win in self.mat_or_all.mat_winners(&self.tb_dir, None) {}
     }
 }
