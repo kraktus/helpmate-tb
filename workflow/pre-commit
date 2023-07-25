@@ -8,4 +8,4 @@
 # To enable this hook, rename this file to "pre-commit".
 
 # Format everything but only re-add files that were previously on stage.
-cargo fmt && (git diff --name-only --cached | xargs git add)
+cargo fmt && (git diff --name-only --cached | xargs git add -f)
