@@ -17,6 +17,7 @@ use clap::Args;
 
 use crate::explore::MatOrAll;
 
+/// Perform sanity checks on given helpmate files
 #[derive(Args, Debug)]
 pub struct Verify {
     #[arg(help = "example \"KQvK\", use special value 'all' to search across all positions", value_parser = MatOrAll::from_str_sequential)]

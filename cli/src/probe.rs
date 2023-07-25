@@ -21,6 +21,7 @@ fn from_fen(fen: &str) -> Result<Chess, &'static str> {
         })
 }
 
+/// Retrieve the outcome of a specific position
 #[derive(Args, Debug)]
 pub struct Probe {
     #[arg(short, long, value_parser = from_fen, name = "fen")]

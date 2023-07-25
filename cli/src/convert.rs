@@ -10,6 +10,7 @@ use clap::Args;
 
 use crate::explore::MatOrAll;
 
+/// Convert back and forth helpmate files using the naive indexer and syzygy indexer
 #[derive(Args, Debug)]
 pub struct Convert {
     #[arg(help = "example \"KQvK\", use special value 'all' to search across all positions", value_parser = MatOrAll::from_str_sequential)]

@@ -11,6 +11,7 @@ use clap::{ArgAction, Args};
 use crate::check_indexer::MatOrNbPieces;
 use crate::explore::stats;
 
+/// Generate helpmate files
 #[derive(Args, Debug)]
 pub struct Generate {
     #[arg(short, long, value_parser = MatOrNbPieces::from_str_sequential, help = "maximum number of pieces on the board, will build all pawnless material config up to this number included.\nOr just a particular material configuration. Note that if a number is given, not compatible with --recursive")]

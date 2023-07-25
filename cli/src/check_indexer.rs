@@ -9,7 +9,7 @@ use std::{
     path::PathBuf,
 };
 
-use clap::Parser;
+use clap::Args;
 
 use from_str_sequential::FromStrSequential;
 use itertools::Itertools;
@@ -140,8 +140,11 @@ enum CliIndexer {
     Syzygy,
 }
 
-#[derive(Parser, Debug)]
-#[command(author, version, about)]
+/// Custom target that perform sanity checks and stats on the indexer
+/// Given a material config, it ouputs:
+/// - The maximum index for the config
+/// - All the positions which are the same modulo symetry, but yield different indexes
+#[derive(Args, Debug)]
 pub struct CheckIndexer {
     #[arg(
         value_parser = MatOrNbPieces::from_str_sequential,

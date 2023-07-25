@@ -161,6 +161,7 @@ impl<T: ReadAt> EncoderDecoder<T> {
         ))
     }
 
+    /// Decompress a helpmate file
     pub fn decompress_file(&self) -> io::Result<Outcomes> {
         let mut outcomes = Outcomes::new();
         let mut byte_offset = 0;

@@ -10,6 +10,7 @@ use retroboard::shakmaty::Color;
 
 use clap::Args;
 
+/// Compare two different helpmate files and ouput positions where the outcome differs
 #[derive(Args, Debug)]
 pub struct Diff {
     #[arg(help = "example \"KQvK\"", value_parser = Material::from_str)]

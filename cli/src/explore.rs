@@ -64,6 +64,7 @@ impl FromStr for Query {
     }
 }
 
+/// Return statistics of selected helpmate files
 #[derive(Args, Debug)]
 pub struct Explore {
     #[arg(help = "example \"KQvK\", use special value 'all' to search across all positions", value_parser = MatOrAll::from_str_sequential)]
@@ -145,7 +146,7 @@ pub fn stats<T>(
     let searched_idx = query.and_then(|q| {
         if let Query::Pos(pos) = q {
             let s_idx = indexer
-                .expect("Not indexer given despite specific position being searched")
+                .expect("No indexer given despite specific position being searched")
                 .encode(pos);
             debug!("Searched idx is {s_idx:?}");
             Some(s_idx)
@@ -160,7 +161,7 @@ pub fn stats<T>(
             match query {
                 Some(Query::Outcome(searched_outcome)) if &outcome == searched_outcome => {
                     let pos = indexer
-                        .expect("Not indexer given despite specific outcome being searched")
+                        .expect("No indexer given despite specific outcome being searched")
                         .restore(
                             &mat_win.material,
                             IndexWithTurn {
