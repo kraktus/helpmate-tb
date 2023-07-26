@@ -8,5 +8,7 @@ dac1ae97275c3da35fc6a561d2deef80  table/KBNvKw
 6dfd3ce2dfbb0a50e5b0955d9a82ea39  table/KQvKRw
 d50cd7ed99f591e7d819a82c90e7b6a5  table/KRRvKb
 4dd04825b124ab500b6e3422be1ed725  table/KRRvKw
+78d13ad43c0a1ca023f94504bb94655b  table/KQRvKb
+0d2bcc67056058111d18b305dbbd1ec3  table/KQRvKw
 a43cdfc4a1cfcff380cb250923f6a0b8  table/KRvKb
 5d68ef6c12aadbf40056bc5b4eeed496  table/KRvKw
