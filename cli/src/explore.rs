@@ -25,6 +25,7 @@ pub enum MatOrAll {
 }
 
 impl MatOrAll {
+    /// List all material configurations requested, restricted to one winner Color if needed
     pub fn mat_winners(&self, tb_dir: &Path, winner: Option<Color>) -> Vec<MaterialWinner> {
         match self {
             MatOrAll::All => {
@@ -68,7 +69,7 @@ impl FromStr for Query {
 #[derive(Args, Debug)]
 pub struct Explore {
     #[arg(help = "example \"KQvK\", use special value 'all' to search across all positions", value_parser = MatOrAll::from_str_sequential)]
-    material: MatOrAll,
+    mat_or_all: MatOrAll,
     #[arg(
         short,
         long,
@@ -88,26 +89,8 @@ pub struct Explore {
 
 impl Explore {
     pub fn run(&self) {
-        match self.material {
-            MatOrAll::All => {
-                let entries = self.tb_dir.read_dir().expect("read_dir call failed");
-                for entry_res in entries {
-                    let mat_win_str = entry_res.unwrap().file_name().into_string().unwrap();
-                    let mat_win =
-                        MaterialWinner::from_str(&mat_win_str).expect("invalid file name");
-                    self.stats_one_mat(mat_win);
-                }
-            }
-            MatOrAll::Mat(ref mat) => {
-                for winner in self
-                    .winner
-                    .map(|w| vec![w])
-                    .unwrap_or_else(|| Color::ALL.into())
-                {
-                    let mat_win = MaterialWinner::new(mat, winner);
-                    self.stats_one_mat(mat_win);
-                }
-            }
+        for mat_win in self.mat_or_all.mat_winners(&self.tb_dir, self.winner) {
+            self.stats_one_mat(mat_win);
         }
     }
 
