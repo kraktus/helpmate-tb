@@ -16,7 +16,7 @@ trycmd-overwrite = [
 ] # feature to allow snapshots tests to be updated via cargo alias
 
 [dependencies]
-clap = { version = "4.0", features = ["derive"] }
+clap = { version = "4.4", features = ["derive"] }
 dhat = { version = "0.3", optional = true }
 env_logger = "0.10"
 from-str-sequential = "0.1.0"
