@@ -93,13 +93,15 @@ impl From<&ReportU8> for Report {
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
 pub enum Outcome {
-    // TODO replace by an enum with 63 elements?
-    Win(u8), // Need to be between 0 and 63 excluded due to conversion to u7
-    Unknown, // Used for positions we don't know the outcome yet. Cannot use `Draw` by default for positions where Drawing is the desired state (eg: KQvKb)
+    /// A position where there's a mate in X plies. TODO check if it's according to the player to move but should be
+    Win(u8), // Need to be between 0 and 63 excluded due to conversion to u7. TODO replace by an enum with 63 elements?
+    /// Used for positions we don't know the outcome yet.
+    /// Cannot use `Draw` by default for positions where Drawing is the desired state (eg: KQvKb)
+    Unknown,
     Draw,
-    // TODO replace by an enum with 63 elements?
-    Lose(u8),  // Need to be between 0 and **62** excluded due to conversion to u7
-    Undefined, // Used for illegal positions. Should we use Option<Outcome> without that variant instead?
+    Lose(u8), // Need to be between 0 and **62** excluded due to conversion to u7. TODO replace by an enum with 63 elements?
+    /// Used for illegal positions. Should we use Option<Outcome> without that variant instead?
+    Undefined,
 }
 
 pub const UNDEFINED_OUTCOME_BYCOLOR: ByColor<ReportU8> = ByColor {

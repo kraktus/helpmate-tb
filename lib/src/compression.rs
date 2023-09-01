@@ -11,7 +11,7 @@ use retroboard::shakmaty::ByColor;
 use zstd::stream::{decode_all, encode_all};
 
 use crate::{IndexWithTurn, Outcome};
-use crate::{MaterialWinner, OutcomeU8, Outcomes, Report, ReportU8, Reports, ReportsSlice};
+use crate::{MaterialWinner, OutcomeU8, Outcomes, Report, ReportU8};
 
 // in bytes, the size of the uncompressed block we want
 const BLOCK_SIZE: usize = 500 * 1_000_000;
@@ -31,8 +31,9 @@ const CACHE_SIZE: usize = 4 * 1_000_000_000;
 const CACHE_ELEMENTS: usize = CACHE_SIZE / BLOCK_SIZE;
 
 /// Deku compatible struct
+// public due to bounds on `EncoderDecoder::compress` and `Block::new`
 #[derive(Debug, Copy, Clone, PartialEq, DekuRead, DekuWrite, Eq)]
-struct RawOutcome {
+pub struct RawOutcome {
     black: u8,
     white: u8,
 }
@@ -43,6 +44,15 @@ impl From<&ByColor<ReportU8>> for RawOutcome {
         Self {
             black: OutcomeU8::from(Report::from(c.black).outcome()).as_raw_u8(),
             white: OutcomeU8::from(Report::from(c.white).outcome()).as_raw_u8(),
+        }
+    }
+}
+
+impl From<&ByColor<OutcomeU8>> for RawOutcome {
+    fn from(c: &ByColor<OutcomeU8>) -> Self {
+        Self {
+            black: c.black.as_raw_u8(),
+            white: c.white.as_raw_u8(),
         }
     }
 }
@@ -81,7 +91,10 @@ fn to_u64(x: usize) -> u64 {
 }
 
 impl<T: Write> EncoderDecoder<T> {
-    pub fn compress(&mut self, outcomes: &Reports) -> io::Result<()> {
+    pub fn compress<'a, U>(&mut self, outcomes: &'a [U]) -> io::Result<()>
+    where
+        &'a U: Into<RawOutcome>,
+    {
         for (i, elements) in outcomes.chunks(BLOCK_ELEMENTS).enumerate() {
             let block = Block::new(elements, BLOCK_ELEMENTS * i)?;
             self.inner.write_all(&block.to_bytes().unwrap())?;
@@ -211,14 +224,17 @@ struct Block {
 }
 
 impl Block {
-    pub fn new(outcomes: ReportsSlice, index_from_usize: usize) -> io::Result<Self> {
+    pub fn new<'a, U>(outcomes: &'a [U], index_from_usize: usize) -> io::Result<Self>
+    where
+        &'a U: Into<RawOutcome>,
+    {
         let index_from = to_u64(index_from_usize);
         let index_to = to_u64(index_from_usize + outcomes.len());
 
         trace!("turning outcomes into bytes");
         let raw_outcomes_bytes: Vec<u8> = outcomes
             .iter()
-            .map(RawOutcome::from)
+            .map(Into::<RawOutcome>::into)
             .flat_map(|raw_outcome| raw_outcome.to_bytes().unwrap())
             .collect();
 
@@ -323,6 +339,7 @@ fn from_bytes_exact<'a, T: deku::DekuContainerRead<'a>>(buf: &'a [u8]) -> io::Re
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Reports;
     use deku::ctx::BitSize;
 
     const DUMMY_NUMBER: usize = 10000;
