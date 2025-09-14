@@ -41,11 +41,7 @@ pub struct OutcomeU8(u8);
 impl OutcomeU8 {
     #[must_use]
     pub fn from_raw_u8(u: u8) -> Option<Self> {
-        if u < 128 {
-            Some(Self(u))
-        } else {
-            None
-        }
+        if u < 128 { Some(Self(u)) } else { None }
     }
 
     #[must_use]
@@ -97,6 +93,7 @@ pub enum Outcome {
     Win(u8), // Need to be between 0 and 63 excluded due to conversion to u7. TODO replace by an enum with 63 elements?
     /// Used for positions we don't know the outcome yet.
     /// Cannot use `Draw` by default for positions where Drawing is the desired state (eg: KQvKb)
+    /// Once the tagging process is finished, no more `Unknown` outcome should be left
     Unknown,
     Draw,
     Lose(u8), // Need to be between 0 and **62** excluded due to conversion to u7. TODO replace by an enum with 63 elements?
@@ -136,7 +133,9 @@ impl FromStr for Outcome {
                 .map(Self::Lose)
                 .map_err(|_| "invalid lose value, must be of the form loseXXX e.g lose12")
         } else {
-            Err("invalid format, must be either: 'draw', 'loseXXX', 'winXXX', 'unknown', 'undefined'")
+            Err(
+                "invalid format, must be either: 'draw', 'loseXXX', 'winXXX', 'unknown', 'undefined'",
+            )
         }
     }
 }
