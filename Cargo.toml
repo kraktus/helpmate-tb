@@ -1,6 +1,7 @@
 [workspace]
 
 members = ["lib", "cli"]
+resolver = "3"
 
 [profile.dhat] # for profiling only # dhat
 debug = 1
@@ -12,7 +13,7 @@ overflow-checks = true  # allow to easily spot bugs with the indexer
 
 [workspace.package]
 authors = ["Kraktus"]
-edition = "2021"
+edition = "2024"
 license = "AGPL-3.0+"
 repository = "https://github.com/kraktus/helpmate-tb"
 version = "0.1.0-alpha"

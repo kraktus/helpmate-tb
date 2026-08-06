@@ -4,3 +4,4 @@ gen-snap = "test --profile dhat --features dhat --features trycmd-overwrite --te
 slow-test = "test --profile dhat --features dhat --no-fail-fast -- --include-ignored"
 tb = "run --release --bin helpmate_tb_cli --"
 # time cargo run --profile dhat --features dhat --bin helpmate_tb_cli -- generate -m KRBNvK
+tb-flamegraph = "flamegraph --profile dhat --bin helpmate_tb_cli --"

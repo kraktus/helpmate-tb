@@ -15,13 +15,13 @@ use from_str_sequential::FromStrSequential;
 use itertools::Itertools;
 use log::{debug, info, warn};
 use retroboard::{
-    shakmaty::{Bitboard, Board, Chess, Color, Color::*, Position, Setup, Square},
     RetroBoard,
+    shakmaty::{Bitboard, Board, Chess, Color, Color::*, Position, Setup, Square},
 };
 
 use helpmate_tb::{
-    to_chess_with_illegal_checks, Common, Descendants, Generator, IndexWithTurn, Indexer, Material,
-    MaterialWinner, NaiveIndexer, PosHandler, Table,
+    Common, Descendants, Generator, IndexWithTurn, Indexer, Material, MaterialWinner, NaiveIndexer,
+    PosHandler, Table, to_chess_with_illegal_checks,
 };
 
 type Transfo = (
@@ -192,13 +192,13 @@ macro_rules! check_index {
         fn [<check_mat_ $suffix>](&self, mat: Material) {
             info!("looking at {mat:?}");
             let mat_win = MaterialWinner::new(&mat, Color::White);
-            let mut gen: Generator<CheckIndexerPosHandler, $indexer> = Generator::new_with_pos_handler(
+            let mut generator: Generator<CheckIndexerPosHandler, $indexer> = Generator::new_with_pos_handler(
                 CheckIndexerPosHandler::default(),
                 mat_win,
                 &self.tb_dir,
             );
-            gen.generate_positions();
-            let (_, syzygy_res) = gen.get_result();
+            generator.generate_positions();
+            let (_, syzygy_res) = generator.get_result();
             if !syzygy_res.duplicate_indexes.is_empty() {
                 warn!(
                     "For {:?}, Found {:?} duplicates",

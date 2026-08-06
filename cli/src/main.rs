@@ -59,7 +59,7 @@ enum Cmd {
 impl Cmd {
     fn run(self) {
         match self {
-            Self::Generate(gen) => gen.run(),
+            Self::Generate(generate) => generate.run(),
             Self::Explore(expl) => expl.run(),
             Self::Probe(probe) => probe.run(),
             Self::CheckIndexer(check_index) => check_index.run(),
